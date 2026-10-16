@@ -1,0 +1,39 @@
+/* ── Sidebar ── */
+.sidebar { position: relative; z-index: 30; display: flex; flex-direction: column; width: 272px; flex-shrink: 0; padding: 22px 16px 16px; background: #e1e9de; color: var(--ink); border-right: 1px solid #bdcdb8; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; margin-bottom: 26px; }
+.brand-symbol { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--forest-800); color: var(--paper); }
+.brand-name { font-family: var(--font-display); font-size: 24px; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+.brand-name > span { color: #58755b; }
+.new-chat { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; border: 0; border-radius: 14px; font-size: 15px; font-weight: 700; background: var(--forest-800); color: var(--paper); box-shadow: 0 3px 8px rgb(17 36 29 / .08); }
+.new-chat:hover:not(:disabled) { background: var(--forest-700); transform: translateY(-2px); box-shadow: 0 6px 14px rgb(17 36 29 / .14); }
+.new-chat:active:not(:disabled) { transform: scale(.98); }
+.sidebar-title { display: flex; align-items: center; justify-content: space-between; margin: 28px 8px 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #3e5948; font-size: 11px; }
+.count-badge { min-width: 26px; padding: 2px 8px; border-radius: 999px; text-align: center; letter-spacing: 0; font-variant-numeric: tabular-nums; background: var(--sage); color: var(--sage-ink); }
+.conversation-list { flex: 1; min-height: 64px; overflow-y: auto; margin: 0 -4px; padding: 0 4px; scrollbar-color: var(--line) transparent; }
+.conversation { display: flex; align-items: center; margin: 2px 0; border-radius: 12px; transition: background-color .2s var(--ease), box-shadow .2s var(--ease); }
+.conversation:hover { background: #d3e0cf; }
+.conversation.selected { background: var(--forest-800); box-shadow: 0 3px 8px rgb(17 36 29 / .1); }
+.conversation-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 8px 10px 8px 12px; border: 0; background: transparent; font-size: 14px; text-align: left; color: #213e30; font-weight: 500; }
+.conversation-open span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-open:hover:not(:disabled) { color: var(--forest-800); }
+.conversation.selected .conversation-open { font-weight: 600; color: var(--paper); }
+.conversation.selected .conversation-open svg { color: #dce8c6; }
+.conversation-remove { width: 32px; height: 32px; margin-right: 5px; opacity: 0; color: var(--muted); }
+.conversation:hover .conversation-remove, .conversation:focus-within .conversation-remove { opacity: 1; }
+.conversation.selected .conversation-remove { color: var(--paper); }
+.conversation-remove:hover:not(:disabled) { background: var(--coral); color: var(--ink); }
+.no-chats { padding: 18px 10px; color: var(--muted); }
+.no-chats p { font-weight: 600; font-size: 14px; color: var(--ink); }
+.no-chats > span { display: block; margin-top: 4px; font-size: 13px; line-height: 1.5; }
+.sidebar-footer { margin-top: 12px; }
+.sidebar-note { display: flex; gap: 10px; padding: 14px; border-radius: 16px; background: #f1f5ed; border: 1px solid #bdcdb8; color: #3e5948; }
+.sidebar-note svg { color: var(--sage-ink); }
+.sidebar-note p { font-size: 13px; line-height: 1.45; }
+.sidebar-note strong { display: block; margin-bottom: 2px; font-weight: 700; color: var(--ink); }
+.profile-box { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 16px 6px 6px; border-top: 1px solid #bdcdb8; }
+.avatar { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; color: var(--ink); font-size: 13px; font-weight: 800; background: #c7d8bf; }
+.profile-details { min-width: 0; }
+.profile-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; color: var(--ink); }
+.profile-role { display: block; margin-top: 1px; font-size: 12px; color: #3e5948; }
+.mobile-close, .mobile-overlay, .menu-button { display: none; }
+

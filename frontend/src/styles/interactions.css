@@ -1,0 +1,48 @@
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes hop { 0%, 70%, 100% { transform: none; } 35% { transform: translateY(-5px); } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+
+/* ── Responsive ── */
+/* Gentle feedback for interactive surfaces. */
+.new-chat svg, .conversation-open svg, .test-button svg, .chip svg, .tile-icon { transition: transform .25s var(--ease); }
+.policy-result > svg { margin-top: 2px; }
+.policy-result > span { min-width: 0; }
+.policy-result strong { display: block; font-size: 14px; }
+.policy-result small { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .new-chat:hover:not(:disabled) svg { transform: rotate(90deg); }
+  .conversation-open:hover:not(:disabled) svg { transform: translateX(2px); }
+  .test-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 12px rgb(17 36 29 / .12); }
+  .test-button:hover:not(:disabled) svg { transform: translateX(4px); }
+  .chip:hover:not(:disabled) svg { transform: rotate(-8deg); }
+  .tile-action:hover:not(:disabled) .tile-icon { transform: translateY(-3px) rotate(-5deg); }
+  .icon-button:hover:not(:disabled) { transform: translateY(-1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  button, button:hover, button:active, .composer:focus-within { transform: none !important; }
+}
+
+/* Shared dropdown styling: native keyboard behavior with a styled picker. */
+select { color-scheme: light; }
+select option { background: var(--paper); color: var(--ink); font-weight: 500; }
+select:disabled { cursor: not-allowed; opacity: .55; }
+.user-select-wrap:has(select:disabled) { cursor: not-allowed; }
+.model-pill.is-connecting .status-dot { background: #8a7142; box-shadow: 0 0 0 3px rgb(138 113 66 / .12); }
+@supports (appearance: base-select) {
+  .user-select-wrap select, .policy-test select, select::picker(select) { appearance: base-select; }
+  .user-select-wrap select { display: flex; align-items: center; gap: 12px; }
+  .user-select-wrap > svg:last-child { display: none; }
+  .policy-test select { display: flex; align-items: center; justify-content: space-between; }
+  select::picker(select) {
+    margin-top: 6px; padding: 6px; border: 1px solid #a5b99c; border-radius: 14px;
+    background: var(--paper); color: var(--ink); box-shadow: 0 12px 32px rgb(17 36 29 / .18);
+    max-height: min(320px, 60dvh); overflow-y: auto; font: 500 14px var(--font-body);
+  }
+  select option { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
+  select option:hover, select option:focus { background: var(--sage); color: var(--forest-800); outline: none; }
+  select option:checked { background: var(--forest-800); color: var(--paper); font-weight: 700; }
+  select option::checkmark { order: 1; margin-left: auto; }
+  select::picker-icon { color: var(--sage-ink); transition: rotate .2s var(--ease); }
+  select:open::picker-icon { rotate: 180deg; }
+}
+
