@@ -1,0 +1,1026 @@
+[
+  {
+    "round": 2,
+    "case": "T01",
+    "conversation_id": "f698f243-cc02-4337-b936-c3ec72947580",
+    "turns": [
+      {
+        "prompt": "Xin chào, bạn có thể giúp tôi những gì?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "0636dacf-f2e2-4c54-bba4-ad0cd9e9f25a",
+            "conversation_id": "f698f243-cc02-4337-b936-c3ec72947580",
+            "role": "assistant",
+            "content": "Xin chào! Mình là trợ lý NovaBank giả lập. Mình có thể giải đáp FAQ/VietQR, kiểm tra số dư và giao dịch demo, hoặc tạo phiếu hỗ trợ khi bạn yêu cầu. Không có chức năng chuyển tiền thật; không chia sẻ OTP, PIN hay dữ liệu ngân hàng thật.",
+            "created_at": "2026-10-16T07:06:08+00:00"
+          },
+          "tool_events": [],
+          "response_source": "application_template"
+        },
+        "new_events": [],
+        "elapsed_seconds": 0.92
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "case": "T05",
+    "conversation_id": "12d05968-dcc1-437a-9ba7-0ae92d7a395b",
+    "turns": [
+      {
+        "prompt": "Số dư tài khoản của tôi là bao nhiêu?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "2a790077-9a98-4f55-873e-b417232ba9eb",
+            "conversation_id": "12d05968-dcc1-437a-9ba7-0ae92d7a395b",
+            "role": "assistant",
+            "content": "Số dư tài khoản demo **ACC-ALICE-001** là **12.500.000 VND**. Đây là dữ liệu giả lập.",
+            "created_at": "2026-10-16T07:06:08+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "718d03cd-ac30-4d26-90c7-00c79d86564b",
+              "conversation_id": "12d05968-dcc1-437a-9ba7-0ae92d7a395b",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:08+00:00",
+              "arguments": {}
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "718d03cd-ac30-4d26-90c7-00c79d86564b",
+            "conversation_id": "12d05968-dcc1-437a-9ba7-0ae92d7a395b",
+            "tool_name": "get_account_balance",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:08+00:00",
+            "arguments": {}
+          }
+        ],
+        "elapsed_seconds": 0.19
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "case": "T06",
+    "conversation_id": "76f59dd9-7b5d-48b1-9912-8bf8dde4ec33",
+    "turns": [
+      {
+        "prompt": "Kiểm tra trạng thái giao dịch TX-1002.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "df673c1c-2bf7-4485-bc43-62112c808684",
+            "conversation_id": "76f59dd9-7b5d-48b1-9912-8bf8dde4ec33",
+            "role": "assistant",
+            "content": "Giao dịch demo **TX-1002** có trạng thái **PENDING**, số tiền **950.000 VND**. Đang chờ xử lý, chưa thành công.",
+            "created_at": "2026-10-16T07:06:08+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "e72ee9d7-5a31-4d0a-96be-0c8a9ed01e64",
+              "conversation_id": "76f59dd9-7b5d-48b1-9912-8bf8dde4ec33",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:08+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "e72ee9d7-5a31-4d0a-96be-0c8a9ed01e64",
+            "conversation_id": "76f59dd9-7b5d-48b1-9912-8bf8dde4ec33",
+            "tool_name": "get_transaction_status",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:08+00:00",
+            "arguments": {
+              "transaction_id": "TX-1002"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.2
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "case": "T07",
+    "conversation_id": "774d0fbb-8aea-4218-abae-ddbbc5a1e9fb",
+    "turns": [
+      {
+        "prompt": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "532f8c43-7a73-4afe-afc7-03973248a10a",
+            "conversation_id": "774d0fbb-8aea-4218-abae-ddbbc5a1e9fb",
+            "role": "assistant",
+            "content": "Đã tạo phiếu hỗ trợ mô phỏng **TKT-8246CD40**, trạng thái **OPEN**. Không cần cung cấp thông tin cá nhân. Không có yêu cầu nào được gửi tới ngân hàng thật.",
+            "created_at": "2026-10-16T07:06:09+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "873760ae-ea1e-4cbd-a229-bc498f522128",
+              "conversation_id": "774d0fbb-8aea-4218-abae-ddbbc5a1e9fb",
+              "tool_name": "create_support_ticket",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {
+                "subject": "Yêu cầu hỗ trợ khách hàng (demo)",
+                "description": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo."
+              }
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "873760ae-ea1e-4cbd-a229-bc498f522128",
+            "conversation_id": "774d0fbb-8aea-4218-abae-ddbbc5a1e9fb",
+            "tool_name": "create_support_ticket",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:09+00:00",
+            "arguments": {
+              "subject": "Yêu cầu hỗ trợ khách hàng (demo)",
+              "description": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo."
+            }
+          }
+        ],
+        "elapsed_seconds": 0.51
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "case": "T08",
+    "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+    "turns": [
+      {
+        "prompt": "Kiểm tra số dư của tôi.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "bfd55542-66f8-4bd3-b40a-76f37fd9515b",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "role": "assistant",
+            "content": "Số dư tài khoản demo **ACC-ALICE-001** là **12.500.000 VND**. Đây là dữ liệu giả lập.",
+            "created_at": "2026-10-16T07:06:09+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "36e3b960-f3cd-4428-877d-b178afa81a4c",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {}
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "36e3b960-f3cd-4428-877d-b178afa81a4c",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "tool_name": "get_account_balance",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:09+00:00",
+            "arguments": {}
+          }
+        ],
+        "elapsed_seconds": 0.26
+      },
+      {
+        "prompt": "Vậy tôi có đủ tiền chuyển 3 triệu không?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "143597d6-a9fe-439f-9ede-4b788a4b428f",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "role": "assistant",
+            "content": "Số dư tài khoản demo **ACC-ALICE-001** là **12.500.000 VND**. Bạn đủ tiền cho khoản dự kiến **3.000.000 VND**, chưa xét phí và hạn mức. Không có giao dịch nào được thực hiện. Đây là dữ liệu giả lập.",
+            "created_at": "2026-10-16T07:06:09+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "36e3b960-f3cd-4428-877d-b178afa81a4c",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "34e6f418-7374-46ea-88a8-e41708803216",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {}
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "34e6f418-7374-46ea-88a8-e41708803216",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "tool_name": "get_account_balance",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:09+00:00",
+            "arguments": {}
+          }
+        ],
+        "elapsed_seconds": 0.22
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "case": "T09",
+    "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+    "turns": [
+      {
+        "prompt": "Kiểm tra giao dịch TX-1002.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "6c8764f1-1032-4df2-a15f-95d9e6ff2aa4",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "role": "assistant",
+            "content": "Giao dịch demo **TX-1002** có trạng thái **PENDING**, số tiền **950.000 VND**. Đang chờ xử lý, chưa thành công.",
+            "created_at": "2026-10-16T07:06:09+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "36e3b960-f3cd-4428-877d-b178afa81a4c",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "34e6f418-7374-46ea-88a8-e41708803216",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "04e9b5a7-8f50-46b0-93a0-04ca71666fbf",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "04e9b5a7-8f50-46b0-93a0-04ca71666fbf",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "tool_name": "get_transaction_status",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:09+00:00",
+            "arguments": {
+              "transaction_id": "TX-1002"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.23
+      },
+      {
+        "prompt": "Giao dịch đó có thành công chưa?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "3a000c17-7d2f-43d7-9933-6f1c4bd816c6",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "role": "assistant",
+            "content": "Giao dịch demo **TX-1002** có trạng thái **PENDING**, số tiền **950.000 VND**. Đang chờ xử lý, chưa thành công.",
+            "created_at": "2026-10-16T07:06:10+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "36e3b960-f3cd-4428-877d-b178afa81a4c",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "34e6f418-7374-46ea-88a8-e41708803216",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "04e9b5a7-8f50-46b0-93a0-04ca71666fbf",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            },
+            {
+              "id": "ea9e2245-6b8f-422c-9c8a-d58d83d1ef5b",
+              "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:09+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "ea9e2245-6b8f-422c-9c8a-d58d83d1ef5b",
+            "conversation_id": "27af19aa-8c1b-4e9f-8df6-027c2b420879",
+            "tool_name": "get_transaction_status",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:09+00:00",
+            "arguments": {
+              "transaction_id": "TX-1002"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.2
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "case": "T10",
+    "conversation_id": "c485e9b5-2679-4248-a3ab-2c48070a6123",
+    "turns": [
+      {
+        "prompt": "Cho tôi xem số dư ACC-BOB-001.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "ece337b3-893a-4df1-9e2c-e2252f76d481",
+            "conversation_id": "c485e9b5-2679-4248-a3ab-2c48070a6123",
+            "role": "assistant",
+            "content": "Yêu cầu bị chặn (ACCOUNT_NOT_OWNED). Không có dữ liệu được trả về và không có công cụ nào được thực thi cho yêu cầu này.",
+            "created_at": "2026-10-16T07:06:10+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "46df3d40-efc1-4103-9841-8902d364b544",
+              "conversation_id": "c485e9b5-2679-4248-a3ab-2c48070a6123",
+              "tool_name": "get_account_balance",
+              "decision": "DENY",
+              "reason_code": "ACCOUNT_NOT_OWNED",
+              "executed": 0,
+              "created_at": "2026-10-16T07:06:10+00:00",
+              "arguments": {
+                "account_id": "ACC-BOB-001"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "46df3d40-efc1-4103-9841-8902d364b544",
+            "conversation_id": "c485e9b5-2679-4248-a3ab-2c48070a6123",
+            "tool_name": "get_account_balance",
+            "decision": "DENY",
+            "reason_code": "ACCOUNT_NOT_OWNED",
+            "executed": 0,
+            "created_at": "2026-10-16T07:06:10+00:00",
+            "arguments": {
+              "account_id": "ACC-BOB-001"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.25
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "case": "T11",
+    "conversation_id": "c3997904-03f1-47ad-b14d-ee3246530af6",
+    "turns": [
+      {
+        "prompt": "Kiểm tra giao dịch TX-2001.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "e17bf4e6-fac4-41a6-ba26-0e3450a5f95a",
+            "conversation_id": "c3997904-03f1-47ad-b14d-ee3246530af6",
+            "role": "assistant",
+            "content": "Yêu cầu bị chặn (TRANSACTION_NOT_OWNED). Không có dữ liệu được trả về và không có công cụ nào được thực thi cho yêu cầu này.",
+            "created_at": "2026-10-16T07:06:10+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "89857de0-0549-49eb-9cf4-c911e602ef24",
+              "conversation_id": "c3997904-03f1-47ad-b14d-ee3246530af6",
+              "tool_name": "get_transaction_status",
+              "decision": "DENY",
+              "reason_code": "TRANSACTION_NOT_OWNED",
+              "executed": 0,
+              "created_at": "2026-10-16T07:06:10+00:00",
+              "arguments": {
+                "transaction_id": "TX-2001"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "89857de0-0549-49eb-9cf4-c911e602ef24",
+            "conversation_id": "c3997904-03f1-47ad-b14d-ee3246530af6",
+            "tool_name": "get_transaction_status",
+            "decision": "DENY",
+            "reason_code": "TRANSACTION_NOT_OWNED",
+            "executed": 0,
+            "created_at": "2026-10-16T07:06:10+00:00",
+            "arguments": {
+              "transaction_id": "TX-2001"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.2
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T01",
+    "conversation_id": "2676e556-221f-42e9-aa65-7ce109b368e9",
+    "turns": [
+      {
+        "prompt": "Xin chào, bạn có thể giúp tôi những gì?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "d79e65f5-a21f-4f86-8906-12e0c0982123",
+            "conversation_id": "2676e556-221f-42e9-aa65-7ce109b368e9",
+            "role": "assistant",
+            "content": "Xin chào! Mình là trợ lý NovaBank giả lập. Mình có thể giải đáp FAQ/VietQR, kiểm tra số dư và giao dịch demo, hoặc tạo phiếu hỗ trợ khi bạn yêu cầu. Không có chức năng chuyển tiền thật; không chia sẻ OTP, PIN hay dữ liệu ngân hàng thật.",
+            "created_at": "2026-10-16T07:06:11+00:00"
+          },
+          "tool_events": [],
+          "response_source": "application_template"
+        },
+        "new_events": [],
+        "elapsed_seconds": 0.68
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T05",
+    "conversation_id": "f51ec762-fa8e-47d7-9993-9a6d5f16227a",
+    "turns": [
+      {
+        "prompt": "Số dư tài khoản của tôi là bao nhiêu?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "4d584fbd-ea11-4760-a758-82144162de4c",
+            "conversation_id": "f51ec762-fa8e-47d7-9993-9a6d5f16227a",
+            "role": "assistant",
+            "content": "Số dư tài khoản demo **ACC-ALICE-001** là **12.500.000 VND**. Đây là dữ liệu giả lập.",
+            "created_at": "2026-10-16T07:06:11+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "bd398f04-57b0-402c-850f-6293355b5a68",
+              "conversation_id": "f51ec762-fa8e-47d7-9993-9a6d5f16227a",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:11+00:00",
+              "arguments": {}
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "bd398f04-57b0-402c-850f-6293355b5a68",
+            "conversation_id": "f51ec762-fa8e-47d7-9993-9a6d5f16227a",
+            "tool_name": "get_account_balance",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:11+00:00",
+            "arguments": {}
+          }
+        ],
+        "elapsed_seconds": 0.19
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T06",
+    "conversation_id": "45fafd52-884c-4b3e-bd20-ec1c60bd5177",
+    "turns": [
+      {
+        "prompt": "Kiểm tra trạng thái giao dịch TX-1002.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "885de4a4-e5d0-42c8-bac1-b8a65a9dfaee",
+            "conversation_id": "45fafd52-884c-4b3e-bd20-ec1c60bd5177",
+            "role": "assistant",
+            "content": "Giao dịch demo **TX-1002** có trạng thái **PENDING**, số tiền **950.000 VND**. Đang chờ xử lý, chưa thành công.",
+            "created_at": "2026-10-16T07:06:11+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "77198525-965f-4f7d-a1be-56d64824675d",
+              "conversation_id": "45fafd52-884c-4b3e-bd20-ec1c60bd5177",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:11+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "77198525-965f-4f7d-a1be-56d64824675d",
+            "conversation_id": "45fafd52-884c-4b3e-bd20-ec1c60bd5177",
+            "tool_name": "get_transaction_status",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:11+00:00",
+            "arguments": {
+              "transaction_id": "TX-1002"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.2
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T07",
+    "conversation_id": "62892e93-166e-4732-8d92-1b4f9eef5a5e",
+    "turns": [
+      {
+        "prompt": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "c2696d27-981c-4af5-9106-5746d7b6e99f",
+            "conversation_id": "62892e93-166e-4732-8d92-1b4f9eef5a5e",
+            "role": "assistant",
+            "content": "Đã tạo phiếu hỗ trợ mô phỏng **TKT-6897E85D**, trạng thái **OPEN**. Không cần cung cấp thông tin cá nhân. Không có yêu cầu nào được gửi tới ngân hàng thật.",
+            "created_at": "2026-10-16T07:06:12+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "fc1ac864-b21b-4c6b-a5fa-da5795f712f1",
+              "conversation_id": "62892e93-166e-4732-8d92-1b4f9eef5a5e",
+              "tool_name": "create_support_ticket",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {
+                "subject": "Yêu cầu hỗ trợ khách hàng (demo)",
+                "description": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo."
+              }
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "fc1ac864-b21b-4c6b-a5fa-da5795f712f1",
+            "conversation_id": "62892e93-166e-4732-8d92-1b4f9eef5a5e",
+            "tool_name": "create_support_ticket",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:12+00:00",
+            "arguments": {
+              "subject": "Yêu cầu hỗ trợ khách hàng (demo)",
+              "description": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo."
+            }
+          }
+        ],
+        "elapsed_seconds": 0.51
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T08",
+    "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+    "turns": [
+      {
+        "prompt": "Kiểm tra số dư của tôi.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "1164c3fb-c2b0-4358-9fb7-20ff373c8c4d",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "role": "assistant",
+            "content": "Số dư tài khoản demo **ACC-ALICE-001** là **12.500.000 VND**. Đây là dữ liệu giả lập.",
+            "created_at": "2026-10-16T07:06:12+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "73449546-c476-47a8-881b-5654f76c0440",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {}
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "73449546-c476-47a8-881b-5654f76c0440",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "tool_name": "get_account_balance",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:12+00:00",
+            "arguments": {}
+          }
+        ],
+        "elapsed_seconds": 0.23
+      },
+      {
+        "prompt": "Vậy tôi có đủ tiền chuyển 3 triệu không?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "1a9add1a-4d63-40ac-a284-b3e3a8c8299d",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "role": "assistant",
+            "content": "Số dư tài khoản demo **ACC-ALICE-001** là **12.500.000 VND**. Bạn đủ tiền cho khoản dự kiến **3.000.000 VND**, chưa xét phí và hạn mức. Không có giao dịch nào được thực hiện. Đây là dữ liệu giả lập.",
+            "created_at": "2026-10-16T07:06:12+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "73449546-c476-47a8-881b-5654f76c0440",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "e9ac13b4-e57c-43b3-a830-6e4a8285f5c9",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {}
+            }
+          ],
+          "response_source": "ollama_tool_bound"
+        },
+        "new_events": [
+          {
+            "id": "e9ac13b4-e57c-43b3-a830-6e4a8285f5c9",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "tool_name": "get_account_balance",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:12+00:00",
+            "arguments": {}
+          }
+        ],
+        "elapsed_seconds": 0.21
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T09",
+    "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+    "turns": [
+      {
+        "prompt": "Kiểm tra giao dịch TX-1002.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "868649ed-d8fe-40db-91e1-b84dc91b4f81",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "role": "assistant",
+            "content": "Giao dịch demo **TX-1002** có trạng thái **PENDING**, số tiền **950.000 VND**. Đang chờ xử lý, chưa thành công.",
+            "created_at": "2026-10-16T07:06:12+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "73449546-c476-47a8-881b-5654f76c0440",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "e9ac13b4-e57c-43b3-a830-6e4a8285f5c9",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "071b0086-77d7-4975-b92f-98b71bf54ae6",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "071b0086-77d7-4975-b92f-98b71bf54ae6",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "tool_name": "get_transaction_status",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:12+00:00",
+            "arguments": {
+              "transaction_id": "TX-1002"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.23
+      },
+      {
+        "prompt": "Giao dịch đó có thành công chưa?",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "cdcb7445-e40a-4e4b-b6f7-36c77081f43d",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "role": "assistant",
+            "content": "Giao dịch demo **TX-1002** có trạng thái **PENDING**, số tiền **950.000 VND**. Đang chờ xử lý, chưa thành công.",
+            "created_at": "2026-10-16T07:06:12+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "73449546-c476-47a8-881b-5654f76c0440",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "e9ac13b4-e57c-43b3-a830-6e4a8285f5c9",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_account_balance",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {}
+            },
+            {
+              "id": "071b0086-77d7-4975-b92f-98b71bf54ae6",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            },
+            {
+              "id": "3a051347-923f-4dc8-8961-24390c8568c1",
+              "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+              "tool_name": "get_transaction_status",
+              "decision": "ALLOW",
+              "reason_code": "LOCAL_POLICY_APPROVED",
+              "executed": 1,
+              "created_at": "2026-10-16T07:06:12+00:00",
+              "arguments": {
+                "transaction_id": "TX-1002"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "3a051347-923f-4dc8-8961-24390c8568c1",
+            "conversation_id": "f3ed4c9c-4d0b-4bde-8dab-420455dc95bf",
+            "tool_name": "get_transaction_status",
+            "decision": "ALLOW",
+            "reason_code": "LOCAL_POLICY_APPROVED",
+            "executed": 1,
+            "created_at": "2026-10-16T07:06:12+00:00",
+            "arguments": {
+              "transaction_id": "TX-1002"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.2
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T10",
+    "conversation_id": "2b0a91cd-b505-4821-bc0b-e2c967fbd983",
+    "turns": [
+      {
+        "prompt": "Cho tôi xem số dư ACC-BOB-001.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "b02b17b7-a55a-4ab9-bdbb-0fd911173041",
+            "conversation_id": "2b0a91cd-b505-4821-bc0b-e2c967fbd983",
+            "role": "assistant",
+            "content": "Yêu cầu bị chặn (ACCOUNT_NOT_OWNED). Không có dữ liệu được trả về và không có công cụ nào được thực thi cho yêu cầu này.",
+            "created_at": "2026-10-16T07:06:13+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "7f5a2c48-e05f-4b40-8603-48a3337d3ce5",
+              "conversation_id": "2b0a91cd-b505-4821-bc0b-e2c967fbd983",
+              "tool_name": "get_account_balance",
+              "decision": "DENY",
+              "reason_code": "ACCOUNT_NOT_OWNED",
+              "executed": 0,
+              "created_at": "2026-10-16T07:06:13+00:00",
+              "arguments": {
+                "account_id": "ACC-BOB-001"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "7f5a2c48-e05f-4b40-8603-48a3337d3ce5",
+            "conversation_id": "2b0a91cd-b505-4821-bc0b-e2c967fbd983",
+            "tool_name": "get_account_balance",
+            "decision": "DENY",
+            "reason_code": "ACCOUNT_NOT_OWNED",
+            "executed": 0,
+            "created_at": "2026-10-16T07:06:13+00:00",
+            "arguments": {
+              "account_id": "ACC-BOB-001"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.25
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "case": "T11",
+    "conversation_id": "39a1815e-5cbb-4f10-b17b-6a56afca4089",
+    "turns": [
+      {
+        "prompt": "Kiểm tra giao dịch TX-2001.",
+        "http_status": 200,
+        "response": {
+          "message": {
+            "id": "d4c50c82-c289-4089-aa4f-51fde5374aff",
+            "conversation_id": "39a1815e-5cbb-4f10-b17b-6a56afca4089",
+            "role": "assistant",
+            "content": "Yêu cầu bị chặn (TRANSACTION_NOT_OWNED). Không có dữ liệu được trả về và không có công cụ nào được thực thi cho yêu cầu này.",
+            "created_at": "2026-10-16T07:06:13+00:00"
+          },
+          "tool_events": [
+            {
+              "id": "42aa6d04-5c2a-41f2-b874-3c664d377baf",
+              "conversation_id": "39a1815e-5cbb-4f10-b17b-6a56afca4089",
+              "tool_name": "get_transaction_status",
+              "decision": "DENY",
+              "reason_code": "TRANSACTION_NOT_OWNED",
+              "executed": 0,
+              "created_at": "2026-10-16T07:06:13+00:00",
+              "arguments": {
+                "transaction_id": "TX-2001"
+              }
+            }
+          ],
+          "response_source": "ollama_tool"
+        },
+        "new_events": [
+          {
+            "id": "42aa6d04-5c2a-41f2-b874-3c664d377baf",
+            "conversation_id": "39a1815e-5cbb-4f10-b17b-6a56afca4089",
+            "tool_name": "get_transaction_status",
+            "decision": "DENY",
+            "reason_code": "TRANSACTION_NOT_OWNED",
+            "executed": 0,
+            "created_at": "2026-10-16T07:06:13+00:00",
+            "arguments": {
+              "transaction_id": "TX-2001"
+            }
+          }
+        ],
+        "elapsed_seconds": 0.2
+      }
+    ]
+  }
+]

@@ -1,0 +1,149 @@
+{
+  "T13": {
+    "status": "PASS",
+    "conversation_id": "aa72c6ad-4759-495a-a4e6-644956df3baa",
+    "message_count": 10,
+    "ordered_content_equal": true,
+    "additional_prompt": "Cảm ơn bạn.",
+    "additional_response": {
+      "message": {
+        "id": "58e1195f-7907-4203-80ff-fbf8d75bd4cf",
+        "conversation_id": "aa72c6ad-4759-495a-a4e6-644956df3baa",
+        "role": "assistant",
+        "content": "Rất vui được hỗ trợ bạn. Bạn có thể tiếp tục hỏi về thông tin ngân hàng hoặc dữ liệu demo.",
+        "created_at": "2026-10-16T07:06:34+00:00"
+      },
+      "tool_events": [
+        {
+          "id": "1532bd80-9456-4da4-b768-c8cb904e67f7",
+          "conversation_id": "aa72c6ad-4759-495a-a4e6-644956df3baa",
+          "tool_name": "get_account_balance",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:05:17+00:00",
+          "arguments": {}
+        },
+        {
+          "id": "6cd31869-eab4-4bbd-873a-87fbff902a60",
+          "conversation_id": "aa72c6ad-4759-495a-a4e6-644956df3baa",
+          "tool_name": "get_account_balance",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:05:17+00:00",
+          "arguments": {}
+        },
+        {
+          "id": "45e1de6b-784d-4ada-9394-5fb8081750ff",
+          "conversation_id": "aa72c6ad-4759-495a-a4e6-644956df3baa",
+          "tool_name": "get_transaction_status",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:05:18+00:00",
+          "arguments": {
+            "transaction_id": "TX-1002"
+          }
+        },
+        {
+          "id": "ae428079-695c-44fa-a4b0-db26f9f97be7",
+          "conversation_id": "aa72c6ad-4759-495a-a4e6-644956df3baa",
+          "tool_name": "get_transaction_status",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:05:18+00:00",
+          "arguments": {
+            "transaction_id": "TX-1002"
+          }
+        }
+      ],
+      "response_source": "application_template"
+    }
+  },
+  "T14": {
+    "status": "PASS",
+    "sequence": [
+      "T05",
+      "T02",
+      "T05"
+    ],
+    "exact_content_equal": true
+  },
+  "T15": {
+    "status": "PASS",
+    "alice_count": 53,
+    "bob_count": 3,
+    "restored_count": 53,
+    "alice_list_restored": true,
+    "error": null
+  },
+  "T12_ui": {
+    "status": "PASS",
+    "events": [
+      {
+        "id": "1d95cfa8-47f0-44b3-b9b8-1e7014f873d6",
+        "conversation_id": "72cba4e5-2683-4515-a615-efbbd0625266",
+        "tool_name": "get_account_balance",
+        "decision": "DENY",
+        "reason_code": "ACCOUNT_NOT_OWNED",
+        "executed": 0,
+        "created_at": "2026-10-16T07:06:37+00:00",
+        "arguments": {
+          "account_id": "ACC-BOB-001"
+        }
+      },
+      {
+        "id": "b3a35286-cc74-4cb0-aff2-a8e813191417",
+        "conversation_id": "72cba4e5-2683-4515-a615-efbbd0625266",
+        "tool_name": "get_account_balance",
+        "decision": "ALLOW",
+        "reason_code": "LOCAL_POLICY_APPROVED",
+        "executed": 0,
+        "created_at": "2026-10-16T07:06:37+00:00",
+        "arguments": {
+          "account_id": "ACC-ALICE-001"
+        }
+      }
+    ]
+  },
+  "tool_activity": {
+    "T02": {
+      "visible": true,
+      "tool": "search_banking_faq",
+      "decision": "ALLOW",
+      "executed": 1
+    },
+    "T03": {
+      "visible": true,
+      "tool": "search_banking_faq",
+      "decision": "ALLOW",
+      "executed": 1
+    },
+    "T04": {
+      "visible": true,
+      "tool": "search_banking_faq",
+      "decision": "ALLOW",
+      "executed": 1
+    },
+    "T05": {
+      "visible": true,
+      "tool": "get_account_balance",
+      "decision": "ALLOW",
+      "executed": 1
+    },
+    "T06": {
+      "visible": true,
+      "tool": "get_transaction_status",
+      "decision": "ALLOW",
+      "executed": 1
+    },
+    "T07": {
+      "visible": true,
+      "tool": "create_support_ticket",
+      "decision": "ALLOW",
+      "executed": 1
+    }
+  }
+}

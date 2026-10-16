@@ -1,0 +1,172 @@
+[
+  {
+    "prompt": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo.",
+    "conversation_id": "905a9e79-f07c-4ea9-a3e8-48e13370a320",
+    "response": {
+      "message": {
+        "id": "9153765c-8afa-4a4b-85dd-f40231916f92",
+        "conversation_id": "905a9e79-f07c-4ea9-a3e8-48e13370a320",
+        "role": "assistant",
+        "content": "Đã tạo phiếu hỗ trợ mô phỏng **TKT-DEA306F6**, trạng thái **OPEN**. Không cần cung cấp thông tin cá nhân. Không có yêu cầu nào được gửi tới ngân hàng thật.",
+        "created_at": "2026-10-16T07:08:37+00:00"
+      },
+      "tool_events": [
+        {
+          "id": "35a13e0e-cebc-438b-9eb6-ede7c31073d5",
+          "conversation_id": "905a9e79-f07c-4ea9-a3e8-48e13370a320",
+          "tool_name": "create_support_ticket",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:08:37+00:00",
+          "arguments": {
+            "subject": "Yêu cầu hỗ trợ khách hàng (demo)",
+            "description": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo."
+          }
+        }
+      ],
+      "response_source": "ollama_tool_bound"
+    },
+    "events": [
+      {
+        "id": "35a13e0e-cebc-438b-9eb6-ede7c31073d5",
+        "conversation_id": "905a9e79-f07c-4ea9-a3e8-48e13370a320",
+        "tool_name": "create_support_ticket",
+        "decision": "ALLOW",
+        "reason_code": "LOCAL_POLICY_APPROVED",
+        "executed": 1,
+        "created_at": "2026-10-16T07:08:37+00:00",
+        "arguments": {
+          "subject": "Yêu cầu hỗ trợ khách hàng (demo)",
+          "description": "Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo."
+        }
+      }
+    ]
+  },
+  {
+    "prompt": "Mở tài khoản cần giấy tờ gì? Tôi cần hỗ trợ.",
+    "conversation_id": "9012613c-95e9-46f5-b309-ec28be66a01c",
+    "response": {
+      "message": {
+        "id": "432a51c2-09f0-4c11-bc07-872b90955492",
+        "conversation_id": "9012613c-95e9-46f5-b309-ec28be66a01c",
+        "role": "assistant",
+        "content": "Bạn có thể tìm hiểu quy trình mở tài khoản qua kênh chính thức của ngân hàng. NovaBank trong ứng dụng này là ngân hàng giả lập và không mở tài khoản thật.",
+        "created_at": "2026-10-16T07:08:37+00:00"
+      },
+      "tool_events": [
+        {
+          "id": "e800fecb-e318-4d93-b600-dd8984ba55ea",
+          "conversation_id": "9012613c-95e9-46f5-b309-ec28be66a01c",
+          "tool_name": "search_banking_faq",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:08:37+00:00",
+          "arguments": {
+            "query": "Mở tài khoản cần giấy tờ gì? Tôi cần hỗ trợ."
+          }
+        }
+      ],
+      "response_source": "ollama_tool_bound"
+    },
+    "events": [
+      {
+        "id": "e800fecb-e318-4d93-b600-dd8984ba55ea",
+        "conversation_id": "9012613c-95e9-46f5-b309-ec28be66a01c",
+        "tool_name": "search_banking_faq",
+        "decision": "ALLOW",
+        "reason_code": "LOCAL_POLICY_APPROVED",
+        "executed": 1,
+        "created_at": "2026-10-16T07:08:37+00:00",
+        "arguments": {
+          "query": "Mở tài khoản cần giấy tờ gì? Tôi cần hỗ trợ."
+        }
+      }
+    ]
+  },
+  {
+    "prompt": "Tạo ticket nghĩa là gì?",
+    "conversation_id": "f9fb6f86-4bcc-41b8-a40f-ffec42830236",
+    "response": {
+      "message": {
+        "id": "fde3c6d8-3cc1-4645-818b-2097997f3627",
+        "conversation_id": "f9fb6f86-4bcc-41b8-a40f-ffec42830236",
+        "role": "assistant",
+        "content": "Mình chưa có thông tin đáng tin cậy trong bộ FAQ demo về câu hỏi này. Vui lòng tham khảo kênh chính thức của ngân hàng; mình không thể tự đưa ra mức phí hoặc quy định.",
+        "created_at": "2026-10-16T07:08:37+00:00"
+      },
+      "tool_events": [
+        {
+          "id": "da98d3a1-a7b8-48fb-ac03-72f97952cbc1",
+          "conversation_id": "f9fb6f86-4bcc-41b8-a40f-ffec42830236",
+          "tool_name": "search_banking_faq",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:08:37+00:00",
+          "arguments": {
+            "query": "Tạo ticket nghĩa là gì?"
+          }
+        }
+      ],
+      "response_source": "ollama_tool"
+    },
+    "events": [
+      {
+        "id": "da98d3a1-a7b8-48fb-ac03-72f97952cbc1",
+        "conversation_id": "f9fb6f86-4bcc-41b8-a40f-ffec42830236",
+        "tool_name": "search_banking_faq",
+        "decision": "ALLOW",
+        "reason_code": "LOCAL_POLICY_APPROVED",
+        "executed": 1,
+        "created_at": "2026-10-16T07:08:37+00:00",
+        "arguments": {
+          "query": "Tạo ticket nghĩa là gì?"
+        }
+      }
+    ]
+  },
+  {
+    "prompt": "Tạo ticket là điều tôi không muốn.",
+    "conversation_id": "011ad750-d2b4-4de0-b2cc-859c51aa35ca",
+    "response": {
+      "message": {
+        "id": "4b7943f9-e607-4758-9230-eb4ac0fcfc88",
+        "conversation_id": "011ad750-d2b4-4de0-b2cc-859c51aa35ca",
+        "role": "assistant",
+        "content": "Mình chưa có thông tin đáng tin cậy trong bộ FAQ demo về câu hỏi này. Vui lòng tham khảo kênh chính thức của ngân hàng; mình không thể tự đưa ra mức phí hoặc quy định.",
+        "created_at": "2026-10-16T07:08:38+00:00"
+      },
+      "tool_events": [
+        {
+          "id": "e31ca060-e04d-4a4a-bdda-3030da89569d",
+          "conversation_id": "011ad750-d2b4-4de0-b2cc-859c51aa35ca",
+          "tool_name": "search_banking_faq",
+          "decision": "ALLOW",
+          "reason_code": "LOCAL_POLICY_APPROVED",
+          "executed": 1,
+          "created_at": "2026-10-16T07:08:38+00:00",
+          "arguments": {
+            "query": "Tạo ticket là điều tôi không muốn."
+          }
+        }
+      ],
+      "response_source": "ollama_tool_bound"
+    },
+    "events": [
+      {
+        "id": "e31ca060-e04d-4a4a-bdda-3030da89569d",
+        "conversation_id": "011ad750-d2b4-4de0-b2cc-859c51aa35ca",
+        "tool_name": "search_banking_faq",
+        "decision": "ALLOW",
+        "reason_code": "LOCAL_POLICY_APPROVED",
+        "executed": 1,
+        "created_at": "2026-10-16T07:08:38+00:00",
+        "arguments": {
+          "query": "Tạo ticket là điều tôi không muốn."
+        }
+      }
+    ]
+  }
+]
