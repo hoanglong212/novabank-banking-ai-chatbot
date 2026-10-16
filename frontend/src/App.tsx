@@ -9,16 +9,16 @@ import { api } from './api';
 import type { ChatMessage, Conversation, DemoUser, Health, ToolEvent, Decision } from './types';
 
 const suggestions = [
-  { icon: <Wallet size={23} />, tone: 'mint', title: 'Kiểm tra số dư', detail: 'Xem số dư tài khoản demo của bạn.', text: 'Kiểm tra số dư tài khoản của tôi' },
-  { icon: <CreditCard size={23} />, tone: 'blue', title: 'Tra cứu giao dịch', detail: 'Theo dõi trạng thái chuyển tiền.', text: 'Kiểm tra trạng thái giao dịch TX-1002' },
-  { icon: <CircleHelp size={23} />, tone: 'violet', title: 'Giải đáp ngân hàng', detail: 'Tìm hiểu VietQR và các dịch vụ.', text: 'VietQR là gì và tôi cần chú ý điều gì khi quét mã?' },
-  { icon: <ClipboardList size={23} />, tone: 'amber', title: 'Yêu cầu hỗ trợ', detail: 'Tạo phiếu hỗ trợ cho vấn đề của bạn.', text: 'Tạo yêu cầu hỗ trợ vì giao dịch bị treo' },
+  { icon: <Wallet size={23} />, tone: 'mint', title: 'Check balance', detail: 'View your demo account balance.', text: 'Check my account balance' },
+  { icon: <CreditCard size={23} />, tone: 'blue', title: 'Track a transaction', detail: 'Check your transaction status.', text: 'Check transaction TX-1002' },
+  { icon: <CircleHelp size={23} />, tone: 'violet', title: 'Banking questions', detail: 'Explore VietQR and banking services.', text: 'What is VietQR and what should I check before scanning a code?' },
+  { icon: <ClipboardList size={23} />, tone: 'amber', title: 'Get support', detail: 'Create a ticket for your issue.', text: 'Create a support ticket for my pending transaction' },
 ];
 
 function formatTime(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.valueOf())) return '';
-  return parsed.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  return parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
 function safeMessageParts(text: string) {
@@ -62,7 +62,7 @@ export default function App() {
       const remembered = list.find(item => item.id === window.sessionStorage.getItem('novabank-demo-user'));
       setUser(remembered || list[0] || null);
       setHealth(status);
-    }).catch(err => { if (alive) setError(err.message + ' · Chưa kết nối được máy chủ hỗ trợ.'); });
+    }).catch(err => { if (alive) setError(err.message + ' · Unable to connect to the support server.'); });
     return () => { alive = false; };
   }, []);
 
@@ -119,7 +119,7 @@ export default function App() {
     if (!user || busy) return;
     setError(null); setBusy(true);
     try {
-      const created = await api.createConversation(user, 'Cuộc trò chuyện mới');
+      const created = await api.createConversation(user, 'New conversation');
       await refreshConversations(user);
       setActive(created.id);
       setSidebarOpen(false);
@@ -129,7 +129,7 @@ export default function App() {
   }
 
   async function deleteConversation(id: string) {
-    if (!user || busy || !window.confirm('Xóa cuộc trò chuyện demo này?')) return;
+    if (!user || busy || !window.confirm('Delete this demo conversation?')) return;
     setBusy(true);
     try {
       await api.deleteConversation(user, id);
@@ -160,7 +160,7 @@ export default function App() {
       setMessages(chat); setEvents(log); await refreshConversations(user);
       if (response.message.role !== 'assistant') throw new Error('Unexpected backend response');
     } catch (err) {
-      setError((err as Error).message + ' · Nội dung đã gửi có thể vẫn được lưu. Kiểm tra history trước khi gửi lại.');
+      setError((err as Error).message + ' · Your message may have been saved. Check the conversation before sending it again.');
       if (active) api.messages(user, active).then(setMessages).catch(() => {});
     } finally { setBusy(false); }
   }
@@ -175,7 +175,7 @@ export default function App() {
         ? { account_id: accountId.trim() || undefined }
         : toolName === 'get_transaction_status'
           ? { transaction_id: 'TX-2001' }
-          : { query: 'VietQR là gì?' };
+          : { query: 'What is VietQR?' };
       const response = await api.policyDryRun(user, id, toolName, args);
       setPolicyResult(response);
       setEvents(await api.toolEvents(user, id));
@@ -188,59 +188,59 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#message-input">Đến ô nhập tin nhắn</a>
-      {sidebarOpen && <button className="mobile-overlay" aria-label="Đóng điều hướng" onClick={() => setSidebarOpen(false)} />}
+      <a className="skip-link" href="#message-input">Skip to message input</a>
+      {sidebarOpen && <button className="mobile-overlay" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} id="navigation">
         <div className="brand">
           <span className="brand-symbol"><Landmark size={24} strokeWidth={1.8} /></span>
-          <div><div className="brand-name">novabank<span>.</span></div><div className="brand-subtitle">NGÂN HÀNG, GẦN BẠN HƠN</div></div>
-          <button className="mobile-close icon-button" aria-label="Đóng điều hướng" onClick={() => setSidebarOpen(false)}><X size={20}/></button>
+          <div><div className="brand-name">novabank<span>.</span></div><div className="brand-subtitle">BANKING, CLOSER TO YOU</div></div>
+          <button className="mobile-close icon-button" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}><X size={20}/></button>
         </div>
 
-        <div className="sidebar-section-label">KHÔNG GIAN CỦA BẠN</div>
-        <div className="nav-current"><MessageCircle size={19}/><span>Trợ lý ngân hàng</span><span className="nav-badge">AI</span></div>
-        <button className="new-chat" onClick={startConversation} disabled={!user || busy}><Plus size={19}/><span>Cuộc trò chuyện mới</span></button>
+        <div className="sidebar-section-label">YOUR WORKSPACE</div>
+        <div className="nav-current"><MessageCircle size={19}/><span>Banking assistant</span><span className="nav-badge">AI</span></div>
+        <button className="new-chat" onClick={startConversation} disabled={!user || busy}><Plus size={19}/><span>New conversation</span></button>
 
-        <div className="sidebar-title"><Clock3 size={15}/><span>Gần đây</span><span className="count-badge">{conversations.length}</span></div>
-        <nav className="conversation-list" aria-label="Lịch sử hội thoại">
-          {conversations.length === 0 && <div className="no-chats"><MessageSquare size={22}/><p>Câu chuyện bắt đầu từ bạn.</p><span>Các cuộc trò chuyện sẽ được lưu ở đây.</span></div>}
+        <div className="sidebar-title"><Clock3 size={15}/><span>Recent</span><span className="count-badge">{conversations.length}</span></div>
+        <nav className="conversation-list" aria-label="Conversation history">
+          {conversations.length === 0 && <div className="no-chats"><MessageSquare size={22}/><p>Start a conversation.</p><span>Your conversations will appear here.</span></div>}
           {conversations.map(c => (
             <div key={c.id} className={`conversation ${c.id === active ? 'selected' : ''}`}>
               <button className="conversation-open" disabled={busy} aria-current={c.id === active ? 'page' : undefined} onClick={() => { setActive(c.id); setSidebarOpen(false); }} title={c.title}><MessageSquare size={16}/><span>{c.title}</span></button>
-              <button className="conversation-remove icon-button" disabled={busy} title="Xóa hội thoại" aria-label={`Xóa hội thoại ${c.title}`} onClick={() => deleteConversation(c.id)}><Trash2 size={15}/></button>
+              <button className="conversation-remove icon-button" disabled={busy} title="Delete conversation" aria-label={`Delete conversation ${c.title}`} onClick={() => deleteConversation(c.id)}><Trash2 size={15}/></button>
             </div>
           ))}
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-note"><span className="note-icon"><ShieldCheck size={20}/></span><strong>Trải nghiệm an tâm</strong><p>Chỉ sử dụng dữ liệu giả lập.<br/>Không chia sẻ OTP hoặc mã PIN.</p><span className="demo-tag">PHIÊN BẢN DEMO</span></div>
-          <div className="profile-box"><div className="avatar">{user ? getInitials(user.name) : '—'}</div><div className="profile-details"><span className="profile-name">{user?.name ?? 'Đang kết nối…'}</span><span className="profile-role">Tài khoản trải nghiệm</span></div><span className="profile-dot"/></div>
+          <div className="sidebar-note"><span className="note-icon"><ShieldCheck size={20}/></span><strong>Explore with confidence</strong><p>Use demo data only.<br/>Never share your OTP or PIN.</p><span className="demo-tag">DEMO EDITION</span></div>
+          <div className="profile-box"><div className="avatar">{user ? getInitials(user.name) : '—'}</div><div className="profile-details"><span className="profile-name">{user?.name ?? 'Connecting…'}</span><span className="profile-role">Demo account</span></div><span className="profile-dot"/></div>
         </div>
       </aside>
 
       <main className="main-area">
         <header className="topbar">
           <div className="topbar-left">
-            <button aria-label="Mở điều hướng" aria-expanded={sidebarOpen} aria-controls="navigation" className="menu-button icon-button" onClick={() => setSidebarOpen(true)}><Menu size={22}/></button>
-            <span className="breadcrumb">Không gian hỗ trợ</span><span className="breadcrumb-divider">/</span><span className="topbar-title">Trợ lý AI</span>
+            <button aria-label="Open navigation" aria-expanded={sidebarOpen} aria-controls="navigation" className="menu-button icon-button" onClick={() => setSidebarOpen(true)}><Menu size={22}/></button>
+            <span className="breadcrumb">Support workspace</span><span className="breadcrumb-divider">/</span><span className="topbar-title">AI assistant</span>
           </div>
           <div className="topbar-right">
-            <span className="model-pill"><span className="status-dot"/>{health ? (health.llm_provider === 'ollama' ? 'Ollama AI' : 'Chế độ demo') : 'Đang kết nối'}</span>
-            <label className="user-select-wrap"><UserRound size={16}/><select disabled={busy || !users.length} aria-label="Chọn khách hàng demo" value={user?.id || ''} onChange={e => { const next = users.find(u => u.id === e.target.value); if (next) changeUser(next); }}>{users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select><ChevronDown size={14}/></label>
-            <button className={`insights-toggle icon-button ${policyPanelOpen ? 'is-active' : ''}`} aria-label="Thông tin kiểm thử" title="Thông tin kiểm thử" aria-controls="policy-panel" aria-expanded={policyPanelOpen} onClick={() => setPolicyPanelOpen(!policyPanelOpen)}><PanelRight size={20}/></button>
+            <span className="model-pill"><span className="status-dot"/>{health ? (health.llm_provider === 'ollama' ? 'Ollama AI' : 'Demo mode') : 'Connecting'}</span>
+            <label className="user-select-wrap"><UserRound size={16}/><select disabled={busy || !users.length} aria-label="Select demo customer" value={user?.id || ''} onChange={e => { const next = users.find(u => u.id === e.target.value); if (next) changeUser(next); }}>{users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select><ChevronDown size={14}/></label>
+            <button className={`insights-toggle icon-button ${policyPanelOpen ? 'is-active' : ''}`} aria-label="Testing insights" title="Testing insights" aria-controls="policy-panel" aria-expanded={policyPanelOpen} onClick={() => setPolicyPanelOpen(!policyPanelOpen)}><PanelRight size={20}/></button>
           </div>
         </header>
 
         <div className="workspace">
-          <section className="chat-column" aria-label="Trò chuyện với NovaBank">
-            <div className="chat-heading"><div className="assistant-identity"><span className="assistant-symbol"><Sparkles size={20}/></span><div><strong>Nova Assistant</strong><span>Trợ lý ngân hàng của bạn</span></div></div><span className="chat-context">{messages.length > 0 ? activeTitle : 'Luôn sẵn sàng lắng nghe'}</span></div>
+          <section className="chat-column" aria-label="Chat with NovaBank">
+            <div className="chat-heading"><div className="assistant-identity"><span className="assistant-symbol"><Sparkles size={20}/></span><div><strong>Nova Assistant</strong><span>Your banking assistant</span></div></div><span className="chat-context">{messages.length > 0 ? activeTitle : 'Here whenever you need us'}</span></div>
             <div className="messages-scroller" ref={scrollerRef}><div className="messages-inner">
               {messages.length === 0 ? (
                 <div className="welcome">
-                  <div className="welcome-topline"><span className="welcome-kicker"><span className="tiny-spark"><Sparkles size={14}/></span> MỘT CÁCH KẾT NỐI MỚI</span><span className="welcome-edition">NOVABANK / AI</span></div>
-                  <div className="welcome-heading"><h1>Xin chào{user ? `, ${user.name.split(' ').slice(-1)[0]}` : ''}.<br/><span>Hôm nay bạn cần giúp gì?</span></h1><div className="welcome-mark" aria-hidden="true"><Landmark size={36} strokeWidth={1.4}/><span><Sparkles size={14}/></span></div></div>
-                  <p className="welcome-description">Từ một câu hỏi nhỏ đến việc cần hỗ trợ.<br className="desktop-break"/> Nova luôn ở đây để giúp bạn tìm câu trả lời.</p>
-                  <div className="section-caption"><span>BẮT ĐẦU THẬT ĐƠN GIẢN</span><span>Chọn một gợi ý bên dưới <ArrowRight size={14}/></span></div>
+                  <div className="welcome-topline"><span className="welcome-kicker"><span className="tiny-spark"><Sparkles size={14}/></span> A NEW WAY TO CONNECT</span><span className="welcome-edition">NOVABANK / AI</span></div>
+                  <div className="welcome-heading"><h1>Hello{user ? `, ${user.name.split(' ').slice(-1)[0]}` : ''}.<br/><span>How can we help today?</span></h1><div className="welcome-mark" aria-hidden="true"><Landmark size={36} strokeWidth={1.4}/><span><Sparkles size={14}/></span></div></div>
+                  <p className="welcome-description">From a quick question to a helping hand.<br className="desktop-break"/> Nova is here to help you find answers.</p>
+                  <div className="section-caption"><span>LET'S GET STARTED</span><span>Choose a suggestion below <ArrowRight size={14}/></span></div>
                   <div className="suggestions">
                     {suggestions.map((s, index) => (
                       <button key={s.title} className={`suggestion-card tone-${s.tone}`} disabled={!user || busy} onClick={() => { setDraft(s.text); textareaRef.current?.focus(); }}>
@@ -249,42 +249,42 @@ export default function App() {
                       </button>
                     ))}
                   </div>
-                  <div className="welcome-footnote"><LockKeyhole size={15}/><span>Không nhập thông tin ngân hàng thật. Đây là môi trường trải nghiệm.</span></div>
+                  <div className="welcome-footnote"><LockKeyhole size={15}/><span>Use demo data only. Never enter real banking information.</span></div>
                 </div>
               ) : (
-                <div className="chat-thread" role="log" aria-label="Nội dung hội thoại" aria-live="polite">
-                  <div className="thread-start"><span/>Bắt đầu cuộc trò chuyện<span/></div>
+                <div className="chat-thread" role="log" aria-label="Conversation messages" aria-live="polite">
+                  <div className="thread-start"><span/>Conversation started<span/></div>
                   {messages.map(m => (
                     <div className={`message-row ${m.role === 'user' ? 'message-user' : 'message-assistant'}`} key={m.id}>
                       {m.role === 'assistant' && <div className="bot-icon"><Sparkles size={18}/></div>}
-                      <div className="message-body"><div className="message-author">{m.role === 'assistant' ? 'Nova Assistant' : 'Bạn'}<span>{formatTime(m.created_at)}</span></div><div className="message-content">{safeMessageParts(m.content)}</div></div>
+                      <div className="message-body"><div className="message-author">{m.role === 'assistant' ? 'Nova Assistant' : 'You'}<span>{formatTime(m.created_at)}</span></div><div className="message-content">{safeMessageParts(m.content)}</div></div>
                       {m.role === 'user' && <div className="me-icon">{user ? getInitials(user.name) : 'U'}</div>}
                     </div>
                   ))}
-                  {busy && <div className="message-row message-assistant"><div className="bot-icon"><Bot size={18}/></div><div className="typing" role="status" aria-label="Nova đang trả lời"><span/><span/><span/><small>Nova đang trả lời</small></div></div>}
+                  {busy && <div className="message-row message-assistant"><div className="bot-icon"><Bot size={18}/></div><div className="typing" role="status" aria-label="Nova is typing"><span/><span/><span/><small>Nova is typing</small></div></div>}
                 </div>
               )}
               <div ref={endRef}/>
             </div></div>
 
             <div className="composer-area">
-              {error && <div className="error-banner" role="alert"><ShieldAlert size={18}/><span>{error}</span><button className="icon-button" aria-label="Đóng thông báo" onClick={() => setError(null)}><X size={17}/></button></div>}
-              <div className="composer"><span className="composer-spark"><Sparkles size={20}/></span><textarea id="message-input" ref={textareaRef} rows={1} placeholder="Bạn muốn tìm hiểu điều gì?" value={draft} disabled={!user || busy} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void sendMessage(); } }} aria-label="Tin nhắn"/><button className="send-button" aria-label="Gửi tin nhắn" disabled={!draft.trim() || busy || !user} onClick={() => void sendMessage()}><Send size={19}/></button></div>
-              <div className="composer-foot"><span><Shield size={13}/> NovaBank AI · Dữ liệu mô phỏng</span><span><kbd>Enter</kbd> để gửi <span className="foot-divider">·</span> <kbd>Shift + Enter</kbd> xuống dòng</span></div>
+              {error && <div className="error-banner" role="alert"><ShieldAlert size={18}/><span>{error}</span><button className="icon-button" aria-label="Dismiss notification" onClick={() => setError(null)}><X size={17}/></button></div>}
+              <div className="composer"><span className="composer-spark"><Sparkles size={20}/></span><textarea id="message-input" ref={textareaRef} rows={1} placeholder="What would you like to know?" value={draft} disabled={!user || busy} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void sendMessage(); } }} aria-label="Message"/><button className="send-button" aria-label="Send message" disabled={!draft.trim() || busy || !user} onClick={() => void sendMessage()}><Send size={19}/></button></div>
+              <div className="composer-foot"><span><Shield size={13}/> NovaBank AI · Simulated data</span><span><kbd>Enter</kbd> to send <span className="foot-divider">·</span> <kbd>Shift + Enter</kbd> for a new line</span></div>
             </div>
           </section>
 
           {policyPanelOpen && <>
-            <button className="inspector-overlay" aria-label="Đóng thông tin kiểm thử" onClick={() => setPolicyPanelOpen(false)}/>
-            <aside className="inspector" id="policy-panel" aria-label="Thông tin kiểm thử">
-              <div className="inspector-header"><div><ShieldCheck size={20}/><strong>Thông tin kiểm thử</strong></div><button className="icon-button" aria-label="Đóng thông tin kiểm thử" onClick={() => setPolicyPanelOpen(false)}><X size={19}/></button></div>
+            <button className="inspector-overlay" aria-label="Close testing insights" onClick={() => setPolicyPanelOpen(false)}/>
+            <aside className="inspector" id="policy-panel" aria-label="Testing insights">
+              <div className="inspector-header"><div><ShieldCheck size={20}/><strong>Testing insights</strong></div><button className="icon-button" aria-label="Close testing insights" onClick={() => setPolicyPanelOpen(false)}><X size={19}/></button></div>
               <div className="inspector-content">
-                <div className="inspector-card"><div className="card-kicker"><span className="status-dot"/> KIỂM SOÁT TRUY CẬP</div><h3>Lớp chính sách demo</h3><p>Kiểm tra quyền trước khi thực thi công cụ. Chưa kết nối gateway thực tế của nhóm.</p><div className="stats-row"><div><span>Gateway</span><strong>{health?.gateway_mode ?? '—'}</strong></div><div><span>Mô hình</span><strong>{health?.llm_provider ?? '—'}</strong></div></div></div>
-                <div className="panel-section-heading"><Wrench size={16}/> Hoạt động công cụ <span>{events.length}</span></div>
-                <div className="activity-list">{events.length === 0 ? <div className="empty-activity"><Database size={25}/><p>Chưa có hoạt động</p><small>Các lần kiểm tra công cụ sẽ xuất hiện ở đây.</small></div> : events.slice(-6).reverse().map(e => <div className="event" key={e.id}><span className={`event-dot ${e.decision === 'ALLOW' ? 'allowed' : 'denied'}`}/><div className="event-content"><strong title={e.tool_name}>{e.tool_name}</strong><span>{e.reason_code.replace(/_/g, ' ')}</span></div><span className={`event-label ${e.decision === 'ALLOW' ? 'allowed' : 'denied'}`}>{e.decision}</span></div>)}</div>
-                <div className="panel-section-heading"><Shield size={16}/> Kiểm tra quyền <span className="dryrun-label">DRY RUN</span></div>
-                <div className="policy-test"><p>Chỉ kiểm tra quyền truy cập, không thực thi công cụ.</p><label>Công cụ<select value={toolName} onChange={e => { setToolName(e.target.value); setPolicyResult(null); }}><option value="get_account_balance">Kiểm tra số dư</option><option value="get_transaction_status">Tra cứu giao dịch</option><option value="search_banking_faq">Tìm kiếm FAQ</option></select></label>{toolName === 'get_account_balance' && <label>Mã tài khoản<input value={accountId} onChange={e => { setAccountId(e.target.value); setPolicyResult(null); }} placeholder="ACC-ALICE-001"/></label>}{toolName === 'get_transaction_status' && <div className="test-note">Giao dịch demo TX-2001 thuộc tài khoản Bob.</div>}<button className="test-button" onClick={runPolicyDryRun} disabled={!user || busy}>Kiểm tra quyền <ArrowRight size={16}/></button>{policyResult && <div role="status" className={`policy-result ${policyResult.decision.toLowerCase()}`}>{policyResult.decision === 'ALLOW' ? <CheckCheck size={17}/> : <ShieldAlert size={17}/>}<span>{policyResult.decision} · {policyResult.reason_code}</span></div>}</div>
-                <div className="inspector-info"><CircleHelp size={17}/><p>Thông tin phục vụ trình diễn kiến trúc, không phải chứng nhận bảo mật ngân hàng.</p></div>
+                <div className="inspector-card"><div className="card-kicker"><span className="status-dot"/> ACCESS CONTROL</div><h3>Demo policy layer</h3><p>Permissions are checked before tools run. The team's live gateway is not connected yet.</p><div className="stats-row"><div><span>Gateway</span><strong>{health?.gateway_mode ?? '—'}</strong></div><div><span>Model</span><strong>{health?.llm_provider ?? '—'}</strong></div></div></div>
+                <div className="panel-section-heading"><Wrench size={16}/> Tool activity <span>{events.length}</span></div>
+                <div className="activity-list">{events.length === 0 ? <div className="empty-activity"><Database size={25}/><p>No activity yet</p><small>Tool checks will appear here.</small></div> : events.slice(-6).reverse().map(e => <div className="event" key={e.id}><span className={`event-dot ${e.decision === 'ALLOW' ? 'allowed' : 'denied'}`}/><div className="event-content"><strong title={e.tool_name}>{e.tool_name}</strong><span>{e.reason_code.replace(/_/g, ' ')}</span></div><span className={`event-label ${e.decision === 'ALLOW' ? 'allowed' : 'denied'}`}>{e.decision}</span></div>)}</div>
+                <div className="panel-section-heading"><Shield size={16}/> Check permissions <span className="dryrun-label">DRY RUN</span></div>
+                <div className="policy-test"><p>Checks permissions without executing the tool.</p><label>Tool<select value={toolName} onChange={e => { setToolName(e.target.value); setPolicyResult(null); }}><option value="get_account_balance">Check balance</option><option value="get_transaction_status">Track a transaction</option><option value="search_banking_faq">Search FAQs</option></select></label>{toolName === 'get_account_balance' && <label>Account ID<input value={accountId} onChange={e => { setAccountId(e.target.value); setPolicyResult(null); }} placeholder="ACC-ALICE-001"/></label>}{toolName === 'get_transaction_status' && <div className="test-note">Demo transaction TX-2001 belongs to Bob.</div>}<button className="test-button" onClick={runPolicyDryRun} disabled={!user || busy}>Check permissions <ArrowRight size={16}/></button>{policyResult && <div role="status" className={`policy-result ${policyResult.decision.toLowerCase()}`}>{policyResult.decision === 'ALLOW' ? <CheckCheck size={17}/> : <ShieldAlert size={17}/>}<span>{policyResult.decision} · {policyResult.reason_code}</span></div>}</div>
+                <div className="inspector-info"><CircleHelp size={17}/><p>Architecture demonstration only. This is not a banking security certification.</p></div>
               </div>
             </aside>
           </>}

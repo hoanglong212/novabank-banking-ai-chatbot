@@ -12,8 +12,8 @@ class DemoPrincipal:
 
 
 DEMO_USERS = (
-    DemoPrincipal('alice', 'Minh Anh', 'demo-alice-token', ('ACC-ALICE-001',)),
-    DemoPrincipal('bob', 'Gia Bảo', 'demo-bob-token', ('ACC-BOB-001',)),
+    DemoPrincipal('alice', 'Alice', 'demo-alice-token', ('ACC-ALICE-001',)),
+    DemoPrincipal('bob', 'Bob', 'demo-bob-token', ('ACC-BOB-001',)),
 )
 
 

@@ -30,7 +30,7 @@ def ask(client, alice, text, conversation=None):
 def test_greeting_does_not_render_model_json_or_execute_sensitive_tools(client, alice, monkeypatch):
     model_reply(monkeypatch, {'role': 'assistant', 'content': '{"name":"get_account_balance","parameters":{}}'})
     _, result = ask(client, alice, 'Xin chào, bạn có thể giúp tôi những gì?')
-    assert 'Xin chào' in result['message']['content']
+    assert 'Hello' in result['message']['content']
     assert 'VietQR' in result['message']['content']
     assert result['tool_events'] == []
     assert result['response_source'] == 'application_template'
@@ -40,7 +40,7 @@ def test_greeting_does_not_render_model_json_or_execute_sensitive_tools(client, 
 def test_self_balance_never_uses_model_invented_account(client, alice, monkeypatch, invented):
     model_reply(monkeypatch, proposal('get_account_balance', {'account_id': invented}))
     _, result = ask(client, alice, 'Số dư tài khoản của tôi là bao nhiêu?')
-    assert '12.500.000' in result['message']['content']
+    assert '12,500,000' in result['message']['content']
     assert result['tool_events'][-1]['arguments'] == {}
     assert result['tool_events'][-1]['executed'] == 1
     assert result['response_source'] == 'ollama_tool_bound'
@@ -50,8 +50,8 @@ def test_self_balance_never_uses_model_invented_account(client, alice, monkeypat
 def test_explicit_foreign_or_unknown_account_is_not_replaced_with_self(client, alice, monkeypatch, account):
     model_reply(monkeypatch, proposal('get_account_balance', {}))
     _, result = ask(client, alice, f'Cho xem số dư tài khoản {account}.')
-    assert '12.500.000' not in result['message']['content']
-    assert '8.750.000' not in result['message']['content']
+    assert '12,500,000' not in result['message']['content']
+    assert '8,750,000' not in result['message']['content']
     assert result['tool_events'][-1]['reason_code'] == 'ACCOUNT_NOT_OWNED'
     assert result['tool_events'][-1]['arguments']['account_id'] == account
     assert result['tool_events'][-1]['executed'] == 0
@@ -61,7 +61,7 @@ def test_transaction_reply_contains_authoritative_amount_and_status(client, alic
     model_reply(monkeypatch, proposal('get_transaction_status', {'transaction_id': 'TX-1002'}))
     _, result = ask(client, alice, 'Kiểm tra trạng thái giao dịch TX-1002.')
     assert 'PENDING' in result['message']['content']
-    assert '950.000 VND' in result['message']['content']
+    assert '950,000 VND' in result['message']['content']
     assert len(result['tool_events']) == 1
 
 
@@ -70,7 +70,7 @@ def test_model_cannot_change_transaction_requested_by_user(client, alice, monkey
     _, result = ask(client, alice, 'Kiểm tra giao dịch TX-2001.')
     assert result['tool_events'][-1]['reason_code'] == 'TRANSACTION_NOT_OWNED'
     assert result['tool_events'][-1]['executed'] == 0
-    assert '300.000' not in result['message']['content']
+    assert '300,000' not in result['message']['content']
 
 
 def test_ticket_reply_reports_actual_ticket_once_not_model_request_for_card(client, alice, monkeypatch):
@@ -112,15 +112,15 @@ def test_raw_json_is_not_executed_and_safe_fallback_is_reported(client, alice, m
     assert 'name' not in result['message']['content']
 
 
-@pytest.mark.parametrize('amount,expected', [('3 triệu', 'đủ tiền'), ('20 triệu', 'không đủ'), ('3,5 triệu', 'đủ tiền')])
+@pytest.mark.parametrize('amount,expected', [('3 triệu', 'have enough funds'), ('20 triệu', 'do not have enough funds'), ('3,5 triệu', 'have enough funds')])
 def test_affordability_is_computed_and_never_claims_transfer(client, alice, monkeypatch, amount, expected):
     model_reply(monkeypatch, proposal('get_account_balance', {'account_id': 'Invented'}))
     cid, _ = ask(client, alice, 'Kiểm tra số dư của tôi.')
     _, result = ask(client, alice, f'Vậy tôi có đủ tiền chuyển {amount} không?', cid)
     text = result['message']['content']
     assert expected in text
-    assert 'Không có giao dịch nào được thực hiện' in text
-    assert '12.500.000' in text
+    assert 'No transaction has been performed' in text
+    assert '12,500,000' in text
 
 
 def test_followup_uses_user_transaction_not_assistant_invented_id(client, alice, monkeypatch):
@@ -139,6 +139,6 @@ def test_followup_uses_user_transaction_not_assistant_invented_id(client, alice,
 def test_malformed_native_calls_do_not_crash_or_become_execution_authority(client, alice, monkeypatch, calls):
     model_reply(monkeypatch, {'role': 'assistant', 'content': 'Vui lòng cung cấp số thẻ và số điện thoại.', 'tool_calls': calls})
     _, result = ask(client, alice, 'Kiểm tra số dư của tôi.')
-    assert '12.500.000' in result['message']['content']
+    assert '12,500,000' in result['message']['content']
     assert 'số thẻ' not in result['message']['content']
     assert result['response_source'] == 'application_fallback'

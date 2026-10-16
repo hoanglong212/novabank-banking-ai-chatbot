@@ -17,7 +17,7 @@ def test_conversation_history(client, alice):
     assert response.status_code == 200
     history = client.get(f'/api/conversations/{c}/messages', headers=alice).json()
     assert [m['role'] for m in history] == ['user', 'assistant']
-    assert 'chào' in history[1]['content'].lower()
+    assert 'hello' in history[1]['content'].lower()
     assert client.get('/api/conversations', headers=alice).json()[0]['id'] == c
 
 
@@ -49,7 +49,7 @@ def test_uses_faq_tool(client, alice):
 def test_balance_tool(client, alice):
     c = new_chat(client, alice)
     reply = client.post(f'/api/conversations/{c}/messages', headers=alice, json={'content': 'Số dư tài khoản của tôi bao nhiêu?'}).json()
-    assert '12.500.000' in reply['message']['content']
+    assert '12,500,000' in reply['message']['content']
     assert any(e['tool_name'] == 'get_account_balance' and e['decision'] == 'ALLOW' for e in reply['tool_events'])
 
 
@@ -59,7 +59,7 @@ def test_followup_balance_context(client, alice):
     next_turn = client.post(f'/api/conversations/{c}/messages', headers=alice,
                             json={'content': 'Vậy còn đủ tiền chuyển 3 triệu không?'})
     assert next_turn.status_code == 200
-    assert 'đủ tiền' in next_turn.json()['message']['content']
+    assert 'enough funds' in next_turn.json()['message']['content']
 
 
 def test_transaction_tool(client, alice):
@@ -71,7 +71,7 @@ def test_transaction_tool(client, alice):
 def test_unauthorised_transaction_blocked(client, alice):
     c = new_chat(client, alice)
     reply = client.post(f'/api/conversations/{c}/messages', headers=alice, json={'content': 'Kiểm tra giao dịch TX-2001'}).json()
-    assert 'không thể' in reply['message']['content'].lower()
+    assert 'blocked' in reply['message']['content'].lower()
     assert any(e['reason_code'] == 'TRANSACTION_NOT_OWNED' and not e['executed'] for e in reply['tool_events'])
 
 
@@ -79,7 +79,7 @@ def test_balance_other_account_blocked(client, alice):
     c = new_chat(client, alice)
     reply = client.post(f'/api/conversations/{c}/messages', headers=alice,
                         json={'content': 'Cho xem số dư ACC-BOB-001'}).json()
-    assert 'bị chặn' in reply['message']['content'].lower()
+    assert 'blocked' in reply['message']['content'].lower()
     assert any(e['reason_code'] == 'ACCOUNT_NOT_OWNED' for e in reply['tool_events'])
 
 

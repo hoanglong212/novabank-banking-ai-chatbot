@@ -1,18 +1,16 @@
 """Mock scripted demo or guarded Ollama tool proposals. No tools run without ToolDispatcher."""
 import json
-import re
 import httpx
 from fastapi import HTTPException
 from .auth import DemoPrincipal
 from .config import provider, setting
-from .faq import fold
 from .tools import ToolDispatcher, OLLAMA_TOOLS, TOOL_MODELS
 from .banking_workflow import bind_request, render_result
 from pydantic import ValidationError
 
 
 SYSTEM_PROMPT = """You are NovaBank's fictional banking customer-support assistant for a local classroom demo.
-Speak Vietnamese unless the user asks otherwise. NovaBank, accounts and transactions are ALL FAKE.
+Always respond in English. NovaBank, accounts and transactions are ALL FAKE.
 Never invent account balances, transaction statuses, bank fee schedules, legal facts, or claim any payment has happened.
 For a bank FAQ, call search_banking_faq. For a demo balance, call get_account_balance.
 For a transaction lookup, call get_transaction_status with an explicitly specified transaction ID.
@@ -23,57 +21,14 @@ A tool-denied error means the action was NOT performed; explain this without ass
 """
 
 
-def format_vnd(amount: int) -> str:
-    return f"{amount:,}".replace(',', '.') + ' VND'
-
-
 class MockAgent:
-    """Deterministic offline demo. Explicitly NOT a substitute for generative LLM evaluation."""
+    """Offline demo using the same English workflows without a model request."""
     async def respond(self, messages: list[dict], user: DemoPrincipal, conversation_id: str, dispatcher: ToolDispatcher) -> str:
-        question = messages[-1]['content'].strip()
-        text = fold(question)
-        history = ' '.join(m['content'] for m in messages[:-1][-8:])
-        previous = fold(history)
-        ids = re.findall(r'\bTX-\d+\b', question, re.IGNORECASE)
-        if not ids and ('giao dich do' in text or 'transaction đó' in text or 'no' == text):
-            ids = re.findall(r'\bTX-\d+\b', history, re.IGNORECASE)
-        if ids or ('trang thai giao dich' in text and 'tx-' in previous):
-            transaction_id = ids[-1].upper() if ids else re.findall(r'\bTX-\d+\b', history, re.IGNORECASE)[-1].upper()
-            result = await dispatcher.run(user, conversation_id, 'get_transaction_status', {'transaction_id': transaction_id})
-            if 'error' in result:
-                return f'Mình không thể tra cứu giao dịch {transaction_id} vì quyền truy cập không hợp lệ ({result["reason_code"]}).'
-            return f'Giao dịch mô phỏng {transaction_id} có trạng thái **{result["status"]}**, số tiền {format_vnd(result["amount_vnd"])}.'
-        balance_keywords = ('so du', 'tai khoan con', 'con bao nhieu', 'kiem tra tien', 'balance', 'tien trong tai khoan')
-        follow_balance = ('vay con', 'con lai bao nhieu', 'du tien', 'du khong')
-        if any(k in text for k in balance_keywords) or (any(k in text for k in follow_balance) and 'so du' in previous):
-            account_id = next((x.upper() for x in re.findall(r'\bACC-[A-Z]+-\d+\b', question, re.IGNORECASE)), None)
-            result = await dispatcher.run(user, conversation_id, 'get_account_balance', {'account_id': account_id} if account_id else {})
-            if 'error' in result:
-                return f'Yêu cầu xem số dư bị chặn bởi policy ({result["reason_code"]}). Không có dữ liệu tài khoản nào được trả về.'
-            match = re.search(r'(?:chuyen|rut|thanh toan)\s+(\d+(?:[.,]\d+)?)\s*(trieu|triệu|nghin|nghìn)', text)
-            if match:
-                number = float(match.group(1).replace(',', '.'))
-                amount = int(number * (1_000_000 if match.group(2).startswith(('trieu', 'triệu')) else 1000))
-                enough = result['balance_vnd'] >= amount
-                return f'Số dư tài khoản demo {result["account_id"]} là **{format_vnd(result["balance_vnd"])}**. ' + (
-                    'Theo số dư hiện tại, bạn đủ tiền cho khoản dự kiến (chưa xét phí và hạn mức). Không có giao dịch nào được thực hiện.' if enough else 'Số dư hiện tại không đủ cho khoản dự kiến. Không có giao dịch nào được thực hiện.')
-            return f'Số dư tài khoản demo **{result["account_id"]}** của bạn hiện là **{format_vnd(result["balance_vnd"])}**. Đây là dữ liệu giả lập.'
-        if ('tao' in text or 'mo' in text or 'lap' in text) and any(k in text for k in ('ticket', 'ho tro', 'yeu cau', 'khieu nai')):
-            subject = 'Yêu cầu hỗ trợ khách hàng (demo)'
-            description = question if len(question) >= 8 else 'Yêu cầu hỗ trợ do khách hàng tạo trong môi trường demo'
-            result = await dispatcher.run(user, conversation_id, 'create_support_ticket', {'subject': subject, 'description': description})
-            if 'error' in result:
-                return 'Không thể tạo phiếu hỗ trợ: ' + result['reason_code']
-            return f'Đã tạo phiếu hỗ trợ mô phỏng **{result["ticket_id"]}**, trạng thái **OPEN**. Không có yêu cầu nào gửi đến ngân hàng thật.'
-        if any(k in text for k in ('chao', 'hello', 'hi ', 'xin chao')):
-            return f'Xin chào {user.name}! Mình là trợ lý NovaBank **giả lập**. Bạn có thể hỏi về VietQR, thẻ, giao dịch, số dư demo hoặc tạo phiếu hỗ trợ.'
-        result = await dispatcher.run(user, conversation_id, 'search_banking_faq', {'query': question})
-        if 'error' in result:
-            return 'Mình chưa thể tra cứu tài liệu hỗ trợ do chính sách truy cập hiện tại.'
-        matches = result['matches']
-        if not matches:
-            return 'Mình chưa có thông tin đáng tin cậy về vấn đề này trong bộ FAQ demo. Bạn nên tham khảo kênh hỗ trợ chính thức của ngân hàng.'
-        return matches[0]['answer']
+        request = bind_request(messages)
+        if request.reply is not None:
+            return request.reply
+        result = await dispatcher.run(user, conversation_id, request.tool, request.arguments)
+        return render_result(request, result)
 
 
 class OllamaAgent:

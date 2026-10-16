@@ -44,7 +44,7 @@ npm install
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Choose demo **Minh Anh (Alice)** or **Gia Bảo (Bob)** from the sidebar. FastAPI docs: **http://127.0.0.1:8000/docs**.
+Open **http://127.0.0.1:5173**. Choose demo **Alice** or **Bob** from the sidebar. FastAPI docs: **http://127.0.0.1:8000/docs**.
 
 ### macOS / Linux
 
@@ -184,9 +184,13 @@ See [architecture](docs/ARCHITECTURE.md) and [security limits](docs/SECURITY_AND
 - Improve KB retrieval and citations for actual bank-specific, approved policies.
 - Run PII detector comparison and full round-trip gateway experiment as separate team tasks.
 
+## Language
+
+The interface, accessible labels, suggested prompts, FAQ content and new assistant replies are in English. Amounts use English grouping (for example, 12,500,000 VND). Existing saved conversations and historical evaluation evidence retain their original text.
+
 ## Verification status
 
-Verified locally on 16 October 2026: 49 backend tests passed; frontend production build passed; all 15 application scenarios passed against live Ollama and browser UI. Eight critical scenarios passed three runs each. See [completion and evidence](docs/reliability-completion.md), including limitations and the pending independent review.
+Verified locally on 16 October 2026: 51 backend tests passed; frontend production build passed; all 15 application scenarios passed against live Ollama and browser UI. Eight critical scenarios passed three runs each. See [completion and evidence](docs/reliability-completion.md), including limitations and the pending independent review.
 
 The Ollama workflow selects a supported operation from user text, constrains native model proposals to it, binds IDs to user input, and formats authoritative tool results. This is a guarded hybrid application, not a benchmark of independent model reasoning. Unknown questions use curated FAQ retrieval. Model unavailability returns 503.
 
@@ -198,7 +202,7 @@ Message POST responses include `response_source`:
 - `application_template`: fixed application reply, without a tool execution.
 - `mock`: separate scripted offline mode.
 
-These labels describe orchestration; all Ollama-mode final replies are application-rendered. Labels are returned for the live response, not persisted on historical messages. The offline mock implementation is unchanged.
+These labels describe orchestration; all Ollama-mode final replies are application-rendered. Labels are returned for the live response, not persisted on historical messages. Offline mock mode uses the same request binding and English reply rendering without calling Ollama.
 
 The frontend identity regression can be run with `npm run test:identity` from `frontend/` while frontend :5173, backend :8000, and an isolated Edge browser with remote debugging :9224 are running. It creates and removes its own temporary conversations.
 
