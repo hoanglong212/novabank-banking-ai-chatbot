@@ -1,5 +1,9 @@
 # 5-minute demonstration for Robert (13 October Week-3 feedback)
 
+For the single-port launcher or Docker image, use `http://127.0.0.1:8080`
+instead of port 5173 below. See [simple demo setup](SIMPLE_DEMO.md) for startup,
+model preflight, reset behavior and an acceptance checklist.
+
 1. Open the UI at `http://127.0.0.1:5173`, confirm the top bar says `Demo mode` (or `Ollama AI` if explicitly configured) and shows fictional user Alice.
 2. Ask **“What is VietQR?”**. In mock mode this searches the curated fictional-bank FAQ. The right side shows `search_banking_faq — ALLOW`.
 3. Ask **“What is my account balance?”**. The tool returns fake Alice account `ACC-ALICE-001` with `12,500,000 VND`.

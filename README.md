@@ -23,6 +23,36 @@ A research **demo**, not a banking service. Built for Group 10's Runtime Securit
 
 ## 2. Quick start — Windows PowerShell
 
+### Recommended: one terminal, one URL
+
+From the repository root, with Python and Node.js installed:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Setup -Mode mock
+```
+
+Open **http://127.0.0.1:8080**. This installs dependencies, builds the React UI,
+checks prerequisites and serves the UI and API from one process. Stop with Ctrl+C.
+`-Setup` preserves any existing `backend/.env` and database. It only needs to be
+used on first setup or after dependency changes. `-Mode mock` explicitly selects
+the offline scripted demonstration for this process; it does not edit `.env`.
+
+For the installed Ollama model:
+
+```powershell
+ollama pull llama3.2:3b
+powershell -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Mode ollama
+```
+
+Ollama must be running. The launcher uses `OLLAMA_URL` and `OLLAMA_MODEL` from
+`backend/.env`. Omit `-Mode` to use the configured provider. Use `-CheckOnly` to
+check an existing build and model without starting the server, `-SkipBuild` to
+reuse an unchanged frontend build, or `-Port 8081` if port 8080 is occupied.
+
+For an optional single-container mock demo, see [simple demo setup](docs/SIMPLE_DEMO.md).
+
+### Development: two terminals with automatic reload
+
 Open **Terminal 1** inside the extracted project:
 
 ```powershell
@@ -105,6 +135,7 @@ The right-side **Policy test** panel is **dry-run only**: it shows allow/deny de
 
 ```text
 GET    /api/health
+GET    /api/ready                        (checks configured model availability)
 GET    /api/demo/users                    (DEMO ONLY)
 GET    /api/conversations
 POST   /api/conversations

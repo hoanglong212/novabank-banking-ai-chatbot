@@ -9,6 +9,8 @@ from .database import Database
 from .gateway import PolicyGateway
 from .schemas import ConversationCreate, SendMessage, DemoToolCheck
 from .tools import ToolDispatcher
+from .readiness import readiness
+from .web import mount_frontend
 
 
 def get_db() -> Database:
@@ -40,6 +42,9 @@ def require_own_conversation(db: Database, conversation_id: str, user: DemoPrinc
 @app.get('/api/health')
 async def health():
     return {'status': 'ok', 'llm_provider': provider(), 'gateway_mode': setting('GATEWAY_MODE', 'local'), 'demo_only': True}
+
+
+app.add_api_route('/api/ready', readiness, methods=['GET'])
 
 
 @app.get('/api/demo/users')
@@ -100,3 +105,7 @@ async def demo_policy_check(conversation_id: str, payload: DemoToolCheck,
     db = get_db()
     require_own_conversation(db, conversation_id, user)
     return await ToolDispatcher(db, PolicyGateway()).dry_run(user, conversation_id, payload.tool_name, payload.arguments)
+
+
+if setting('FRONTEND_DIST'):
+    mount_frontend(app, setting('FRONTEND_DIST'))
