@@ -1,0 +1,4 @@
+# Day-1 evaluation only; production integration is not yet enabled.
+-r requirements-dev.txt
+presidio-analyzer==2.2.364
+presidio-anonymizer==2.2.364

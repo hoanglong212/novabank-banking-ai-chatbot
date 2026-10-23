@@ -7,14 +7,24 @@ A research **demo**, not a banking service. Built for Group 10's Runtime Securit
 - React + TypeScript + Tailwind chat UI with a conversation sidebar and mobile layout.
 - SQLite-persisted conversation history that survives refreshing and backend restarts.
 - Multi-turn context passed to the agent; user conversations are separated by demo identity.
-- An agent that can call four simulated banking tools.
+- A read-only agent that can call three simulated banking tools.
 - A **policy authorization point** that runs before tool execution; both ALLOW and DENY are audited.
 - Two modes: `mock` for immediate offline functional demonstration; `ollama` for **guarded Llama 3.2 3B native tool proposals with application-bound inputs and replies**.
 - Proposed adapter interface for the Group 10 gateway. This project **does not claim to have integrated the group's actual gateway**.
 
-> **Safety notice:** Two demo tokens ship with the frontend; selecting a different user is possible. This is NOT real authentication, and it must not be exposed publicly or connected to actual banking APIs / customer PII. The local policy is a functional placeholder, NOT verified banking-grade security.
+> **Current authentication (23 October):** Sign in with individually seeded demo passwords. Passwords use Argon2id; JWTs use HttpOnly cookies and revocable server sessions. Legacy demo bearer tokens are rejected. Use synthetic data only; the local policy remains a development placeholder. Manual simulated transfers, confirmation receipts and transaction history are available in Accounts & transfers. Presidio/model integration, LangGraph and QR remain pending.
+
+Before starting the upgraded app, install `backend/requirements.txt`, then run `backend/.venv/Scripts/python.exe scripts/init-demo-auth.py` from the repository root. It generates missing secrets and Alice/Bob passwords in ignored `backend/.env` without printing them. Read that local file for the demo credentials. Existing database passwords are never overwritten. See [authentication setup](docs/AUTH_SETUP.md) and [follow-up evidence](docs/day1-followup-2026-10-23/completion.md).
 
 ## 1. Requirements
+
+### Chat response design
+
+Ollama proposes read-only tool calls. The backend binds resource IDs from the user's request, checks ownership on execution, permits one operation per turn, and builds the final answer from templates and approved FAQ content. There is no second LLM call to write the final answer. Explicit unresolved account references request clarification instead of falling back to the session account. Transfer descriptions are available in the banking UI but excluded from chat tool results. LangGraph and full request/history PII filtering are still pending; current recognizer results are evaluation evidence only.
+
+### Simulated transfers
+
+Accounts & transfers supports preview, explicit confirmation, receipts and recent history. A pending intent expires after five minutes. Confirmation uses one atomic SQLite transaction for debit, credit, receipt and audit event; retrying the same intent returns its existing receipt. Two different intents represent two different transfers. Editing cancels the old intent. Only the pending intent ID is retained in browser session storage for reload recovery. See [implementation and verification results](docs/day2-evidence-2026-10-23/completion.md).
 
 - Python 3.11 or 3.12 recommended (3.13 also tested for backend here)
 - Node.js 20.19+ or 22+
@@ -74,7 +84,7 @@ npm install
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Choose demo **Alice** or **Bob** from the sidebar. FastAPI docs: **http://127.0.0.1:8000/docs**.
+Open **http://127.0.0.1:5173** and sign in as **alice** or **bob** using the locally generated password. Vite proxies `/api` to FastAPI. FastAPI docs: **http://127.0.0.1:8000/docs**.
 
 ### macOS / Linux
 
@@ -118,14 +128,13 @@ OLLAMA_URL=http://localhost:11434
 
 Llama 3.2 3B can have weaker Vietnamese/tool-choice accuracy than larger models. Test with the [demo scenarios](docs/DEMO_SCRIPT.md), not just one happy path. If Ollama cannot be reached, the backend returns an explicit 503 rather than silently faking a model response.
 
-## 4. Four simulated tools
+## 4. Three read-only simulated tools
 
 | Tool | Input | Description | Policy |
 |---|---|---|---|
 | `search_banking_faq` | `query` | Searches curated fictional-bank FAQ | Allow if valid |
 | `get_account_balance` | Optional `account_id` | Returns the logged-in demo user's fictional balance | Must own account |
 | `get_transaction_status` | `transaction_id` e.g. `TX-1002` | Looks up a fictional transaction | Must own transaction |
-| `create_support_ticket` | `subject`, `description` | Adds a fictional ticket to local SQLite | Validation + allowlist |
 
 Try Alice's balance `ACC-ALICE-001`, Alice transactions `TX-1001` and `TX-1002`, and Bob's transaction `TX-2001`. Alice must **not** be allowed to read `ACC-BOB-001` or `TX-2001`.
 
@@ -136,7 +145,9 @@ The right-side **Policy test** panel is **dry-run only**: it shows allow/deny de
 ```text
 GET    /api/health
 GET    /api/ready                        (checks configured model availability)
-GET    /api/demo/users                    (DEMO ONLY)
+POST   /api/auth/login
+GET    /api/auth/session
+POST   /api/auth/logout
 GET    /api/conversations
 POST   /api/conversations
 GET    /api/conversations/{id}/messages
@@ -146,7 +157,7 @@ DELETE /api/conversations/{id}
 POST   /api/conversations/{id}/demo/tool-check     (DRY RUN)
 ```
 
-Protected endpoints require `Authorization: Bearer demo-alice-token` (or Bob's **insecure demo token**). Conversation ownership is verified server-side; an ID alone cannot open someone else's history.
+Protected endpoints require a valid session cookie. Mutating endpoints additionally require an allowed Origin and the session's X-CSRF-Token. Login requires an allowed Origin; `/api/auth/session` restores user and CSRF state after reload. Conversation ownership is checked server-side. `/api/demo/users` has been removed.
 
 ## 6. Run backend automated tests
 

@@ -83,13 +83,13 @@ def test_balance_other_account_blocked(client, alice):
     assert any(e['reason_code'] == 'ACCOUNT_NOT_OWNED' for e in reply['tool_events'])
 
 
-def test_create_support_ticket(client, alice):
+def test_chat_cannot_create_support_ticket(client, alice):
     c = new_chat(client, alice)
     reply = client.post(f'/api/conversations/{c}/messages', headers=alice,
                         json={'content': 'Tạo yêu cầu hỗ trợ vì giao dịch bị treo'}).json()
-    assert 'TKT-' in reply['message']['content']
+    assert 'read-only' in reply['message']['content']
     from app.main import get_db
-    assert get_db().ticket_count('alice') == 1
+    assert get_db().ticket_count('alice') == 0
 
 
 def test_dry_run_only(client, alice):
@@ -99,7 +99,7 @@ def test_dry_run_only(client, alice):
     decision = client.post(f'/api/conversations/{c}/demo/tool-check', headers=alice, json={
         'tool_name': 'create_support_ticket', 'arguments': {'subject': 'Demo support', 'description': 'A ticket dry-run that must not execute'}
     }).json()
-    assert decision['decision'] == 'ALLOW' and not decision['executed']
+    assert decision['decision'] == 'DENY' and not decision['executed']
     assert get_db().ticket_count('alice') == before
 
 

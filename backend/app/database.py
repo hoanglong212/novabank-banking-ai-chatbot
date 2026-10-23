@@ -2,6 +2,7 @@
 import json
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,12 +16,17 @@ class Database:
         self.path = path
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
+    @contextmanager
     def connect(self):
         conn = sqlite3.connect(self.path, timeout=15)
-        conn.row_factory = sqlite3.Row
-        conn.execute('PRAGMA foreign_keys = ON')
-        conn.execute('PRAGMA busy_timeout = 5000')
-        return conn
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute('PRAGMA busy_timeout = 5000')
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def initialize(self):
         with self.connect() as conn:
@@ -60,6 +66,8 @@ class Database:
               created_at TEXT NOT NULL
             );
             ''')
+        from .banking import initialize_banking
+        initialize_banking(self)
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())

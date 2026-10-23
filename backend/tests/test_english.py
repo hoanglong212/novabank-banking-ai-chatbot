@@ -16,7 +16,7 @@ def test_english_suggestion_flows(client, alice, monkeypatch, mode):
         ('Do I have enough money to transfer 3 million?', 'enough'),
         ('Check transaction TX-1002', '950,000'),
         ('What is VietQR?', 'recipient'),
-        ('Create a support ticket for my pending transaction', 'TKT-'),
+        ('Create a support ticket for my pending transaction', 'read-only'),
     ]:
         response = client.post(f'/api/conversations/{cid}/messages', headers=alice, json={'content': prompt})
         assert response.status_code == 200

@@ -1,47 +1,73 @@
-// Live regression check. Requires frontend :5173, backend :8000 and isolated Edge CDP :9224.
-// Uses existing Node WebSocket; no browser automation dependency is installed.
+// Requires an isolated Edge CDP session :9224 and same-origin UI/API :5173.
+// Reads local credentials without printing them; no demo token bypass.
 import assert from 'node:assert/strict';
-import { call, evaluate, until, close } from './browser-session.mjs';
-const api='http://127.0.0.1:8000/api';
-const clients={alice:{Authorization:'Bearer demo-alice-token','Content-Type':'application/json'},bob:{Authorization:'Bearer demo-bob-token','Content-Type':'application/json'}};
-const seeds=[];
-const expected={};
-try {
-  for(const who of ['alice','bob']) {
-    const response=await fetch(api+'/conversations',{method:'POST',headers:clients[who],body:JSON.stringify({title:`Identity regression ${who} ${Date.now()}`})});
-    assert.equal(response.status,201);
-    seeds.push({who,...await response.json()});
-    expected[who]=(await fetch(api+'/conversations',{headers:clients[who]}).then(r=>r.json())).map(c=>c.title).sort();
-  }
-  await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
-  await call('Page.navigate',{url:'http://127.0.0.1:5173'});
-  await until("!!document.querySelector('.user-select-wrap select')");
-  await evaluate("sessionStorage.setItem('novabank-demo-user','alice')");
+import { readFileSync } from 'node:fs';
+import { call, evaluate, until, close, capture } from './browser-session.mjs';
+const env = readFileSync(new URL('../../backend/.env', import.meta.url), 'utf8');
+const password = who => {
+  const value = env.match(new RegExp(`^DEMO_${who.toUpperCase()}_PASSWORD=['"]?([^'"\\r\\n]+)`, 'm'))?.[1];
+  if (!value) throw new Error('Configure local demo passwords first');
+  return value;
+};
+const ids = {};
+async function reload() {
+  await evaluate("window.__novabankReloadMarker='pending'");
   await call('Page.reload');
-  await until("document.querySelectorAll('.conversation-open').length>0");
-  const select=who=>evaluate(`(()=>{const s=document.querySelector('.user-select-wrap select');s.value=${JSON.stringify(who)};s.dispatchEvent(new Event('change',{bubbles:true}));})()`);
-  async function verify(who){
-    await new Promise(r=>setTimeout(r,700));
-    const state=await evaluate("({titles:Array.from(document.querySelectorAll('.conversation-open'),b=>b.title).sort(),error:document.querySelector('.error-banner')?.textContent||null,draft:document.querySelector('textarea').value})");
-    assert.equal(state.error,null,`${who}: no stale conversation 404`);
-    assert.deepEqual(state.titles,expected[who],`${who}: complete, own conversation list`);
-    assert.equal(state.draft,'',`${who}: previous user's draft cleared`);
-  }
-  for(let round=1;round<=3;round++){
-    await evaluate(`Array.from(document.querySelectorAll('.conversation-open')).find(b=>b.title===${JSON.stringify(seeds[0].title)}).click()`);
-    await new Promise(r=>setTimeout(r,200));
-    await evaluate("(()=>{const el=document.querySelector('textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(el,'Alice private draft');el.dispatchEvent(new Event('input',{bubbles:true}));})()");
-    await select('bob'); await verify('bob');
-    await select('alice'); await verify('alice');
-    console.log(`PASS: Alice -> Bob -> Alice round ${round}`);
-  }
-  await call('Network.enable');
-  await call('Network.emulateNetworkConditions',{offline:false,latency:200,downloadThroughput:-1,uploadThroughput:-1});
-  for(const who of ['bob','alice','bob','alice']){await select(who);await new Promise(r=>setTimeout(r,40));}
-  await new Promise(r=>setTimeout(r,600));await verify('alice');
-  console.log('PASS: fast identity switches with delayed network');
+  await until("window.__novabankReloadMarker!=='pending' && document.readyState==='complete'");
+}
+async function login(who) {
+  await until("!!document.querySelector('input[name=username]')");
+  const fields = [['username',who],['password',password(who)]];
+  await evaluate(`(()=>{for(const [name,value] of ${JSON.stringify(fields)}){const e=document.querySelector('input[name='+name+']');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));}document.querySelector('button[type=submit]').click();})()`);
+  await until("!!document.querySelector('.profile-name')");
+}
+async function logout() {
+  await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Sign out').click()");
+  await until("!!document.querySelector('input[name=username]')");
+}
+async function create(who) {
+  ids[who] = await evaluate(`(async()=>{const s=await fetch('/api/auth/session').then(r=>r.json());const r=await fetch('/api/conversations',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':s.csrf_token},body:JSON.stringify({title:'Session regression ${who}'})});if(!r.ok)throw new Error('create failed');return (await r.json()).id;})()`);
+}
+try {
+  await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  await call('Page.navigate',{url:process.env.NOVABANK_TEST_URL || 'http://127.0.0.1:5173'});
+  await until("!!document.querySelector('input[name=username], .profile-name')");
+  if (await evaluate("!!document.querySelector('.profile-name')")) await logout();
+  await login('alice'); await create('alice');
+  await reload();
+  await until("Array.from(document.querySelectorAll('.conversation-open')).some(b=>b.title==='Session regression alice')");
+  console.log('PASS: session and own history survive reload');
+  await evaluate("Array.from(document.querySelectorAll('.workspace-tabs button')).find(b=>b.textContent==='Accounts & transfers').click()");
+  await until("!!document.querySelector('input[name=recipient]') && !document.querySelector('input[name=recipient]').disabled");
+  await evaluate(`(()=>{for(const [name,value] of [['recipient','ACC-BOB-001'],['amount','100000'],['description','Browser simulated transfer']]){const e=document.querySelector('input[name='+name+']');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));}})()`);
+  await evaluate("document.querySelector('.banking-panel button[type=submit]').click()");
+  await until("!!document.querySelector('[aria-label=\"Transfer preview\"]')");
+  await reload();
+  await until("Array.from(document.querySelectorAll('.banking-panel button')).some(b=>b.textContent==='Confirm transfer' && !b.disabled)");
+  await evaluate("Array.from(document.querySelectorAll('.banking-panel button')).find(b=>b.textContent==='Confirm transfer').click()");
+  await until("!!document.querySelector('[aria-label=\"Transfer receipt\"]') && document.querySelector('.account-cards').textContent.includes('12,400,000')");
+  await capture('../docs/day2-evidence-2026-10-23/transfer-receipt.png');
+  console.log('PASS: manual transfer preview survives reload; confirmation produces receipt and updated balance');
+  await logout(); await login('bob'); await create('bob');
+  const denied = await evaluate(`fetch('/api/conversations/${ids.alice}/messages').then(r=>r.status)`);
+  assert.equal(denied,404);
+  assert.equal(await evaluate("Array.from(document.querySelectorAll('.conversation-open')).some(b=>b.title==='Session regression alice')"),false);
+  console.log('PASS: Bob cannot read Alice history');
+  await evaluate("Array.from(document.querySelectorAll('.workspace-tabs button')).find(b=>b.textContent==='Accounts & transfers').click()");
+  await until("!!document.querySelector('.account-cards') && document.querySelector('.account-cards').textContent.includes('8,850,000')");
+  assert.ok(await evaluate("document.querySelector('.bank-history').textContent.includes('Browser simulated transfer')"));
+  console.log('PASS: recipient sees credited balance and transfer history');
+  await logout(); await login('alice');
+  await until("Array.from(document.querySelectorAll('.conversation-open')).some(b=>b.title==='Session regression alice')");
+  console.log('PASS: sign out/sign in restores correct identity');
 } finally {
-  await call('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1}).catch(()=>{});
-  for(const seed of seeds) await fetch(`${api}/conversations/${seed.id}`,{method:'DELETE',headers:clients[seed.who]});
+  for(const who of Object.keys(ids)) {
+    try {
+      if(await evaluate("!!document.querySelector('.profile-name')")) await logout();
+      await login(who);
+      await evaluate(`(async()=>{const s=await fetch('/api/auth/session').then(r=>r.json());await fetch('/api/conversations/${ids[who]}',{method:'DELETE',headers:{'X-CSRF-Token':s.csrf_token}});})()`);
+      await logout();
+    } catch { console.error('Cleanup incomplete; remove temporary Session regression conversation after sign-in.'); }
+  }
   close();
 }

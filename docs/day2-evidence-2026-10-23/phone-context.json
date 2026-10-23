@@ -1,0 +1,104 @@
+{
+  "method": "12 new synthetic cases, not development tests; frozen context rule; no tuning after run",
+  "cases": 12,
+  "pass": 12,
+  "rows": [
+    {
+      "text": "Tổng: 0900000123 VND",
+      "expected": [],
+      "detected": [],
+      "pass": true
+    },
+    {
+      "text": "Phí 0910000234 đồng",
+      "expected": [],
+      "detected": [],
+      "pass": true
+    },
+    {
+      "text": "Chuyển 0920000345",
+      "expected": [],
+      "detected": [],
+      "pass": true
+    },
+    {
+      "text": "so tien: 0930000456",
+      "expected": [],
+      "detected": [],
+      "pass": true
+    },
+    {
+      "text": "Số dư 0940000567 đ",
+      "expected": [],
+      "detected": [],
+      "pass": true
+    },
+    {
+      "text": "Amount: 0950000678",
+      "expected": [],
+      "detected": [],
+      "pass": true
+    },
+    {
+      "text": "SĐT: 0900000123",
+      "expected": [
+        "0900000123"
+      ],
+      "detected": [
+        "0900000123"
+      ],
+      "pass": true
+    },
+    {
+      "text": "phone +84 910 000 234",
+      "expected": [
+        "+84 910 000 234"
+      ],
+      "detected": [
+        "+84 910 000 234"
+      ],
+      "pass": true
+    },
+    {
+      "text": "Gọi 092.000.0345",
+      "expected": [
+        "092.000.0345"
+      ],
+      "detected": [
+        "092.000.0345"
+      ],
+      "pass": true
+    },
+    {
+      "text": "dien thoai 093-000-0456",
+      "expected": [
+        "093-000-0456"
+      ],
+      "detected": [
+        "093-000-0456"
+      ],
+      "pass": true
+    },
+    {
+      "text": "Chuyển tiền rồi gọi 0940000567",
+      "expected": [
+        "0940000567"
+      ],
+      "detected": [
+        "0940000567"
+      ],
+      "pass": true
+    },
+    {
+      "text": "Số tiền 0950000678 VND, điện thoại 0960000789",
+      "expected": [
+        "0960000789"
+      ],
+      "detected": [
+        "0960000789"
+      ],
+      "pass": true
+    }
+  ],
+  "limitations": "Small templated sample; not a general Vietnamese PII guarantee; not production pipeline integration"
+}

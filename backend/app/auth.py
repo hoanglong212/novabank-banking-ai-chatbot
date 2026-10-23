@@ -1,27 +1,15 @@
-"""Intentionally insecure local identity switch. NEVER use in production."""
+"""Demo account metadata; authentication lives in sessions.py."""
 from dataclasses import dataclass
-from fastapi import HTTPException, status
 
 
 @dataclass(frozen=True)
 class DemoPrincipal:
     id: str
     name: str
-    token: str
     accounts: tuple[str, ...]
 
 
 DEMO_USERS = (
-    DemoPrincipal('alice', 'Alice', 'demo-alice-token', ('ACC-ALICE-001',)),
-    DemoPrincipal('bob', 'Bob', 'demo-bob-token', ('ACC-BOB-001',)),
+    DemoPrincipal('alice', 'Alice', ('ACC-ALICE-001',)),
+    DemoPrincipal('bob', 'Bob', ('ACC-BOB-001',)),
 )
-
-
-def authenticate(authorization: str | None) -> DemoPrincipal:
-    if not authorization or not authorization.startswith('Bearer '):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Missing demo access token')
-    token = authorization[7:]
-    for user in DEMO_USERS:
-        if user.token == token:
-            return user
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid demo access token')

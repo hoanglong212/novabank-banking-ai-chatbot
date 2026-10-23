@@ -28,12 +28,13 @@ assert.ok(sidebar.includes('Delete conversation Private chat'));
 assert.ok(sidebar.includes('Alice'));
 console.log('PASS: navigation selection, identity and accessible delete label');
 
-const header = renderToStaticMarkup(<Topbar user={user} users={[user]} busy health={null}
+const header = renderToStaticMarkup(<Topbar user={user} busy health={null}
   title="Nova Assistant" sidebarOpen={false} setSidebarOpen={noop}
-  policyPanelOpen={false} setPolicyPanelOpen={noop} changeUser={noop} />);
+  policyPanelOpen={false} setPolicyPanelOpen={noop} logout={noop} />);
 assert.ok(header.includes('Connecting'));
-assert.match(header, /<select[^>]*disabled/);
-console.log('PASS: connection status and disabled identity switch while busy');
+assert.match(header, /<button[^>]*disabled[^>]*>Sign out/);
+assert.ok(!header.includes('<select'));
+console.log('PASS: connection status and disabled sign-out while busy; no identity switch');
 
 for (const decision of ['ALLOW', 'DENY'] as const) {
   const policy = renderToStaticMarkup(<PolicyTest user={user} busy={false}

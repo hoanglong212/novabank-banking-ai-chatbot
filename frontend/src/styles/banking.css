@@ -1,0 +1,15 @@
+.banking-panel { overflow-y: auto; padding: 24px; max-width: 960px; width: 100%; margin: 0 auto; }
+.banking-panel h1 { font-size: 26px; margin-bottom: 10px; }
+.banking-panel h2 { font-size: 20px; margin: 0 0 16px; }
+.account-cards { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
+.bank-card { padding: 22px; margin: 16px 0; border: 1px solid #d4dce6; border-radius: 12px; background: #fff; overflow-wrap: anywhere; }
+.bank-card strong { display: block; font-size: 20px; margin: 10px 0; }
+.bank-card p { margin: 8px 0; }
+.bank-card label { display: grid; gap: 6px; margin: 14px 0; }
+.bank-card input, .bank-card select { border: 1px solid #8293a8; border-radius: 6px; padding: 10px; font: inherit; width: 100%; }
+.banking-panel button, .workspace-tabs button { padding: 10px 16px; border: 1px solid #c1cddd; border-radius: 8px; background: #f6f8fb; font: inherit; cursor: pointer; }
+.banking-panel button:disabled { opacity: .5; cursor: wait; }
+.bank-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.bank-error { color: #a21b24; padding: 12px; background: #fff1f1; border-radius: 8px; }
+.workspace-tabs { display: flex; gap: 8px; padding: 10px 24px; border-bottom: 1px solid #d4dce6; }
+.workspace-tabs [aria-pressed=true] { background: #16324f; color: white; }

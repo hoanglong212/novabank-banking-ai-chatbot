@@ -3,9 +3,7 @@ import { api } from '../api';
 import type { ChatMessage, Conversation, DemoUser, Health, ToolEvent, Decision } from '../types';
 
 // Owns session state and request coordination. Presentation components do not call the API.
-export function useBankingChat() {
-  const [users, setUsers] = useState<DemoUser[]>([]);
-  const [user, setUser] = useState<DemoUser | null>(null);
+export function useBankingChat(user: DemoUser) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selection, setSelection] = useState<{ id: string; ownerId: string; } | null>(null);
   const active = selection?.ownerId === user?.id ? selection?.id ?? null : null;
@@ -29,11 +27,8 @@ export function useBankingChat() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.demoUsers(), api.health()]).then(([list, status]) => {
+    api.health().then(status => {
       if (!alive) return;
-      setUsers(list);
-      const remembered = list.find(item => item.id === window.sessionStorage.getItem('novabank-demo-user'));
-      setUser(remembered || list[0] || null);
       setHealth(status);
     }).catch(err => {
       if (alive) setError(err.message + ' · Unable to connect to the support server.');
@@ -45,7 +40,6 @@ export function useBankingChat() {
 
   useEffect(() => {
     if (!user) return;
-    window.sessionStorage.setItem('novabank-demo-user', user.id);
     let cancelled = false;
     setActive(null);
     setMessages([]);
@@ -84,18 +78,6 @@ export function useBankingChat() {
       cancelled = true;
     };
   }, [user, active]);
-
-  function changeUser(next: DemoUser) {
-    if (busy || next.id === user?.id) return;
-    setSelection(null);
-    setMessages([]);
-    setEvents([]);
-    setConversations([]);
-    setDraft('');
-    setPolicyResult(null);
-    setError(null);
-    setUser(next);
-  }
 
   useEffect(() => {
     if (messages.length === 0 && !busy) {
@@ -217,7 +199,6 @@ export function useBankingChat() {
   };
 
   return {
-    users,
     user,
     conversations,
     active,
@@ -243,7 +224,6 @@ export function useBankingChat() {
     endRef,
     scrollerRef,
     textareaRef,
-    changeUser,
     startConversation,
     deleteConversation,
     sendMessage,

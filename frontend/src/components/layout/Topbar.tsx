@@ -1,31 +1,29 @@
-import { Menu, UserRound, ChevronDown, PanelRight } from 'lucide-react';
+import { Menu, UserRound, PanelRight } from 'lucide-react';
 
 import type { DemoUser, Health } from '../../types';
 
 interface TopbarProps {
   title: string;
   user: DemoUser | null;
-  users: DemoUser[];
   health: Health | null;
   busy: boolean;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   policyPanelOpen: boolean;
   setPolicyPanelOpen: (open: boolean) => void;
-  changeUser: (user: DemoUser) => void;
+  logout: () => void;
 }
 
 export function Topbar({
   title,
   user,
-  users,
   health,
   busy,
   sidebarOpen,
   setSidebarOpen,
   policyPanelOpen,
   setPolicyPanelOpen,
-  changeUser,
+  logout,
 }: TopbarProps) {
   return (
     <header className="topbar">
@@ -47,22 +45,11 @@ export function Topbar({
           <span className="status-dot" aria-hidden="true" />
           {health ? (health.llm_provider === 'ollama' ? 'Local AI model' : 'Demo mode') : 'Connecting'}
         </span>
-        <label className="user-select-wrap">
+        <div className="user-select-wrap">
           <UserRound size={16} aria-hidden="true" />
-          <select
-            disabled={busy || !users.length}
-            aria-label="Select demo customer"
-            value={user?.id || ''}
-            onChange={e => {
-              const next = users.find(u => u.id === e.target.value);
-              if (next) changeUser(next);
-            }}>
-            {users.map(u => <option key={u.id} value={u.id}>
-              {u.name}
-            </option>)}
-          </select>
-          <ChevronDown size={14} aria-hidden="true" />
-        </label>
+          <span>{user?.name}</span>
+          <button type="button" disabled={busy} onClick={logout}>Sign out</button>
+        </div>
         <button
           className={`insights-toggle icon-button ${policyPanelOpen ? 'is-active' : ''}`}
           aria-label="Testing insights"

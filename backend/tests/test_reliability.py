@@ -73,15 +73,15 @@ def test_model_cannot_change_transaction_requested_by_user(client, alice, monkey
     assert '300,000' not in result['message']['content']
 
 
-def test_ticket_reply_reports_actual_ticket_once_not_model_request_for_card(client, alice, monkeypatch):
+def test_ticket_proposals_never_write_even_with_explicit_request(client, alice, monkeypatch):
     from app.main import get_db
     model_reply(monkeypatch, proposal('create_support_ticket', {'subject': 'Giao dịch bị treo', 'description': 'Giao dịch bị treo'}, copies=3))
     _, result = ask(client, alice, 'Tạo yêu cầu hỗ trợ vì giao dịch của tôi bị treo.')
     text = result['message']['content']
-    assert 'TKT-' in text and 'OPEN' in text
+    assert 'read-only' in text and 'TKT-' not in text
     assert 'số thẻ' not in text.lower() and 'điện thoại' not in text.lower()
-    assert get_db().ticket_count('alice') == 1
-    assert sum(e['executed'] for e in result['tool_events']) == 1
+    assert get_db().ticket_count('alice') == 0
+    assert sum(e['executed'] for e in result['tool_events']) == 0
 
 
 @pytest.mark.parametrize('question', [
@@ -98,7 +98,7 @@ def test_model_ticket_proposal_without_explicit_creation_consent_has_no_side_eff
     _, result = ask(client, alice, question)
     assert get_db().ticket_count('alice') == 0
     assert not any(e['tool_name'] == 'create_support_ticket' and e['executed'] for e in result['tool_events'])
-    assert any(e['reason_code'] == 'INTENT_MISMATCH' and not e['executed'] for e in result['tool_events'])
+    assert any(e['reason_code'] == 'UNKNOWN_TOOL' and not e['executed'] for e in result['tool_events'])
 
 
 def test_raw_json_is_not_executed_and_safe_fallback_is_reported(client, alice, monkeypatch):

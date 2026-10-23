@@ -1,0 +1,28 @@
+{
+  "status": "stopped_on_error",
+  "benchmark_exit_code": 1,
+  "error": "PermissionError WinError 32 during temporary SQLite database cleanup after all 20 cases",
+  "production_code_changed": false,
+  "native_tool_correct": 16,
+  "native_arguments_correct": 15,
+  "guarded_checks_pass": 19,
+  "completed_cases": 20,
+  "sources": {
+    "ollama_tool": 13,
+    "ollama_tool_bound": 3,
+    "application_template": 3,
+    "application_fallback": 1
+  },
+  "latencies": {
+    "native": {
+      "median": 0.31393615000160935,
+      "p95_nearest_rank": 0.5177301000003354,
+      "max": 4.703541800001403
+    },
+    "guarded": {
+      "median": 0.6953455000002577,
+      "p95_nearest_rank": 1.1252749000013864,
+      "max": 1.51248200000191
+    }
+  }
+}

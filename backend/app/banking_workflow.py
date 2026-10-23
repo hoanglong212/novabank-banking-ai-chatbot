@@ -21,6 +21,32 @@ class BankingRequest:
 
 BALANCE_WORDS = ('so du', 'balance', 'tai khoan con', 'con bao nhieu', 'kiem tra tien')
 FOLLOW_BALANCE = ('du tien', 'du khong', 'enough money', 'afford')
+ACCOUNT_PLACEHOLDER = re.compile(r'<(?:BANK_ACCOUNT|ACCOUNT)(?:_[A-Z0-9]+)?>', re.I)
+UNRESOLVED_REPLY = 'Please specify one resolvable account ID. No account data was returned.'
+
+
+def unresolved_account(text: str) -> bool:
+    if ACCOUNT_PLACEHOLDER.search(text):
+        return True
+    candidates = re.findall(r'\bACC-[A-Z0-9-]+', text, re.I)
+    if len(set(x.upper() for x in candidates)) > 1:
+        return True
+    if any(not re.fullmatch(r'ACC-[A-Z0-9]+-[A-Z0-9-]+', x, re.I) for x in candidates):
+        return True
+    folded = fold(text)
+    named = re.search(r'\b(?:account|tai khoan)\s+(?:of|cua)\s+(\S+)',folded)
+    if named and named.group(1).strip('?.!,') not in {'toi','minh','me','mine','my'} and account_in(text) is None:
+        return True
+    numeric_targets = re.findall(r'\b(?:account|tai khoan|stk)(?:\s+(?:id|number|so))?[\s:#]+([a-z]*\d[a-z0-9-]*)\b',folded)
+    if len(set(numeric_targets + [x.lower() for x in candidates])) > 1:
+        return True
+    label = re.search(r'\b(?:account|tai khoan|stk)(?:\s+(?:id|number|so))?\s*[:#]\s*(\S+)', folded)
+    if label and account_in(text) is None:
+        return True
+    # Explicit named targets must not silently turn into the session default.
+    label = re.search(r'\b(?:account|tai khoan|stk)\s+(\S+)', folded)
+    self_words = {'balance','of','is','con','cua','toi','minh','my','number','id','so','co'}
+    return bool(label and label.group(1).strip('?.!,') not in self_words and account_in(text) is None)
 
 
 def account_in(text: str) -> str | None:
@@ -40,7 +66,16 @@ def requested_amount(text: str) -> int | None:
     return int(Decimal(match.group(1).replace(',', '.')) * multiplier)
 
 
-def bind_request(messages: list[dict]) -> BankingRequest:
+def bind_request(messages: list[dict], *, account_mapping: dict[str, str] | None = None) -> BankingRequest:
+    # Mapping is an internal, request-local backend argument, never an HTTP input.
+    mapping = account_mapping or {}
+    def restore(match):
+        value = mapping.get(match.group())
+        if isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9-]{1,40}', value):
+            return value if value.upper().startswith('ACC-') else 'account: '+value
+        return match.group()
+    messages = [{**m, 'content': ACCOUNT_PLACEHOLDER.sub(restore, m['content'])}
+                if m['role'] == 'user' else m for m in messages]
     question = messages[-1]['content'].strip()
     text = fold(question)
     history = [m['content'] for m in messages[:-1] if m['role'] == 'user'][-12:]
@@ -54,10 +89,7 @@ def bind_request(messages: list[dict]) -> BankingRequest:
     ticket_is_negated = 'khong muon' in text or 'do not want' in text or bool(re.search(
         r'\b(?:khong|dung|chua|do not|don.t)\b.{0,35}\b(?:tao|mo|lap|create|open)\b', text))
     if wants_ticket and not ticket_is_question and not ticket_is_negated:
-        return BankingRequest('create_support_ticket', {
-            'subject': 'Customer support request (demo)',
-            'description': question,
-        })
+        return BankingRequest(reply='Chat is read-only. I cannot create a support ticket. No request has been created.')
 
     ids = re.findall(r'\bTX-[A-Z0-9-]+\b', question, re.I)
     if not ids and any(term in text for term in ('giao dich do', 'giao dich nay', 'that transaction', 'its status')):
@@ -74,11 +106,15 @@ def bind_request(messages: list[dict]) -> BankingRequest:
     balance = any(term in text for term in BALANCE_WORDS)
     affordability = any(term in text for term in FOLLOW_BALANCE)
     explicit_account = account_in(question)
+    if unresolved_account(question):
+        return BankingRequest(reply=UNRESOLVED_REPLY)
     if balance or affordability or explicit_account:
         account = explicit_account
         if not account and affordability:
             for previous in reversed(history):
                 if any(term in fold(previous) for term in BALANCE_WORDS):
+                    if unresolved_account(previous):
+                        return BankingRequest(reply=UNRESOLVED_REPLY)
                     account = account_in(previous)
                     break
         # A named third party is not an instruction to substitute the current user.
@@ -88,9 +124,9 @@ def bind_request(messages: list[dict]) -> BankingRequest:
                               amount_vnd=requested_amount(text), affordability=affordability)
 
     if re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:chuyen|rut|transfer|withdraw)\b', text):
-        return BankingRequest(reply='This demo does not support transfers or withdrawals. No transaction has been performed.')
+        return BankingRequest(reply='Chat cannot execute transfers or withdrawals. Use Accounts & transfers for a simulated transfer. No transaction has been performed.')
     if re.search(r'\b(?:xin chao|hello|hi|ban co the giup|ban lam duoc|what can you)\b', text):
-        return BankingRequest(reply='Hello! I am your NovaBank demo assistant. I can answer banking and VietQR questions, check demo balances and transactions, or create a support ticket at your request. Real transfers are not supported. Never share OTPs, PINs, or real banking data.')
+        return BankingRequest(reply='Hello! I am your NovaBank demo assistant. I can answer banking and VietQR questions and check demo balances and transactions. Chat is read-only. Never share OTPs, PINs, or real banking data.')
     if text.rstrip('.! ') in ('cam on', 'cam on ban', 'thank you', 'thanks'):
         return BankingRequest(reply='Happy to help! Feel free to ask another banking question or explore the demo data.')
     # Unrecognized questions use the approved KB, not unconstrained model prose.
@@ -119,8 +155,6 @@ def render_result(request: BankingRequest, result: dict) -> str:
     if request.tool == 'get_transaction_status':
         explanation = {'PENDING': 'Processing is pending; the transaction has not completed.', 'COMPLETED': 'The simulated transaction has completed.'}.get(result['status'], '')
         return f'Demo transaction **{result["transaction_id"]}** has status **{result["status"]}** and amount **{vnd(result["amount_vnd"])}**. {explanation}'
-    if request.tool == 'create_support_ticket':
-        return f'Created demo support ticket **{result["ticket_id"]}**, status **{result["status"]}**. No personal information is needed. No request was sent to a real bank.'
     matches = result.get('matches', [])
     if matches:
         return matches[0]['answer']

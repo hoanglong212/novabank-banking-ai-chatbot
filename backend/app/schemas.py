@@ -22,7 +22,7 @@ class FaqArgs(BaseModel):
 
 class BalanceArgs(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    account_id: str | None = Field(default=None, max_length=40)
+    account_id: str | None = Field(default=None, min_length=1, max_length=40)
 
 
 class TransactionArgs(BaseModel):

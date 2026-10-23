@@ -5,24 +5,14 @@ from .auth import DemoPrincipal
 from .database import Database
 from .faq import search
 from .gateway import PolicyGateway
-from .schemas import FaqArgs, BalanceArgs, TransactionArgs, TicketArgs, ToolDecision
+from .schemas import FaqArgs, BalanceArgs, TransactionArgs, ToolDecision
+from .banking import accounts_for, transactions_for
 
 
 TOOL_MODELS = {
     'search_banking_faq': FaqArgs,
     'get_account_balance': BalanceArgs,
     'get_transaction_status': TransactionArgs,
-    'create_support_ticket': TicketArgs,
-}
-
-ACCOUNTS = {
-    'ACC-ALICE-001': {'balance_vnd': 12500000, 'currency': 'VND'},
-    'ACC-BOB-001': {'balance_vnd': 8750000, 'currency': 'VND'},
-}
-TRANSACTIONS = {
-    'TX-1001': {'amount_vnd': 300000, 'status': 'COMPLETED', 'description': 'Demo transfer'},
-    'TX-1002': {'amount_vnd': 950000, 'status': 'PENDING', 'description': 'Demo transfer'},
-    'TX-2001': {'amount_vnd': 200000, 'status': 'COMPLETED', 'description': 'Demo transfer'},
 }
 
 OLLAMA_TOOLS = [
@@ -32,8 +22,6 @@ OLLAMA_TOOLS = [
      'parameters': {'type': 'object', 'properties': {'account_id': {'type': 'string', 'description': 'Demo account ID; omit for current user'}}}}},
     {'type': 'function', 'function': {'name': 'get_transaction_status', 'description': 'Get simulated transaction status by transaction ID, only for authenticated owner.',
      'parameters': {'type': 'object', 'properties': {'transaction_id': {'type': 'string'}} , 'required': ['transaction_id']}}},
-    {'type': 'function', 'function': {'name': 'create_support_ticket', 'description': 'Create a demo customer support ticket for the authenticated customer.',
-     'parameters': {'type': 'object', 'properties': {'subject': {'type': 'string'}, 'description': {'type': 'string'}}, 'required': ['subject','description']}}},
 ]
 
 
@@ -41,6 +29,7 @@ class ToolDispatcher:
     def __init__(self, db: Database, gateway: PolicyGateway):
         self.db = db
         self.gateway = gateway
+        self.gateway.database = db
 
     def record_rejection(self, conversation_id: str, tool_name: str, reason_code: str):
         """Audit an unrequested model proposal without persisting model-supplied PII."""
@@ -81,13 +70,12 @@ class ToolDispatcher:
             result = search(parsed['query'])
         elif tool_name == 'get_account_balance':
             account_id = parsed.get('account_id') or user.accounts[0]
-            result = {'account_id': account_id, **ACCOUNTS[account_id], 'demo': True}
+            account = next(a for a in accounts_for(self.db,user.id) if a['id']==account_id)
+            result = {'account_id':account_id,'balance_vnd':account['balance_vnd'],'currency':account['currency'],'demo':True}
         elif tool_name == 'get_transaction_status':
             transaction_id = parsed['transaction_id']
-            result = {'transaction_id': transaction_id, **TRANSACTIONS[transaction_id], 'demo': True}
-        elif tool_name == 'create_support_ticket':
-            ticket = self.db.create_ticket(user.id, parsed['subject'], parsed['description'])
-            result = {'ticket_id': ticket['id'], 'status': ticket['status'], 'demo': True}
+            transaction = transactions_for(self.db,user.id,transaction_id)[0]
+            result = {'transaction_id':transaction_id,'amount_vnd':transaction['amount_vnd'],'status':transaction['status'],'demo':True}
         else:
             # Defensive deny; impossible without a programming error upstream.
             result = {'error': 'TOOL_DENIED', 'reason_code': 'UNKNOWN_TOOL'}

@@ -2,6 +2,8 @@
 import argparse
 import re
 import httpx
+from pathlib import Path
+from dotenv import dotenv_values
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('url', help='Example: http://127.0.0.1:8080')
@@ -19,8 +21,17 @@ with httpx.Client(base_url=base, timeout=180) as client:
     assert client.get('/api/ready').json()['llm_provider'] == expected_provider
     for path in ('/.env', '/app/main.py', '/api/no-such-endpoint'):
         assert client.get(path).status_code == 404
-    alice = {'Authorization': 'Bearer demo-alice-token'}
-    bob = {'Authorization': 'Bearer demo-bob-token'}
+    configuration = dotenv_values(Path(__file__).resolve().parents[1] / 'backend/.env')
+    def sign_in(username):
+        response = client.post('/api/auth/login', headers={'Origin':base}, json={
+            'username':username, 'password':configuration.get(f'DEMO_{username.upper()}_PASSWORD','')})
+        response.raise_for_status()
+        headers = {'Cookie':'novabank_session='+client.cookies.get('novabank_session'),
+                   'Origin':base,'X-CSRF-Token':response.json()['csrf_token']}
+        client.cookies.clear()
+        return headers
+    alice = sign_in('alice')
+    bob = sign_in('bob')
     created = client.post('/api/conversations', headers=alice, json={'title': 'Setup acceptance test'})
     created.raise_for_status()
     path = '/api/conversations/' + created.json()['id']
@@ -41,4 +52,6 @@ with httpx.Client(base_url=base, timeout=180) as client:
         assert check['decision'] == 'ALLOW' and not check['executed']
     finally:
         client.delete(path, headers=alice).raise_for_status()
+        client.post('/api/auth/logout',headers=alice).raise_for_status()
+        client.post('/api/auth/logout',headers=bob).raise_for_status()
 print('PASS: UI/assets, readiness, own balance, foreign-account denial, user isolation, dry-run, cleanup')

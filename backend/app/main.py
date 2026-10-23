@@ -1,9 +1,10 @@
 """Banking demo HTTP API; ownership checks are applied on every conversation route."""
 from contextlib import asynccontextmanager
-from fastapi import Depends, FastAPI, HTTPException, Header
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends, FastAPI, HTTPException, Request
 from .agent import make_agent
-from .auth import DemoPrincipal, DEMO_USERS, authenticate
+from .auth import DemoPrincipal
+from .sessions import current_user, initialize_auth, router as auth_router
+from .banking_api import router as banking_router
 from .config import provider, setting
 from .database import Database
 from .gateway import PolicyGateway
@@ -20,16 +21,21 @@ def get_db() -> Database:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     get_db().initialize()
+    initialize_auth(get_db())
     yield
 
 
 app = FastAPI(title='NovaBank Banking Chatbot (Demo Only)', version='0.1.0', lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173'],
-                   allow_methods=['GET', 'POST', 'DELETE'], allow_headers=['Authorization', 'Content-Type'])
+app.include_router(auth_router)
+app.include_router(banking_router)
 
 
-def current_user(authorization: str | None = Header(default=None)) -> DemoPrincipal:
-    return authenticate(authorization)
+@app.middleware('http')
+async def private_api_responses(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 def require_own_conversation(db: Database, conversation_id: str, user: DemoPrincipal):
@@ -45,12 +51,6 @@ async def health():
 
 
 app.add_api_route('/api/ready', readiness, methods=['GET'])
-
-
-@app.get('/api/demo/users')
-async def demo_users():
-    # Exposes local demo identity tokens intentionally; NEVER deploy to the public internet.
-    return [{'id': u.id, 'name': u.name, 'token': u.token} for u in DEMO_USERS]
 
 
 @app.get('/api/conversations')
