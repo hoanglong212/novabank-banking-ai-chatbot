@@ -9,9 +9,11 @@ from .config import setting
 from .schemas import ToolDecision
 
 
-VALID_TOOLS = {'search_banking_faq', 'get_account_balance', 'get_transaction_status', 'create_support_ticket'}
+VALID_TOOLS = {'search_banking_faq', 'get_account_balance', 'get_transaction_status', 'get_recent_transactions',
+               'create_support_ticket', 'create_vietqr'}
 ACCOUNT_OWNERS = {'ACC-ALICE-001': 'alice', 'ACC-BOB-001': 'bob'}
-TRANSACTION_OWNERS = {'TX-1001': 'alice', 'TX-1002': 'alice', 'TX-2001': 'bob'}
+TRANSACTION_OWNERS = {'TX-1001': 'alice', 'TX-1002': 'alice', 'TX-1003': 'alice', 'TX-1004': 'alice',
+                      'TX-2001': 'bob', 'TX-2002': 'bob', 'TX-2003': 'bob'}
 
 
 class PolicyGateway:

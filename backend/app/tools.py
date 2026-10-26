@@ -5,14 +5,18 @@ from .auth import DemoPrincipal
 from .database import Database
 from .faq import search
 from .gateway import PolicyGateway
-from .schemas import FaqArgs, BalanceArgs, TransactionArgs, TicketArgs, ToolDecision
+from .gateway import TRANSACTION_OWNERS
+from .schemas import FaqArgs, BalanceArgs, TransactionArgs, RecentTransactionsArgs, TicketArgs, VietQRArgs, ToolDecision
+from . import vietqr
 
 
 TOOL_MODELS = {
     'search_banking_faq': FaqArgs,
     'get_account_balance': BalanceArgs,
     'get_transaction_status': TransactionArgs,
+    'get_recent_transactions': RecentTransactionsArgs,
     'create_support_ticket': TicketArgs,
+    'create_vietqr': VietQRArgs,
 }
 
 ACCOUNTS = {
@@ -20,9 +24,13 @@ ACCOUNTS = {
     'ACC-BOB-001': {'balance_vnd': 8750000, 'currency': 'VND'},
 }
 TRANSACTIONS = {
-    'TX-1001': {'amount_vnd': 300000, 'status': 'COMPLETED', 'description': 'Demo transfer'},
-    'TX-1002': {'amount_vnd': 950000, 'status': 'PENDING', 'description': 'Demo transfer'},
-    'TX-2001': {'amount_vnd': 200000, 'status': 'COMPLETED', 'description': 'Demo transfer'},
+    'TX-1001': {'amount_vnd': 300000, 'status': 'COMPLETED', 'description': 'Transfer to Minh Anh', 'direction': 'out', 'date': '2026-10-24'},
+    'TX-1002': {'amount_vnd': 950000, 'status': 'PENDING', 'description': 'Electricity bill', 'direction': 'out', 'date': '2026-10-25'},
+    'TX-1003': {'amount_vnd': 45000, 'status': 'COMPLETED', 'description': 'Coffee shop', 'direction': 'out', 'date': '2026-10-26'},
+    'TX-1004': {'amount_vnd': 15000000, 'status': 'COMPLETED', 'description': 'Salary credit', 'direction': 'in', 'date': '2026-10-20'},
+    'TX-2001': {'amount_vnd': 200000, 'status': 'COMPLETED', 'description': 'Transfer to Gia Bao', 'direction': 'out', 'date': '2026-10-23'},
+    'TX-2002': {'amount_vnd': 120000, 'status': 'COMPLETED', 'description': 'Ride-hailing trip', 'direction': 'out', 'date': '2026-10-25'},
+    'TX-2003': {'amount_vnd': 5000000, 'status': 'COMPLETED', 'description': 'Freelance payment', 'direction': 'in', 'date': '2026-10-21'},
 }
 
 OLLAMA_TOOLS = [
@@ -32,8 +40,13 @@ OLLAMA_TOOLS = [
      'parameters': {'type': 'object', 'properties': {'account_id': {'type': 'string', 'description': 'Demo account ID; omit for current user'}}}}},
     {'type': 'function', 'function': {'name': 'get_transaction_status', 'description': 'Get simulated transaction status by transaction ID, only for authenticated owner.',
      'parameters': {'type': 'object', 'properties': {'transaction_id': {'type': 'string'}} , 'required': ['transaction_id']}}},
+    {'type': 'function', 'function': {'name': 'get_recent_transactions', 'description': "List the authenticated customer's own most recent transactions (history, spending, income).",
+     'parameters': {'type': 'object', 'properties': {'limit': {'type': 'integer', 'description': 'How many, default 5'}}}}},
     {'type': 'function', 'function': {'name': 'create_support_ticket', 'description': 'Create a demo customer support ticket for the authenticated customer.',
      'parameters': {'type': 'object', 'properties': {'subject': {'type': 'string'}, 'description': {'type': 'string'}}, 'required': ['subject','description']}}},
+    {'type': 'function', 'function': {'name': 'create_vietqr', 'description': 'Create a VietQR payment code for a bank account the user specified.',
+     'parameters': {'type': 'object', 'properties': {'bank': {'type': 'string'}, 'account_no': {'type': 'string'}, 'amount_vnd': {'type': 'integer'},
+                    'add_info': {'type': 'string'}, 'account_name': {'type': 'string'}}, 'required': ['bank', 'account_no']}}},
 ]
 
 
@@ -85,9 +98,18 @@ class ToolDispatcher:
         elif tool_name == 'get_transaction_status':
             transaction_id = parsed['transaction_id']
             result = {'transaction_id': transaction_id, **TRANSACTIONS[transaction_id], 'demo': True}
+        elif tool_name == 'get_recent_transactions':
+            owned = sorted((dict(transaction_id=t, **TRANSACTIONS[t]) for t, owner in TRANSACTION_OWNERS.items() if owner == user.id),
+                           key=lambda t: t['date'], reverse=True)
+            result = {'transactions': owned[:parsed['limit']], 'demo': True}
         elif tool_name == 'create_support_ticket':
             ticket = self.db.create_ticket(user.id, parsed['subject'], parsed['description'])
             result = {'ticket_id': ticket['id'], 'status': ticket['status'], 'demo': True}
+        elif tool_name == 'create_vietqr':
+            try:
+                result = await vietqr.generate(**parsed)
+            except vietqr.VietQRError as exc:
+                result = {'error': 'TOOL_FAILED', 'reason_code': exc.reason_code}
         else:
             # Defensive deny; impossible without a programming error upstream.
             result = {'error': 'TOOL_DENIED', 'reason_code': 'UNKNOWN_TOOL'}

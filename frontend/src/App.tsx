@@ -1,95 +1,49 @@
-import { Sidebar } from './components/layout/Sidebar';
-import { Topbar } from './components/layout/Topbar';
-import { Welcome } from './components/chat/Welcome';
-import { MessageThread } from './components/chat/MessageThread';
-import { Composer } from './components/chat/Composer';
-import { TestingInsights } from './components/insights/TestingInsights';
+import { useEffect, useState } from 'react';
+import { api } from './api';
+import { Login } from './components/auth/Login';
+import { NavBar, type Tab } from './components/app/NavBar';
+import { Home } from './components/home/Home';
+import { Activity } from './components/activity/Activity';
+import { QrStudio } from './components/qr/QrStudio';
+import { Profile } from './components/profile/Profile';
+import { Assistant } from './components/chat/Assistant';
 import { useBankingChat } from './hooks/useBankingChat';
+import { useSession } from './hooks/useSession';
+import type { DemoUser, Profile as ProfileData } from './types';
 
 export default function App() {
-  const chat = useBankingChat();
+  const session = useSession();
+  if (!session.user) return <Login onLogin={session.login} notice={session.notice} />;
+  // Keyed by user so no state from a previous customer survives a new sign-in.
+  return <BankApp key={session.user.id} user={session.user} logout={() => session.logout()} />;
+}
+
+function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
+  const chat = useBankingChat(user);
+  const [tab, setTab] = useState<Tab>('home');
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+
+  useEffect(() => {
+    // Refresh on every tab change so balances and history stay current.
+    api.me(user).then(setProfile).catch(() => { });
+  }, [user, tab]);
+
+  const ask = (text: string) => {
+    setTab('assistant');
+    void chat.askNew(text);
+  };
 
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#message-input">Skip to message input</a>
-      <Sidebar
-
-        user={chat.user}
-        busy={chat.busy}
-        conversations={chat.conversations}
-
-        active={chat.active}
-        setActive={chat.setActive}
-
-        sidebarOpen={chat.sidebarOpen}
-        setSidebarOpen={chat.setSidebarOpen}
-
-        startConversation={chat.startConversation}
-        deleteConversation={chat.deleteConversation}
-      />
-      <main className="main-area">
-        <Topbar
-
-          title={chat.messages.length > 0 && chat.activeTitle ? chat.activeTitle : 'Nova Assistant'}
-
-          user={chat.user}
-          users={chat.users}
-          health={chat.health}
-          busy={chat.busy}
-
-          sidebarOpen={chat.sidebarOpen}
-          setSidebarOpen={chat.setSidebarOpen}
-
-          policyPanelOpen={chat.policyPanelOpen}
-          setPolicyPanelOpen={chat.setPolicyPanelOpen}
-
-          changeUser={chat.changeUser}
-        />
-        <div className="workspace">
-          <section className="chat-column" aria-label="Chat with NovaBank">
-            <div className="messages-scroller" ref={chat.scrollerRef}>
-              <div className="messages-inner">
-                {chat.messages.length === 0 ? (
-                  <Welcome user={chat.user} busy={chat.busy} pickSuggestion={chat.pickSuggestion} />
-                ) : (
-                  <MessageThread messages={chat.messages} busy={chat.busy} />
-                )}
-                <div ref={chat.endRef} />
-              </div>
-            </div>
-            <Composer
-
-              user={chat.user}
-              busy={chat.busy}
-              draft={chat.draft}
-              setDraft={chat.setDraft}
-
-              error={chat.error}
-              setError={chat.setError}
-              hasMessages={chat.messages.length > 0}
-
-              textareaRef={chat.textareaRef}
-              sendMessage={chat.sendMessage}
-              pickSuggestion={chat.pickSuggestion}
-            />
-          </section>
-          {chat.policyPanelOpen && (
-            <TestingInsights
-
-              health={chat.health}
-              events={chat.events}
-              setPolicyPanelOpen={chat.setPolicyPanelOpen}
-
-              policy={{
-                user: chat.user, busy: chat.busy,
-                toolName: chat.toolName, setToolName: chat.setToolName,
-                accountId: chat.accountId, setAccountId: chat.setAccountId,
-                policyResult: chat.policyResult, setPolicyResult: chat.setPolicyResult,
-                runPolicyDryRun: chat.runPolicyDryRun,
-              }}
-            />
-          )}
-        </div>
+      <a className="skip-link" href="#main">Skip to content</a>
+      <NavBar tab={tab} setTab={setTab} user={user} logout={logout} />
+      {/* key restarts the enter animation on every tab change */}
+      <main id="main" key={tab} className={`app-main ${tab === 'assistant' ? 'is-assistant' : ''}`}>
+        {tab === 'home' && <Home user={user} profile={profile} navigate={setTab} ask={ask} />}
+        {tab === 'activity' && <Activity profile={profile} ask={ask} />}
+        {tab === 'qr' && <QrStudio user={user} />}
+        {tab === 'profile' && <Profile user={user} profile={profile} logout={logout} />}
+        {tab === 'assistant' && <Assistant chat={chat} />}
       </main>
     </div>
   );

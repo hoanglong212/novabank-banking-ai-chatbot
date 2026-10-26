@@ -12,6 +12,6 @@ def setting(name: str, default: str = '') -> str:
 
 def provider() -> str:
     value = setting('LLM_PROVIDER', 'mock').lower()
-    if value not in ('mock', 'ollama'):
-        raise ValueError('LLM_PROVIDER must be mock or ollama')
+    if value not in ('mock', 'ollama', 'langgraph'):
+        raise ValueError('LLM_PROVIDER must be mock, ollama or langgraph')
     return value

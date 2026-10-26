@@ -12,14 +12,20 @@ def client(tmp_path, monkeypatch):
         yield c
 
 
-@pytest.fixture()
-def alice():
-    return {'Authorization': 'Bearer demo-alice-token'}
+def sign_in(client, username, password):
+    response = client.post('/api/auth/login', json={'username': username, 'password': password})
+    assert response.status_code == 200, response.text
+    return {'Authorization': 'Bearer ' + response.json()['access_token']}
 
 
 @pytest.fixture()
-def bob():
-    return {'Authorization': 'Bearer demo-bob-token'}
+def alice(client):
+    return sign_in(client, 'alice', 'Alice@2026')
+
+
+@pytest.fixture()
+def bob(client):
+    return sign_in(client, 'bob', 'Bob@2026')
 
 
 def new_chat(client, headers):

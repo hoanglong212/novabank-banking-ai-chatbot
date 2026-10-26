@@ -40,6 +40,44 @@ def requested_amount(text: str) -> int | None:
     return int(Decimal(match.group(1).replace(',', '.')) * multiplier)
 
 
+QR_HELP = ('To create a VietQR code, tell me the bank and the account number, for example: '
+           '"Create a QR for Vietcombank account 0123456789, 500k, content dinner".')
+
+
+def qr_request(question: str, text: str) -> BankingRequest | None:
+    if not (re.search(r'\b(?:viet)?qr\b', text) and re.search(r'\b(?:tao|lap|xuat|create|generate|make)\b', text)):
+        return None
+    # The number introduced as the account wins; otherwise the longest one (amounts are usually shorter).
+    keyed = re.search(r'\b(?:account|tai khoan|stk)(?:\s*(?:no|number|so))?\s*[:#]?\s*(\d{6,19})\b', text)
+    numbers = re.findall(r'(?<!\d)\d{6,19}(?!\d)', text)
+    account = keyed.group(1) if keyed else max(numbers, key=len, default=None)
+    if not account:
+        return BankingRequest(reply=QR_HELP)
+    # "ngan hang X" / "bank X", then "<account> X", then "X account <account>".
+    bank = (re.search(r'\b(?:ngan hang|bank|tai(?! khoan)|at)\s+([a-z0-9]{2,})', text)
+            or re.search(re.escape(account) + r'\s+(?!(?:noi|so|voi|va|and|with|amount|content|note)\b)([a-z][a-z0-9]+)', text)
+            or re.search(r'\b([a-z0-9]{2,})\s+(?:account|tai khoan|stk)\b', text))
+    if not bank:
+        return BankingRequest(reply=QR_HELP)
+    args = {'bank': bank.group(1), 'account_no': account}
+    rest = text.replace(account, ' ')
+    amount = re.search(r'(\d+(?:[.,]\d+)*)\s*(k|nghin|ngan|tr|trieu|m|million|thousand|vnd|dong|d)?\b', rest)
+    if amount:
+        unit = {'k': 1000, 'nghin': 1000, 'ngan': 1000, 'thousand': 1000,
+                'tr': 1_000_000, 'trieu': 1_000_000, 'm': 1_000_000, 'million': 1_000_000}.get(amount.group(2) or '')
+        number = amount.group(1)
+        value = Decimal(number.replace(',', '.')) * unit if unit else Decimal(re.sub(r'[.,]', '', number))
+        if value > 0:
+            args['amount_vnd'] = int(value)
+    info = re.search(r'\b(?:noi dung|content|note|message|ghi chu|memo)\s*:?\s*(.+)$', text)
+    if info:
+        args['add_info'] = info.group(1).strip(' ."\'')
+    name = re.search(r'(?i:\bt[eê]n|account name)\s*:?\s*([A-Z]{2,}(?: [A-Z]{1,})+)', question)
+    if name:
+        args['account_name'] = name.group(1)
+    return BankingRequest('create_vietqr', args)
+
+
 def bind_request(messages: list[dict]) -> BankingRequest:
     question = messages[-1]['content'].strip()
     text = fold(question)
@@ -59,6 +97,10 @@ def bind_request(messages: list[dict]) -> BankingRequest:
             'description': question,
         })
 
+    qr = qr_request(question, text)
+    if qr:
+        return qr
+
     ids = re.findall(r'\bTX-[A-Z0-9-]+\b', question, re.I)
     if not ids and any(term in text for term in ('giao dich do', 'giao dich nay', 'that transaction', 'its status')):
         # Resolve references from user-originated messages only, never model guesses.
@@ -70,6 +112,9 @@ def bind_request(messages: list[dict]) -> BankingRequest:
         if len(set(x.upper() for x in ids)) > 1:
             return BankingRequest(reply='Please choose one demo transaction ID to check at a time.')
         return BankingRequest('get_transaction_status', {'transaction_id': ids[-1].upper()})
+
+    if re.search(r'\b(?:recent transactions|transaction history|my transactions|lich su giao dich|giao dich gan day)\b', text):
+        return BankingRequest('get_recent_transactions', {'limit': 5})
 
     balance = any(term in text for term in BALANCE_WORDS)
     affordability = any(term in text for term in FOLLOW_BALANCE)
@@ -101,9 +146,28 @@ def vnd(amount: int) -> str:
     return f'{amount:,} VND'
 
 
+def render_qr(result: dict) -> str:
+    amount = f' for **{vnd(result["amount_vnd"])}**' if result.get('amount_vnd') else ''
+    info = f' with content "{result["add_info"]}"' if result.get('add_info') else ''
+    # The chat UI renders this line as an image only for VietQR sources.
+    return (f'VietQR code created for **{result["bank"]}** account **••••{result["account_no"][-4:]}**{amount}{info}. '
+            'Scan it with any banking app and confirm the recipient name before paying.\n\n'
+            f'![VietQR]({result["image"]})')
+
+
 def render_result(request: BankingRequest, result: dict) -> str:
+    if result.get('error') == 'TOOL_FAILED':
+        hint = 'Check the bank name (e.g. Vietcombank, VCB, MB, Techcombank).' if result['reason_code'] == 'UNKNOWN_BANK' \
+            else 'The VietQR service did not respond; please try again shortly.'
+        return f'I could not create the VietQR code ({result["reason_code"]}). {hint}'
     if 'error' in result:
         return f'Request blocked ({result["reason_code"]}). No data was returned and no tool was executed for this request.'
+    if request.tool == 'create_vietqr':
+        return render_qr(result)
+    if request.tool == 'get_recent_transactions':
+        lines = [f'• {t["date"]} · {t["description"]} · **{"+" if t["direction"] == "in" else "-"}{vnd(t["amount_vnd"])}** · {t["status"]}'
+                 for t in result['transactions']]
+        return 'Your recent demo transactions:\n' + '\n'.join(lines)
     if request.tool == 'get_account_balance':
         answer = f'The balance of demo account **{result["account_id"]}** is **{vnd(result["balance_vnd"])}**.'
         if request.affordability:

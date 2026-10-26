@@ -1,48 +1,41 @@
-@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes hop { 0%, 70%, 100% { transform: none; } 35% { transform: translateY(-5px); } }
-@keyframes slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+/* ── Motion: entrances, feedback and loading. All disabled under prefers-reduced-motion (responsive.css). ── */
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-left { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes slide-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes reveal { from { opacity: 0; filter: blur(8px); transform: translateY(4px); } to { opacity: 1; filter: none; transform: none; } }
+@keyframes hop { 0%, 70%, 100% { transform: none; } 35% { transform: translateY(-4px); } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgb(21 128 61 / .45); } 70% { box-shadow: 0 0 0 6px rgb(21 128 61 / 0); } 100% { box-shadow: 0 0 0 0 rgb(21 128 61 / 0); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
-/* ── Responsive ── */
-/* Gentle feedback for interactive surfaces. */
-.new-chat svg, .conversation-open svg, .test-button svg, .chip svg, .tile-icon { transition: transform .25s var(--ease); }
-.policy-result > svg { margin-top: 2px; }
-.policy-result > span { min-width: 0; }
-.policy-result strong { display: block; font-size: 14px; }
-.policy-result small { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; }
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .new-chat:hover:not(:disabled) svg { transform: rotate(90deg); }
-  .conversation-open:hover:not(:disabled) svg { transform: translateX(2px); }
-  .test-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 12px rgb(17 36 29 / .12); }
-  .test-button:hover:not(:disabled) svg { transform: translateX(4px); }
-  .chip:hover:not(:disabled) svg { transform: rotate(-8deg); }
-  .tile-action:hover:not(:disabled) .tile-icon { transform: translateY(-3px) rotate(-5deg); }
-  .icon-button:hover:not(:disabled) { transform: translateY(-1px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  button, button:hover, button:active, .composer:focus-within { transform: none !important; }
-}
+/* Page enter: sections cascade in, restarted by App's key on every tab change. */
+.page > :not(dialog), .home-main > *, .home-side > * { animation: rise .45s var(--ease) both; }
+.page > :nth-child(2), .home-main > :nth-child(1), .home-side > :nth-child(1) { animation-delay: .05s; }
+.page > :nth-child(3), .home-main > :nth-child(2), .home-side > :nth-child(2) { animation-delay: .1s; }
+.page > :nth-child(4), .home-main > :nth-child(3) { animation-delay: .15s; }
+.page > :nth-child(5) { animation-delay: .2s; }
+.page > :nth-child(n + 6) { animation-delay: .25s; }
+.home-grid { animation: none !important; }
+.tx-list li, .bank-list li, .settings-list li { animation: rise .35s var(--ease) both; }
+.tx-list li:nth-child(2), .settings-list li:nth-child(2) { animation-delay: .04s; }
+.tx-list li:nth-child(3), .settings-list li:nth-child(3) { animation-delay: .08s; }
+.tx-list li:nth-child(n + 4) { animation-delay: .12s; }
+.service { animation: pop .4s var(--ease) both; }
+.service:nth-child(2) { animation-delay: .03s; } .service:nth-child(3) { animation-delay: .06s; } .service:nth-child(4) { animation-delay: .09s; }
+.service:nth-child(5) { animation-delay: .12s; } .service:nth-child(6) { animation-delay: .15s; } .service:nth-child(7) { animation-delay: .18s; } .service:nth-child(8) { animation-delay: .21s; }
 
-/* Shared dropdown styling: native keyboard behavior with a styled picker. */
-select { color-scheme: light; }
-select option { background: var(--paper); color: var(--ink); font-weight: 500; }
-select:disabled { cursor: not-allowed; opacity: .55; }
-.user-select-wrap:has(select:disabled) { cursor: not-allowed; }
-.model-pill.is-connecting .status-dot { background: #8a7142; box-shadow: 0 0 0 3px rgb(138 113 66 / .12); }
-@supports (appearance: base-select) {
-  .user-select-wrap select, .policy-test select, select::picker(select) { appearance: base-select; }
-  .user-select-wrap select { display: flex; align-items: center; gap: 12px; }
-  .user-select-wrap > svg:last-child { display: none; }
-  .policy-test select { display: flex; align-items: center; justify-content: space-between; }
-  select::picker(select) {
-    margin-top: 6px; padding: 6px; border: 1px solid #a5b99c; border-radius: 14px;
-    background: var(--paper); color: var(--ink); box-shadow: 0 12px 32px rgb(17 36 29 / .18);
-    max-height: min(320px, 60dvh); overflow-y: auto; font: 500 14px var(--font-body);
-  }
-  select option { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
-  select option:hover, select option:focus { background: var(--sage); color: var(--forest-800); outline: none; }
-  select option:checked { background: var(--forest-800); color: var(--paper); font-weight: 700; }
-  select option::checkmark { order: 1; margin-left: auto; }
-  select::picker-icon { color: var(--sage-ink); transition: rotate .2s var(--ease); }
-  select:open::picker-icon { rotate: 180deg; }
-}
+/* Press feedback on everything tappable. */
+:is(.primary-button, .secondary-button, .danger-button, .tool-button, .service, .quick-actions button, .tx, .banner,
+  .suggestion, .assistant-card, .chips button, .amount-chips button, .nav-item, .eye-button, .account-no, .bank-trigger):active:not(:disabled) { transform: scale(.97); }
 
+/* Skeletons while the profile loads. */
+.skeleton { display: block; border-radius: 8px; background: linear-gradient(90deg, #ece9f4 25%, #f7f5fb 50%, #ece9f4 75%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }
+.account-card .skeleton { background: linear-gradient(90deg, rgb(255 255 255 / .1) 25%, rgb(255 255 255 / .22) 50%, rgb(255 255 255 / .1) 75%); background-size: 200% 100%; }
+.skeleton-text { width: 130px; height: 24px; }
+.skeleton-balance { width: 220px; height: 34px; }
+.skeleton-row { height: 52px; margin: 8px 0; }
+.tx-list li.skeleton + li.skeleton { border-top: 0; }
+.tx-list li.skeleton { animation: shimmer 1.3s linear infinite; }

@@ -1,7 +1,5 @@
 @import './styles/base.css';
-@import './styles/sidebar.css';
-@import './styles/layout.css';
 @import './styles/chat.css';
-@import './styles/insights.css';
+@import './styles/app.css';
 @import './styles/interactions.css';
 @import './styles/responsive.css';

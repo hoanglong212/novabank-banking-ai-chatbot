@@ -3,12 +3,14 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from .agent import make_agent
-from .auth import DemoPrincipal, DEMO_USERS, authenticate
+from . import vietqr
+from .auth import DemoPrincipal, TTL_SECONDS, authenticate, issue_token, login
 from .config import provider, setting
 from .database import Database
-from .gateway import PolicyGateway
-from .schemas import ConversationCreate, SendMessage, DemoToolCheck
-from .tools import ToolDispatcher
+from .gateway import PolicyGateway, TRANSACTION_OWNERS
+from .guard import inspect_prompt
+from .schemas import ConversationCreate, SendMessage, DemoToolCheck, LoginRequest, VietQRArgs
+from .tools import ACCOUNTS, TRANSACTIONS, ToolDispatcher
 from .readiness import readiness
 from .web import mount_frontend
 
@@ -47,10 +49,36 @@ async def health():
 app.add_api_route('/api/ready', readiness, methods=['GET'])
 
 
-@app.get('/api/demo/users')
-async def demo_users():
-    # Exposes local demo identity tokens intentionally; NEVER deploy to the public internet.
-    return [{'id': u.id, 'name': u.name, 'token': u.token} for u in DEMO_USERS]
+@app.post('/api/auth/login')
+async def sign_in(payload: LoginRequest):
+    user = login(payload.username, payload.password)
+    return {'access_token': issue_token(user), 'token_type': 'bearer', 'expires_in': TTL_SECONDS,
+            'user': {'id': user.id, 'name': user.name}}
+
+
+@app.get('/api/me')
+async def me(user: DemoPrincipal = Depends(current_user)):
+    # Direct read of the signed-in customer's own demo data; the agent still goes through ToolDispatcher.
+    owned = [{'id': tx_id, **TRANSACTIONS[tx_id]} for tx_id, owner in TRANSACTION_OWNERS.items() if owner == user.id]
+    return {'id': user.id, 'name': user.name,
+            'accounts': [{'id': acc, **ACCOUNTS[acc]} for acc in user.accounts],
+            'transactions': sorted(owned, key=lambda t: t['date'], reverse=True)}
+
+
+@app.get('/api/vietqr/banks')
+async def vietqr_banks(user: DemoPrincipal = Depends(current_user)):
+    try:
+        return [{k: b.get(k) for k in ('bin', 'code', 'shortName', 'name', 'logo')} for b in await vietqr.banks()]
+    except vietqr.VietQRError as exc:
+        raise HTTPException(status_code=502, detail='VietQR bank list is unavailable') from exc
+
+
+@app.post('/api/vietqr')
+async def create_vietqr(payload: VietQRArgs, user: DemoPrincipal = Depends(current_user)):
+    try:
+        return await vietqr.generate(**payload.model_dump(exclude_none=True))
+    except vietqr.VietQRError as exc:
+        raise HTTPException(status_code=400 if exc.reason_code == 'UNKNOWN_BANK' else 502, detail=exc.reason_code) from exc
 
 
 @app.get('/api/conversations')
@@ -89,7 +117,13 @@ async def get_events(conversation_id: str, user: DemoPrincipal = Depends(current
 async def send_message(conversation_id: str, payload: SendMessage, user: DemoPrincipal = Depends(current_user)):
     db = get_db()
     require_own_conversation(db, conversation_id, user)
-    db.append_message(conversation_id, 'user', payload.content)
+    # Guard runs before anything is stored or reaches a model.
+    verdict = inspect_prompt(payload.content)
+    db.append_message(conversation_id, 'user', verdict.text)
+    if verdict.reason:
+        db.add_event(conversation_id, 'input_guard', {}, 'DENY', verdict.reason, executed=False)
+        answer = db.append_message(conversation_id, 'assistant', verdict.reply)
+        return {'message': answer, 'tool_events': db.list_events(conversation_id)[-12:], 'response_source': 'input_guard'}
     history = db.list_messages(conversation_id)
     dispatcher = ToolDispatcher(db, PolicyGateway())
     agent = make_agent()

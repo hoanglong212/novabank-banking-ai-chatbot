@@ -1,53 +1,55 @@
-@media (max-width: 1279px) {
-  .inspector { position: absolute; top: 0; right: 0; bottom: 0; box-shadow: -12px 0 40px rgb(8 46 35 / .18); }
-  .inspector-overlay { display: block; position: absolute; inset: 0; z-index: 24; border: 0; background: rgb(8 46 35 / .35); }
+@media (max-width: 1023px) {
+  .home-grid, .qr-layout { grid-template-columns: minmax(0, 1fr); }
+  .qr-result { position: static; min-height: 0; padding-top: 28px; padding-bottom: 28px; }
+  .banner-strip { grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 1100px) {
-  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tile-hero { grid-column: 1 / -1; grid-row: auto; min-height: 280px; }
-  .tone-balance, .tone-support, .tile-safety { grid-column: 1 / -1; }
-  .tone-transfer { grid-column: 1; }
-  .tone-faq { grid-column: 2; }
-}
+
+/* ── Phones: bottom tab bar with a raised QR button, bottom sheets ── */
 @media (max-width: 767px) {
-  .sidebar { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); transform: translateX(-100%); visibility: hidden; transition: transform .25s var(--ease), visibility .25s; background: #e1e9de; color: var(--ink); border-right: 1px solid #bdcdb8; }
-  .sidebar-open { transform: none; visibility: visible; }
-  .mobile-close { display: grid; margin-left: auto; color: var(--ink); }
-  .mobile-close:hover { background: var(--sage) !important; }
-  .mobile-overlay { display: block; position: fixed; inset: 0; z-index: 29; border: 0; background: rgb(5 36 27 / .55); }
-  .menu-button { display: grid; }
-  .topbar { height: 60px; padding: 0 12px 0 8px; gap: 8px; }
-  .topbar-title { font-size: 17px; }
-  .model-pill { display: none; }
-  .user-select-wrap { padding: 0 12px; }
-  .user-select-wrap > svg:first-child { display: none; }
-  .user-select-wrap select { max-width: 104px; }
-  .messages-inner { padding: 14px 14px 20px; }
-  .bento { gap: 10px; grid-auto-rows: minmax(140px, auto); }
-  .tile { border-radius: 22px; }
-  .tile-hero { min-height: 0; padding: 22px; }
-  .tile-hero::before { width: 200px; height: 200px; border-width: 30px; right: -70px; bottom: -90px; }
-  .tile-hero::after { right: 24px; top: 26px; width: 18px; height: 18px; }
-  .tile-hero h1 { font-size: 36px; padding-top: 22px; }
-  .tile-hero h1 > span { font-size: 20px; }
-  .tile-action { padding: 16px; }
-  .tile-go { top: 14px; right: 14px; width: 34px; height: 34px; }
-  .tile-icon { width: 42px; height: 42px; border-radius: 13px; }
-  .tile-body strong { font-size: 19px; }
-  .tile-detail { font-size: 13px; }
-  .tile-safety { padding: 16px 18px; }
-  .tile-safety p { font-size: 14px; }
-  .chat-thread { padding-top: 4px; }
-  .message-body { max-width: 86%; }
-  .message-content { font-size: 15px; padding: 12px 15px; }
-  .composer-area { padding: 8px 12px 12px; }
+  .app-shell { flex-direction: column-reverse; }
+  .app-nav { position: fixed; inset: auto 0 0 0; height: auto; gap: 0; padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -8px 24px -16px rgb(26 16 52 / .3); }
+  .nav-brand, .nav-user { display: none; }
+  .nav-profile-item { display: flex !important; }
+  .nav-items { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 0; width: 100%; }
+  .nav-item { flex-direction: column; justify-content: center; gap: 3px; height: auto; min-height: 54px; padding: 2px 0; font-size: 11px; }
+  .nav-item::after { display: none; }
+  .nav-item[aria-current='page'] { color: var(--brand-700); }
+  .nav-item[aria-current='page'] .nav-icon { transform: translateY(-2px); }
+  .nav-qr .nav-icon { width: 56px; height: 56px; margin-top: -26px; border: 4px solid #fff; border-radius: 50%; background: var(--hero); color: #fff; box-shadow: 0 8px 18px -6px rgb(59 18 134 / .7); }
+  .nav-qr[aria-current='page'] .nav-icon { transform: translateY(-2px) scale(1.05); }
+  .app-main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .page { gap: 14px; padding: 18px 14px 28px; }
+  .page-title { font-size: 22px; }
+  .card { padding: 16px; }
+  .service-grid { gap: 16px 4px; }
+  .service { font-size: 12px; }
+  .service-icon { width: 46px; height: 46px; }
+  .banner-strip { display: flex; gap: 10px; margin: 0 -14px; padding: 0 14px 4px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .banner { flex: 0 0 82%; scroll-snap-align: start; }
+  .month-totals strong { font-size: 17px; }
+  .sheet, .sheet-right { width: 100%; height: fit-content; margin: auto 0 0; }
+  .sheet-body, .sheet-right .sheet-body { width: 100%; height: auto; max-height: 88dvh; border-radius: 22px 22px 0 0; padding-bottom: env(safe-area-inset-bottom); animation: slide-up .3s var(--ease) both; }
+  .sheet-head::before { content: ''; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; border-radius: 4px; background: var(--line-strong); transform: translateX(-50%); }
+  .sheet-head { position: relative; padding-top: 22px; }
+  .login-page { grid-template-columns: 1fr; background: var(--hero); }
+  .login-hero { display: none; }
+  .login-mark { display: grid; width: 52px; height: 52px; border-radius: 16px; font-size: 24px; }
+  .login-card { padding: 28px 22px; }
+  .login-foot { color: rgb(255 255 255 / .85); }
+  .topbar { height: 58px; padding: 0 12px; }
+  .tool-button { width: 38px; padding: 0; justify-content: center; }
+  .tool-button span { display: none; }
+  .messages-inner { padding: 18px 14px 20px; }
+  .welcome { margin-top: 2vh; }
+  .welcome h1 { font-size: 21px; }
+  .message-body { max-width: 88%; }
+  .bot-icon { display: none; }
+  .message-content { padding: 11px 14px; font-size: 14.5px; }
+  .composer-area { padding: 8px 12px 10px; }
   .quick-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
   .chip { flex-shrink: 0; }
-  .composer { padding-left: 16px; }
   .composer-foot { justify-content: center; }
   .composer-foot > span:last-child { display: none; }
-  .inspector { width: min(360px, 100%); }
-  .conversation-remove { opacity: 1; color: var(--muted); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

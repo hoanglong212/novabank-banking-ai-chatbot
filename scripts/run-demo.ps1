@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('configured', 'mock', 'ollama')][string]$Mode = 'configured',
+    [ValidateSet('configured', 'mock', 'ollama', 'langgraph')][string]$Mode = 'configured',
     [ValidateRange(1024, 65535)][int]$Port = 8080,
     [switch]$Setup,
     [switch]$SkipBuild,

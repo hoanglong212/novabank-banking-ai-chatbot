@@ -12,7 +12,7 @@ A research **demo**, not a banking service. Built for Group 10's Runtime Securit
 - Two modes: `mock` for immediate offline functional demonstration; `ollama` for **guarded Llama 3.2 3B native tool proposals with application-bound inputs and replies**.
 - Proposed adapter interface for the Group 10 gateway. This project **does not claim to have integrated the group's actual gateway**.
 
-> **Safety notice:** Two demo tokens ship with the frontend; selecting a different user is possible. This is NOT real authentication, and it must not be exposed publicly or connected to actual banking APIs / customer PII. The local policy is a functional placeholder, NOT verified banking-grade security.
+> **Safety notice:** Sign-in uses two fixed demo customers (`alice` / `Alice@2026`, `bob` / `Bob@2026`) with PBKDF2 password hashes and 60-minute HS256 JWTs. There is no MFA, refresh token or revocation, so this is NOT production authentication, and it must not be exposed publicly or connected to actual banking APIs / customer PII. The local policy is a functional placeholder, NOT verified banking-grade security.
 
 ## 1. Requirements
 
@@ -74,7 +74,7 @@ npm install
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Choose demo **Alice** or **Bob** from the sidebar. FastAPI docs: **http://127.0.0.1:8000/docs**.
+Open **http://127.0.0.1:5173**. Sign in as `alice` / `Alice@2026` or `bob` / `Bob@2026`. FastAPI docs: **http://127.0.0.1:8000/docs**.
 
 ### macOS / Linux
 
@@ -118,6 +118,18 @@ OLLAMA_URL=http://localhost:11434
 
 Llama 3.2 3B can have weaker Vietnamese/tool-choice accuracy than larger models. Test with the [demo scenarios](docs/DEMO_SCRIPT.md), not just one happy path. If Ollama cannot be reached, the backend returns an explicit 503 rather than silently faking a model response.
 
+### LangGraph agent (`LLM_PROVIDER=langgraph`)
+
+`backend/app/graph_agent.py` runs a LangGraph tool-calling loop (`agent ⇄ tools`) on `ChatOllama`. Unlike `ollama` mode, the model chooses tools and writes the final reply itself:
+
+1. **Input guard** (`backend/app/guard.py`, runs for every mode before storage): refuses prompt-injection attempts and redacts card numbers, OTP/PIN/CVV and passwords.
+2. **Pseudonymization**: emails, phone numbers, national IDs, bank account numbers and upper-case account names become tokens such as `<ACCOUNT_1>` before the model sees them; values are restored only inside tool calls and in the final reply.
+3. **Tools** still run only through `ToolDispatcher` (schema validation, policy gateway, audit). Audit arguments are masked (`******6789`).
+
+### VietQR payment codes (all modes)
+
+Ask e.g. *"Create a VietQR for Vietcombank account 0123456789, 50k, content coffee"*. The `create_vietqr` tool resolves the bank via `https://api.vietqr.io/v2/banks`, then calls `/v2/generate` when `VIETQR_CLIENT_ID`/`VIETQR_API_KEY` are set, or the public `img.vietqr.io` Quick Link otherwise. The chat only renders images from those VietQR sources.
+
 ## 4. Four simulated tools
 
 | Tool | Input | Description | Policy |
@@ -136,7 +148,10 @@ The right-side **Policy test** panel is **dry-run only**: it shows allow/deny de
 ```text
 GET    /api/health
 GET    /api/ready                        (checks configured model availability)
-GET    /api/demo/users                    (DEMO ONLY)
+POST   /api/auth/login                    {username, password} -> JWT
+GET    /api/me                            own profile, accounts, transactions
+GET    /api/vietqr/banks                  VietQR bank list
+POST   /api/vietqr                        create a VietQR code
 GET    /api/conversations
 POST   /api/conversations
 GET    /api/conversations/{id}/messages
@@ -146,7 +161,7 @@ DELETE /api/conversations/{id}
 POST   /api/conversations/{id}/demo/tool-check     (DRY RUN)
 ```
 
-Protected endpoints require `Authorization: Bearer demo-alice-token` (or Bob's **insecure demo token**). Conversation ownership is verified server-side; an ID alone cannot open someone else's history.
+Protected endpoints require `Authorization: Bearer <access_token>` from `/api/auth/login`; five failed sign-ins lock a username for 5 minutes. Conversation ownership is verified server-side; an ID alone cannot open someone else's history.
 
 ## 6. Run backend automated tests
 
@@ -208,7 +223,7 @@ See [architecture](docs/ARCHITECTURE.md) and [security limits](docs/SECURITY_AND
 
 ## 9. What remains to finish in the next iteration
 
-- Real identity provider/OIDC; do not deploy demo tokens.
+- Real identity provider/OIDC, MFA and token revocation; do not deploy the demo passwords.
 - Wire in Group 10's real security gateway with contract tests.
 - Measure tool-calling accuracy and Vietnamese conversational utility using real Ollama.
 - Optionally add real token streaming/SSE (currently the UI shows a loading indicator while waiting for a complete reply).

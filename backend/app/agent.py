@@ -100,4 +100,8 @@ class OllamaAgent:
 
 
 def make_agent():
-    return OllamaAgent() if provider() == 'ollama' else MockAgent()
+    mode = provider()
+    if mode == 'langgraph':
+        from .graph_agent import LangGraphAgent  # optional heavy dependency; mock mode runs without it
+        return LangGraphAgent()
+    return OllamaAgent() if mode == 'ollama' else MockAgent()
