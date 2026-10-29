@@ -49,7 +49,20 @@ Ollama must be running. The launcher uses `OLLAMA_URL` and `OLLAMA_MODEL` from
 check an existing build and model without starting the server, `-SkipBuild` to
 reuse an unchanged frontend build, or `-Port 8081` if port 8080 is occupied.
 
-For an optional single-container mock demo, see [simple demo setup](docs/SIMPLE_DEMO.md).
+### Docker: one container, no Node.js or Python needed
+
+With Docker Desktop running (Linux containers), from the repository root:
+
+```powershell
+docker build -t novabank-demo .
+docker run --rm --name novabank-demo -p 127.0.0.1:8080:8000 novabank-demo
+```
+
+Open **http://127.0.0.1:8080** and sign in as `alice` / `Alice@2026`. This runs mock mode
+offline; `--rm` starts with an empty database each run. Keep the port bound to
+`127.0.0.1` because the demo logins are public. For host Ollama
+(`-e LLM_PROVIDER=ollama -e OLLAMA_URL=http://host.docker.internal:11434`) and
+troubleshooting, see [simple demo setup](docs/SIMPLE_DEMO.md).
 
 ### Development: two terminals with automatic reload
 
