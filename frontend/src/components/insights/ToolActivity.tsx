@@ -13,6 +13,7 @@ const ACTIONS: Record<string, string> = {
   search_banking_faq: 'Help article search',
   create_support_ticket: 'Support ticket',
   create_vietqr: 'VietQR code',
+  create_transfer: 'Transfer draft (needs your OTP)',
   input_guard: 'Message screening',
 };
 

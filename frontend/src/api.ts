@@ -1,4 +1,4 @@
-import type { Conversation, ChatMessage, DemoUser, ToolEvent, SendResponse, Health, Decision, LoginResponse, Profile, Bank, VietQR } from './types';
+import type { Conversation, ChatMessage, DemoUser, ToolEvent, SendResponse, Health, Decision, LoginResponse, Profile, Bank, VietQR, Transfer } from './types';
 
 const PREFIX = '/api';
 let onUnauthorized: () => void = () => { };
@@ -30,6 +30,12 @@ export const api = {
   banks: (user: DemoUser) => request<Bank[]>('/vietqr/banks', user),
   createVietQR: (user: DemoUser, body: Record<string, unknown>) =>
     request<VietQR>('/vietqr', user, { method: 'POST', body: JSON.stringify(body) }),
+  createTransfer: (user: DemoUser, body: Record<string, unknown>) =>
+    request<Transfer>('/transfers', user, { method: 'POST', body: JSON.stringify(body) }),
+  resendOtp: (user: DemoUser, id: string) =>
+    request<Transfer>(`/transfers/${encodeURIComponent(id)}/otp`, user, { method: 'POST' }),
+  confirmTransfer: (user: DemoUser, id: string, otp: string) =>
+    request<Transfer>(`/transfers/${encodeURIComponent(id)}/confirm`, user, { method: 'POST', body: JSON.stringify({ otp }) }),
   listConversations: (user: DemoUser) => request<Conversation[]>('/conversations', user),
   createConversation: (user: DemoUser, title = 'New conversation') =>
     request<Conversation>('/conversations', user, { method: 'POST', body: JSON.stringify({ title }) }),

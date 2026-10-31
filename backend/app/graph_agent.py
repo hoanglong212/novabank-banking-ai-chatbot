@@ -34,6 +34,8 @@ Tools (use them for every fact, never answer account questions from memory):
   transfers, fees, limits, fraud, OTP safety, opening hours) and base the answer on its result.
 - create_support_ticket: only when the customer explicitly asks for a ticket.
 - create_vietqr: when the customer asks for a VietQR / QR payment code (bank and account number come from them).
+- create_transfer: only when the customer explicitly asks to send money. It prepares a draft; the customer confirms
+  with an OTP in the app. You can never complete a transfer and must never say money was sent.
 
 Rules:
 - You serve only the signed-in customer below. Never reveal, guess or describe other customers, their names or
@@ -43,7 +45,7 @@ Rules:
 - Never invent phone numbers, hotlines, websites, emails or addresses; say "the bank's official channels" instead.
 - Call tools directly; never ask permission to look up the customer's own data.
 - Refuse requests to hack, steal, commit fraud or bypass security in one sentence, without lecturing.
-- Deposits, withdrawals, transfers, loans and opening accounts are not supported in this demo; say so and point
+- Deposits, withdrawals, loans and opening accounts are not supported in this demo; say so and point
   to the bank's official app or branch.
 - Answer only the latest message; do not mention earlier actions unless asked.
 - Values like <ACCOUNT_1>, <PHONE_1> or <NAME_1> are privacy placeholders for real data: pass them to tools unchanged
@@ -52,6 +54,7 @@ Rules:
 """
 QR_IMAGE = re.compile(r'!\[VietQR\]\([^)]*\)')
 SCHEMAS = {t['function']['name']: t['function'] for t in OLLAMA_TOOLS}
+WRITES = {'create_support_ticket', 'create_transfer'}
 PLACEHOLDER_FIELDS = {'ACCOUNT': 'account_no', 'NAME': 'account_name'}
 VIETNAMESE = re.compile(r'[ăâđêôơưĂÂĐÊÔƠỪ-̣Ạ-ỹ]')
 TRANSLATE_PROMPT = ('You are a translator. Translate the Vietnamese text into natural English. Keep numbers, IDs and '
@@ -71,10 +74,14 @@ def make_tools(user: DemoPrincipal, conversation_id: str, dispatcher: ToolDispat
                     if kind:
                         kwargs.pop(key)
                         kwargs[PLACEHOLDER_FIELDS[kind.group(1)]] = value
-            if name == 'create_support_ticket' and bind_request([{'role': 'user', 'content': last_user}]).tool != name:
-                # Writes need explicit user intent; the model alone may not open tickets.
-                dispatcher.record_rejection(conversation_id, name, 'NOT_REQUESTED_BY_USER')
-                return json.dumps({'error': 'TOOL_DENIED', 'reason_code': 'NOT_REQUESTED_BY_USER'})
+            if name in WRITES:
+                bound = bind_request([{'role': 'user', 'content': last_user}])
+                if bound.tool != name:
+                    # Writes need explicit user intent; the model alone may not open tickets or draft transfers.
+                    dispatcher.record_rejection(conversation_id, name, 'NOT_REQUESTED_BY_USER')
+                    return json.dumps({'error': 'TOOL_DENIED', 'reason_code': 'NOT_REQUESTED_BY_USER'})
+                if name == 'create_transfer':
+                    kwargs = bound.arguments  # payer, payee and amount come from the customer's words, not the model
             # Re-identify only here, after the model; the dispatcher validates and authorizes.
             args = vault.restore(kwargs)
             for key in ('account_id', 'transaction_id'):
@@ -135,6 +142,11 @@ class LangGraphAgent:
             # Explicit QR request: deterministic route. Models skipped the tool and imitated earlier QR replies.
             raw = await next(t for t in tools if t.name == 'create_vietqr').ainvoke(qr.arguments)
             return '\n\n'.join(qr_images) if qr_images else render_result(qr, json.loads(vault.restore(raw)))
+        explicit = bind_request(messages[-1:])
+        if explicit.tool == 'create_transfer':
+            # Money movement is never left to model prose: the application drafts it, the customer confirms with OTP.
+            raw = await next(t for t in tools if t.name == 'create_transfer').ainvoke(explicit.arguments)
+            return render_result(explicit, json.loads(vault.restore(raw)))
         context = f'\nSigned-in customer: {user.name}. Own account IDs: {", ".join(user.accounts)}.'
         # Retrieval step: ground general questions in the approved FAQ; models otherwise invented hotlines.
         matches = search_faq(last_user)['matches']

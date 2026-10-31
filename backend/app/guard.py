@@ -7,6 +7,12 @@
 """
 import re
 from dataclasses import dataclass
+import regex
+from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer, RecognizerRegistry
+from presidio_analyzer.nlp_engine import NoOpNlpEngine
+from presidio_analyzer.predefined_recognizers import PhoneRecognizer
+from presidio_anonymizer import AnonymizerEngine
+from presidio_anonymizer.entities import OperatorConfig
 from .faq import fold
 
 CARD = re.compile(r'(?<!\d)(?:\d[ -]?){15,18}\d(?!\d)')
@@ -19,16 +25,28 @@ INJECTION = re.compile(
     r'|system prompt|developer mode|jailbreak|\bdan mode\b|you are now\b'
     r'|act as (?:an? )?(?:admin|administrator|developer|root)|ban bay gio la|gia vo (?:la|lam)')
 
-# Order matters: keyword-anchored patterns first, so "account 012345678901" is not taken for an ID.
-PII = (
-    ('EMAIL', re.compile(r'[\w.+-]+@[\w-]+\.[\w.-]+')),
+def _pattern(entity: str, expression: str, score: float) -> PatternRecognizer:
+    # Case-sensitive on purpose (NAME needs upper case); keywords use inline (?i:). Presidio compiles with
+    # the `regex` module, which allows the variable-length lookbehinds that keep keywords out of the match.
+    return PatternRecognizer(entity, patterns=[Pattern(entity, expression, score)],
+                             global_regex_flags=regex.DOTALL | regex.MULTILINE)
+
+
+# Microsoft Presidio detects the PII. Scores settle overlaps: a keyword-anchored account beats a phone
+# or ID reading of the same digits. No NLP model: Vietnamese has no Presidio NER, and the patterns need none.
+_registry = RecognizerRegistry(recognizers=[
+    _pattern('EMAIL', r'[\w.+-]+@[\w-]+\.[\w.-]+', 1.0),
     # Only digits introduced as an account, so amounts like 500000 stay readable for the model.
-    ('ACCOUNT', re.compile(r'(?i:\bstk|s[oố]\s*t[aà]i\s*kho[aả]n|t[aà]i\s*kho[aả]n|account(?:\s*(?:no|number))?)\s*[:#]?\s*(\d{6,19})\b')),
+    _pattern('ACCOUNT', r'(?<=(?i:\bstk|s[oố]\s*t[aà]i\s*kho[aả]n|t[aà]i\s*kho[aả]n|account(?:\s*(?:no|number))?)\s*[:#]?\s*)\d{6,19}\b', 0.9),
     # VietQR account names are upper case without diacritics.
-    ('NAME', re.compile(r'(?i:\bt[eê]n|account name|ch[uủ] t[aà]i kho[aả]n)\s*:?\s*([A-Z]{2,}(?: [A-Z]{1,})+)')),
-    ('PHONE', re.compile(r'(?<!\d)(?:\+84|84|0)[35789]\d{8}(?!\d)')),
-    ('NATIONAL_ID', re.compile(r'(?<!\d)\d{12}(?!\d)')),
-)
+    _pattern('NAME', r'(?<=(?i:\bt[eê]n|account name|ch[uủ] t[aà]i kho[aả]n)\s*:?\s*)[A-Z]{2,}(?: [A-Z]{1,})+', 0.85),
+    # libphonenumber validation for Vietnam, including "+84 91 234 5678".
+    PhoneRecognizer(supported_regions=['VN'], supported_entity='PHONE'),
+    _pattern('NATIONAL_ID', r'(?<!\d)\d{12}(?!\d)', 0.3),
+])
+ANALYZER = AnalyzerEngine(registry=_registry, nlp_engine=NoOpNlpEngine(models=[{'lang_code': 'en', 'model_name': 'none'}]))
+ANONYMIZER = AnonymizerEngine()
+KINDS = ('EMAIL', 'ACCOUNT', 'NAME', 'PHONE', 'NATIONAL_ID')
 TOKEN = re.compile(r'<(?:EMAIL|PHONE|NATIONAL_ID|ACCOUNT|NAME)_\d+>')
 
 
@@ -84,12 +102,12 @@ class Pseudonymizer:
         return self.token[value]
 
     def pseudonymize(self, text: str) -> str:
-        for kind, pattern in PII:
-            if pattern.groups:
-                text = pattern.sub(lambda m: m.group()[:m.start(1) - m.start()] + self._swap(kind, m.group(1)), text)
-            else:
-                text = pattern.sub(lambda m: self._swap(kind, m.group()), text)
-        return text
+        found = ANALYZER.analyze(text, language='en', entities=list(KINDS))
+        # Number tokens in reading order (the anonymizer replaces right to left); the higher score claims shared digits.
+        for r in sorted(found, key=lambda r: (r.start, -r.score)):
+            self._swap(r.entity_type, text[r.start:r.end])
+        operators = {kind: OperatorConfig('custom', {'lambda': lambda value: self.token[value]}) for kind in KINDS}
+        return ANONYMIZER.anonymize(text, found, operators).text
 
     def restore(self, value):
         if isinstance(value, str):

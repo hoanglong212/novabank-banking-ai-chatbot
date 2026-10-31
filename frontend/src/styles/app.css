@@ -118,7 +118,10 @@
 .tx-detail { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .tx-detail-amount { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .tx-detail-amount.in { color: var(--ok); }
-.tx-detail .secondary-button { width: 100%; margin-top: 6px; }
+.tx-detail .secondary-button, .tx-detail .primary-button { width: 100%; margin-top: 6px; }
+.sms-box { display: flex; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--subtle); font-size: 13.5px; line-height: 1.5; }
+.sms-box svg { flex-shrink: 0; margin-top: 2px; color: var(--brand-700); }
+.otp-input { letter-spacing: .5em; text-align: center; font-variant-numeric: tabular-nums; }
 .detail-list { display: grid; width: 100%; margin: 6px 0 0; text-align: left; }
 .detail-list > div { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .detail-list dt { color: var(--muted); }

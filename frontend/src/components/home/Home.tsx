@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ArrowDownLeft, ArrowUpRight, Check, ChevronRight, ClipboardList, Copy, CreditCard, Eye, EyeOff,
+  ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Check, ChevronRight, ClipboardList, Copy, CreditCard, Eye, EyeOff,
   MapPin, MessageCircle, Percent, QrCode, ReceiptText, ShieldCheck,
 } from 'lucide-react';
 
@@ -13,18 +13,19 @@ interface HomeProps {
   profile: Profile | null;
   navigate: (tab: Tab) => void;
   ask: (text: string) => void;
+  transfer: () => void;
 }
 
-export function Home({ user, profile, navigate, ask }: HomeProps) {
+export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
   // Hidden by default, as in banking apps: shoulder-surfing protection until the customer asks.
   const [shown, setShown] = useState(false);
   const [copied, setCopied] = useState(false);
   const account = profile?.accounts[0];
 
   const quick = [
+    { label: 'Transfer', icon: ArrowLeftRight, run: transfer },
     { label: 'VietQR', icon: QrCode, run: () => navigate('qr') },
     { label: 'History', icon: ReceiptText, run: () => navigate('activity') },
-    { label: 'Support', icon: ClipboardList, run: () => ask('Create a support ticket for my pending transaction') },
     { label: 'Assistant', icon: MessageCircle, run: () => navigate('assistant') },
   ];
   const services = [

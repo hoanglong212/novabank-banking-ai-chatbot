@@ -100,3 +100,4 @@
 .event-label { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .event-label.allowed { background: var(--ok-bg); color: var(--ok); }
 .event-label.denied { background: var(--danger-bg); color: var(--danger); }
+.draft-button { margin-top: 8px; min-height: 40px; }

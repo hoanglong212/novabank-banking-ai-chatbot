@@ -40,6 +40,67 @@ def requested_amount(text: str) -> int | None:
     return int(Decimal(match.group(1).replace(',', '.')) * multiplier)
 
 
+def bank_in(text: str, account: str) -> str | None:
+    # "ngan hang X" / "bank X", then "<account> X", then "X account <account>".
+    bank = (re.search(r'\b(?:ngan hang|bank|tai(?! khoan)|at)\s+([a-z0-9]{2,})', text)
+            or re.search(re.escape(account) + r'\s+(?!(?:noi|so|voi|va|and|with|amount|content|note)\b)([a-z][a-z0-9]+)', text)
+            or re.search(r'\b([a-z0-9]{2,})\s+(?:account|tai khoan|stk)\b', text))
+    return bank.group(1) if bank else None
+
+
+def amount_in(text: str) -> int | None:
+    amount = re.search(r'(\d+(?:[.,]\d+)*)\s*(k|nghin|ngan|tr|trieu|m|million|thousand|vnd|dong|d)?\b', text)
+    if not amount:
+        return None
+    unit = {'k': 1000, 'nghin': 1000, 'ngan': 1000, 'thousand': 1000,
+            'tr': 1_000_000, 'trieu': 1_000_000, 'm': 1_000_000, 'million': 1_000_000}.get(amount.group(2) or '')
+    number = amount.group(1)
+    value = Decimal(number.replace(',', '.')) * unit if unit else Decimal(re.sub(r'[.,]', '', number))
+    return int(value) if value > 0 else None
+
+
+CONTENT = re.compile(r'\b(?:noi dung|content|note|message|ghi chu|memo)\s*:?\s*(.+)$')
+
+
+def content_in(text: str) -> str | None:
+    info = CONTENT.search(text)
+    return info.group(1).strip(' ."\'') if info else None
+
+
+NOVA_ID = r'\bACC-[A-Z0-9]+-[A-Z0-9-]+\b'
+TRANSFER_HELP = ('To transfer, tell me the amount and the recipient, for example: "Transfer 200k to ACC-BOB-001 '
+                 'content lunch" or "Transfer 500k to Vietcombank account 0123456789". You confirm it with an OTP in the app.')
+
+
+def transfer_request(question: str, text: str) -> BankingRequest:
+    """Recipient, amount and payer come only from the customer's own words; the gateway checks the payer."""
+    source = re.search(r'\b(?:from|tu)\s+(' + NOVA_ID + ')', question, re.I)
+    internal = [x.upper() for x in re.findall(NOVA_ID, question, re.I) if not source or x.upper() != source.group(1).upper()]
+    head = CONTENT.split(text)[0]  # an amount inside the transfer content is not the amount
+    if internal:
+        args = {'to_bank': 'NovaBank', 'to_account': internal[0]}
+        rest = re.sub(NOVA_ID, ' ', head, flags=re.I)
+    else:
+        numbers = re.findall(r'(?<!\d)\d{6,19}(?!\d)', head)
+        keyed = re.search(r'\b(?:account|tai khoan|stk)(?:\s*(?:no|number|so))?\s*[:#]?\s*(\d{6,19})\b', head)
+        account = keyed.group(1) if keyed else max(numbers, key=len, default=None)
+        bank = account and bank_in(head, account)
+        if not bank:
+            return BankingRequest(reply=TRANSFER_HELP)
+        args = {'to_bank': bank, 'to_account': account}
+        rest = head.replace(account, ' ')
+    amount = amount_in(rest)
+    if not amount:
+        return BankingRequest(reply=TRANSFER_HELP)
+    args['amount_vnd'] = amount
+    if source:
+        args['from_account'] = source.group(1).upper()
+    info = content_in(text)
+    if info:
+        args['content'] = info
+    return BankingRequest('create_transfer', args)
+
+
 QR_HELP = ('To create a VietQR code, tell me the bank and the account number, for example: '
            '"Create a QR for Vietcombank account 0123456789, 500k, content dinner".')
 
@@ -53,25 +114,16 @@ def qr_request(question: str, text: str) -> BankingRequest | None:
     account = keyed.group(1) if keyed else max(numbers, key=len, default=None)
     if not account:
         return BankingRequest(reply=QR_HELP)
-    # "ngan hang X" / "bank X", then "<account> X", then "X account <account>".
-    bank = (re.search(r'\b(?:ngan hang|bank|tai(?! khoan)|at)\s+([a-z0-9]{2,})', text)
-            or re.search(re.escape(account) + r'\s+(?!(?:noi|so|voi|va|and|with|amount|content|note)\b)([a-z][a-z0-9]+)', text)
-            or re.search(r'\b([a-z0-9]{2,})\s+(?:account|tai khoan|stk)\b', text))
+    bank = bank_in(text, account)
     if not bank:
         return BankingRequest(reply=QR_HELP)
-    args = {'bank': bank.group(1), 'account_no': account}
-    rest = text.replace(account, ' ')
-    amount = re.search(r'(\d+(?:[.,]\d+)*)\s*(k|nghin|ngan|tr|trieu|m|million|thousand|vnd|dong|d)?\b', rest)
+    args = {'bank': bank, 'account_no': account}
+    amount = amount_in(text.replace(account, ' '))
     if amount:
-        unit = {'k': 1000, 'nghin': 1000, 'ngan': 1000, 'thousand': 1000,
-                'tr': 1_000_000, 'trieu': 1_000_000, 'm': 1_000_000, 'million': 1_000_000}.get(amount.group(2) or '')
-        number = amount.group(1)
-        value = Decimal(number.replace(',', '.')) * unit if unit else Decimal(re.sub(r'[.,]', '', number))
-        if value > 0:
-            args['amount_vnd'] = int(value)
-    info = re.search(r'\b(?:noi dung|content|note|message|ghi chu|memo)\s*:?\s*(.+)$', text)
+        args['amount_vnd'] = amount
+    info = content_in(text)
     if info:
-        args['add_info'] = info.group(1).strip(' ."\'')
+        args['add_info'] = info
     name = re.search(r'(?i:\bt[eê]n|account name)\s*:?\s*([A-Z]{2,}(?: [A-Z]{1,})+)', question)
     if name:
         args['account_name'] = name.group(1)
@@ -100,6 +152,10 @@ def bind_request(messages: list[dict]) -> BankingRequest:
     qr = qr_request(question, text)
     if qr:
         return qr
+
+    # Before the balance branch: "transfer 200k to ACC-BOB-001" names an account but is not a balance check.
+    if re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:chuyen|transfer|send)\b', text):
+        return transfer_request(question, text)
 
     ids = re.findall(r'\bTX-[A-Z0-9-]+\b', question, re.I)
     if not ids and any(term in text for term in ('giao dich do', 'giao dich nay', 'that transaction', 'its status')):
@@ -132,10 +188,10 @@ def bind_request(messages: list[dict]) -> BankingRequest:
         return BankingRequest('get_account_balance', {'account_id': account} if account else {},
                               amount_vnd=requested_amount(text), affordability=affordability)
 
-    if re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:chuyen|rut|transfer|withdraw)\b', text):
-        return BankingRequest(reply='This demo does not support transfers or withdrawals. No transaction has been performed.')
+    if re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:rut|withdraw)\b', text):
+        return BankingRequest(reply='Cash withdrawals need an ATM or a branch. No transaction has been performed.')
     if re.search(r'\b(?:xin chao|hello|hi|ban co the giup|ban lam duoc|what can you)\b', text):
-        return BankingRequest(reply='Hello! I am your NovaBank demo assistant. I can answer banking and VietQR questions, check demo balances and transactions, or create a support ticket at your request. Real transfers are not supported. Never share OTPs, PINs, or real banking data.')
+        return BankingRequest(reply='Hello! I am your NovaBank demo assistant. I can answer banking and VietQR questions, check demo balances and transactions, prepare a transfer for you to confirm with an OTP, or create a support ticket at your request. Never share OTPs, PINs, or real banking data.')
     if text.rstrip('.! ') in ('cam on', 'cam on ban', 'thank you', 'thanks'):
         return BankingRequest(reply='Happy to help! Feel free to ask another banking question or explore the demo data.')
     # Unrecognized questions use the approved KB, not unconstrained model prose.
@@ -155,7 +211,25 @@ def render_qr(result: dict) -> str:
             f'![VietQR]({result["image"]})')
 
 
+TRANSFER_HINTS = {
+    'INSUFFICIENT_FUNDS': 'Your balance is lower than this amount.',
+    'RECIPIENT_NOT_FOUND': 'Check the NovaBank account ID.',
+    'SAME_ACCOUNT': 'You cannot transfer to the same account.',
+    'UNKNOWN_BANK': 'Check the bank name (e.g. Vietcombank, VCB, MB, Techcombank).',
+    'INVALID_ACCOUNT': 'Other banks use numeric account numbers.',
+}
+
+
 def render_result(request: BankingRequest, result: dict) -> str:
+    if request.tool == 'create_transfer':
+        if 'error' in result:
+            hint = TRANSFER_HINTS.get(result['reason_code'], 'Please try again from the Transfer screen.')
+            return f'I could not prepare this transfer ({result["reason_code"]}). {hint} No money was moved.'
+        account = result['to_account'] if result['to_bank'] == 'NovaBank' else '••••' + result['to_account'][-4:]
+        # The chat UI turns the TRF reference into a "Review & confirm" button.
+        return (f'I prepared a transfer of **{vnd(result["amount_vnd"])}** to **{result["to_bank"]}** account **{account}**. '
+                f'Nothing has been sent yet: review the recipient and confirm with the OTP sent to your phone. '
+                f'Reference **{result["transfer_id"]}**.')
     if result.get('error') == 'TOOL_FAILED':
         hint = 'Check the bank name (e.g. Vietcombank, VCB, MB, Techcombank).' if result['reason_code'] == 'UNKNOWN_BANK' \
             else 'The VietQR service did not respond; please try again shortly.'

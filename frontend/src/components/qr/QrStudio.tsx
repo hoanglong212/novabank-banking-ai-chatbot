@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Download, QrCode } from 'lucide-react';
+import { Download, QrCode, ScanLine } from 'lucide-react';
 
 import { api } from '../../api';
-import type { Bank, DemoUser, VietQR } from '../../types';
+import type { Bank, DemoUser, TransferStart, VietQR } from '../../types';
 import { vnd } from '../../format';
 import { BankPicker } from './BankPicker';
 
 const AMOUNTS = [50000, 100000, 200000, 500000];
 
-export function QrStudio({ user }: { user: DemoUser }) {
+export function QrStudio({ user, pay }: { user: DemoUser; pay: (start: TransferStart) => void }) {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [bank, setBank] = useState('970436');
   const [accountNo, setAccountNo] = useState('');
@@ -97,6 +97,11 @@ export function QrStudio({ user }: { user: DemoUser }) {
                 {qr.amount_vnd && <div><dt>Amount</dt><dd>{vnd(qr.amount_vnd)}</dd></div>}
                 {qr.add_info && <div><dt>Content</dt><dd>{qr.add_info}</dd></div>}
               </dl>
+              {/* Simulates another customer scanning this code: the transfer form opens prefilled from the QR. */}
+              <button className="primary-button" onClick={() => pay({
+                to_bank: qr.bin, to_account: qr.account_no, to_name: qr.account_name || undefined,
+                amount_vnd: qr.amount_vnd ?? undefined, content: qr.add_info || undefined,
+              })}><ScanLine size={18} aria-hidden="true" /> Scan &amp; pay (simulated)</button>
               <a className="secondary-button" href={qr.image} target="_blank" rel="noopener noreferrer"><Download size={18} aria-hidden="true" /> Open image</a>
               <p className="muted small">Anyone scanning this code pays the account above. Always confirm the recipient name in the banking app.</p>
             </>

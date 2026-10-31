@@ -136,21 +136,26 @@ Llama 3.2 3B can have weaker Vietnamese/tool-choice accuracy than larger models.
 `backend/app/graph_agent.py` runs a LangGraph tool-calling loop (`agent ⇄ tools`) on `ChatOllama`. Unlike `ollama` mode, the model chooses tools and writes the final reply itself:
 
 1. **Input guard** (`backend/app/guard.py`, runs for every mode before storage): refuses prompt-injection attempts and redacts card numbers, OTP/PIN/CVV and passwords.
-2. **Pseudonymization**: emails, phone numbers, national IDs, bank account numbers and upper-case account names become tokens such as `<ACCOUNT_1>` before the model sees them; values are restored only inside tool calls and in the final reply.
+2. **Pseudonymization** with [Microsoft Presidio](https://microsoft.github.io/presidio/): emails, phone numbers (libphonenumber, Vietnam), national IDs, bank account numbers and upper-case account names become tokens such as `<ACCOUNT_1>` before the model sees them; values are restored only inside tool calls and in the final reply. Presidio runs with its no-op NLP engine (pattern recognizers only, no spaCy model download).
 3. **Tools** still run only through `ToolDispatcher` (schema validation, policy gateway, audit). Audit arguments are masked (`******6789`).
 
 ### VietQR payment codes (all modes)
 
-Ask e.g. *"Create a VietQR for Vietcombank account 0123456789, 50k, content coffee"*. The `create_vietqr` tool resolves the bank via `https://api.vietqr.io/v2/banks`, then calls `/v2/generate` when `VIETQR_CLIENT_ID`/`VIETQR_API_KEY` are set, or the public `img.vietqr.io` Quick Link otherwise. The chat only renders images from those VietQR sources.
+Ask e.g. _"Create a VietQR for Vietcombank account 0123456789, 50k, content coffee"_. The `create_vietqr` tool resolves the bank via `https://api.vietqr.io/v2/banks`, then calls `/v2/generate` when `VIETQR_CLIENT_ID`/`VIETQR_API_KEY` are set, or the public `img.vietqr.io` Quick Link otherwise. The chat only renders images from those VietQR sources.
 
 ## 4. Four simulated tools
 
-| Tool | Input | Description | Policy |
-|---|---|---|---|
-| `search_banking_faq` | `query` | Searches curated fictional-bank FAQ | Allow if valid |
-| `get_account_balance` | Optional `account_id` | Returns the logged-in demo user's fictional balance | Must own account |
-| `get_transaction_status` | `transaction_id` e.g. `TX-1002` | Looks up a fictional transaction | Must own transaction |
-| `create_support_ticket` | `subject`, `description` | Adds a fictional ticket to local SQLite | Validation + allowlist |
+| Tool                     | Input                           | Description                                         | Policy                 |
+| ------------------------ | ------------------------------- | --------------------------------------------------- | ---------------------- |
+| `search_banking_faq`     | `query`                         | Searches curated fictional-bank FAQ                 | Allow if valid         |
+| `get_account_balance`    | Optional `account_id`           | Returns the logged-in demo user's fictional balance | Must own account       |
+| `get_transaction_status` | `transaction_id` e.g. `TX-1002` | Looks up a fictional transaction                    | Must own transaction   |
+| `create_support_ticket`  | `subject`, `description`        | Adds a fictional ticket to local SQLite             | Validation + allowlist |
+| `create_transfer`        | `to_bank`, `to_account`, `amount_vnd`, optional `from_account` | Prepares a transfer **draft** only | Payer must be own account; user must have asked |
+
+### Simulated transfers
+
+**Home → Transfer**, **VietQR → Scan & pay (simulated)**, or ask Nova *"Transfer 200k to ACC-BOB-001 content lunch"*. Every transfer is draft → review (recipient name) → OTP → receipt. The OTP appears as a simulated SMS in the app; it is never given to the model, and an OTP typed into chat is redacted by the input guard. Confirming debits the payer and, for NovaBank accounts, credits the recipient in one SQLite transaction; a replayed confirm posts nothing. Limits: 1,000–100,000,000 VND per transfer, 200,000,000 VND per day, 3 OTP attempts, OTP valid 2 minutes. Other banks are simulated: the payer is debited and the recipient name is not verified.
 
 Try Alice's balance `ACC-ALICE-001`, Alice transactions `TX-1001` and `TX-1002`, and Bob's transaction `TX-2001`. Alice must **not** be allowed to read `ACC-BOB-001` or `TX-2001`.
 

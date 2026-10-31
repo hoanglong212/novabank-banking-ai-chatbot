@@ -21,7 +21,7 @@ export function BankPicker({ banks, value, onChange }: BankPickerProps) {
   return (
     <>
       <button type="button" className="bank-trigger" onClick={() => setOpen(true)} disabled={!banks.length} aria-haspopup="dialog">
-        {selected ? <img src={selected.logo} alt="" /> : <span className="bank-logo-empty" />}
+        {selected?.logo ? <img src={selected.logo} alt="" /> : <span className="bank-logo-empty" />}
         <span className="bank-names">
           <strong>{selected?.shortName ?? 'Loading banks…'}</strong>
           {selected && <small>{selected.name}</small>}
@@ -37,7 +37,7 @@ export function BankPicker({ banks, value, onChange }: BankPickerProps) {
           {matches.map(b => (
             <li key={b.bin}>
               <button type="button" className={b.bin === value ? 'is-selected' : ''} onClick={() => { onChange(b.bin); setOpen(false); setQuery(''); }}>
-                <img src={b.logo} alt="" loading="lazy" />
+                {b.logo ? <img src={b.logo} alt="" loading="lazy" /> : <span className="bank-logo-empty" />}
                 <span className="bank-names"><strong>{b.shortName}</strong><small>{b.name}</small></span>
                 {b.bin === value && <Check size={18} aria-hidden="true" />}
               </button>

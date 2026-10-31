@@ -10,7 +10,7 @@ import { MessageThread } from './MessageThread';
 import { Welcome } from './Welcome';
 
 // One chat column; history and the security log open as drawers instead of permanent side panels.
-export function Assistant({ chat }: { chat: ReturnType<typeof useBankingChat> }) {
+export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useBankingChat>; openTransfer: (draftId: string) => void }) {
   const [panel, setPanel] = useState<'history' | 'log' | null>(null);
 
   return (
@@ -29,7 +29,7 @@ export function Assistant({ chat }: { chat: ReturnType<typeof useBankingChat> })
             {chat.messages.length === 0 ? (
               <Welcome user={chat.user} busy={chat.busy} pickSuggestion={chat.pickSuggestion} />
             ) : (
-              <MessageThread messages={chat.messages} busy={chat.busy} />
+              <MessageThread messages={chat.messages} busy={chat.busy} openTransfer={openTransfer} />
             )}
             <div ref={chat.endRef} />
           </div>

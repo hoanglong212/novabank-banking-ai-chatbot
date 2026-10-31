@@ -51,6 +51,12 @@ def test_pseudonymizer_round_trip_keeps_amounts():
     assert vault.restore({'account_no': '<ACCOUNT_1>'}) == {'account_no': '0123456789'}
 
 
+def test_presidio_validates_vietnamese_phones_and_prefers_account_keyword():
+    vault = Pseudonymizer()
+    text = vault.pseudonymize('stk 0912345678, gọi +84 91 234 5678, mã 0123456789')
+    assert text == 'stk <ACCOUNT_1>, gọi <PHONE_1>, mã 0123456789'  # 012... is not a valid VN phone
+
+
 def test_audit_mask():
     assert mask({'account_no': '0123456789', 'id': 'ACC-ALICE-001', 'amount': 5}) == \
         {'account_no': '******6789', 'id': 'ACC-ALICE-001', 'amount': 5}

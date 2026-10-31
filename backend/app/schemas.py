@@ -55,6 +55,20 @@ class VietQRArgs(BaseModel):
     account_name: str | None = Field(default=None, max_length=50)
 
 
+class TransferArgs(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    from_account: str | None = Field(default=None, max_length=40, description='Payer account; omit for the customer own account')
+    to_bank: str = Field(default='NovaBank', min_length=2, max_length=40, description='NovaBank, or a bank short name/code/BIN')
+    to_account: str = Field(pattern=r'^(?i:ACC-[A-Z0-9-]{3,30}|\d{6,19})$', description='NovaBank ID like ACC-BOB-001 or a bank account number')
+    amount_vnd: int = Field(ge=1000, le=100_000_000)
+    content: str | None = Field(default=None, max_length=80)
+    to_name: str | None = Field(default=None, max_length=50)
+
+
+class TransferConfirm(BaseModel):
+    otp: str = Field(pattern=r'^\d{6}$')
+
+
 class ToolDecision(BaseModel):
     decision: Literal['ALLOW', 'DENY']
     reason_code: str

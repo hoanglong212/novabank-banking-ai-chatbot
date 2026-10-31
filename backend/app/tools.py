@@ -5,9 +5,8 @@ from .auth import DemoPrincipal
 from .database import Database
 from .faq import search
 from .gateway import PolicyGateway
-from .gateway import TRANSACTION_OWNERS
-from .schemas import FaqArgs, BalanceArgs, TransactionArgs, RecentTransactionsArgs, TicketArgs, VietQRArgs, ToolDecision
-from . import vietqr
+from .schemas import FaqArgs, BalanceArgs, TransactionArgs, RecentTransactionsArgs, TicketArgs, VietQRArgs, TransferArgs, ToolDecision
+from . import transfers, vietqr
 
 
 TOOL_MODELS = {
@@ -17,20 +16,7 @@ TOOL_MODELS = {
     'get_recent_transactions': RecentTransactionsArgs,
     'create_support_ticket': TicketArgs,
     'create_vietqr': VietQRArgs,
-}
-
-ACCOUNTS = {
-    'ACC-ALICE-001': {'balance_vnd': 12500000, 'currency': 'VND'},
-    'ACC-BOB-001': {'balance_vnd': 8750000, 'currency': 'VND'},
-}
-TRANSACTIONS = {
-    'TX-1001': {'amount_vnd': 300000, 'status': 'COMPLETED', 'description': 'Transfer to Minh Anh', 'direction': 'out', 'date': '2026-10-24'},
-    'TX-1002': {'amount_vnd': 950000, 'status': 'PENDING', 'description': 'Electricity bill', 'direction': 'out', 'date': '2026-10-25'},
-    'TX-1003': {'amount_vnd': 45000, 'status': 'COMPLETED', 'description': 'Coffee shop', 'direction': 'out', 'date': '2026-10-26'},
-    'TX-1004': {'amount_vnd': 15000000, 'status': 'COMPLETED', 'description': 'Salary credit', 'direction': 'in', 'date': '2026-10-20'},
-    'TX-2001': {'amount_vnd': 200000, 'status': 'COMPLETED', 'description': 'Transfer to Gia Bao', 'direction': 'out', 'date': '2026-10-23'},
-    'TX-2002': {'amount_vnd': 120000, 'status': 'COMPLETED', 'description': 'Ride-hailing trip', 'direction': 'out', 'date': '2026-10-25'},
-    'TX-2003': {'amount_vnd': 5000000, 'status': 'COMPLETED', 'description': 'Freelance payment', 'direction': 'in', 'date': '2026-10-21'},
+    'create_transfer': TransferArgs,
 }
 
 OLLAMA_TOOLS = [
@@ -47,6 +33,9 @@ OLLAMA_TOOLS = [
     {'type': 'function', 'function': {'name': 'create_vietqr', 'description': 'Create a VietQR payment code for a bank account the user specified.',
      'parameters': {'type': 'object', 'properties': {'bank': {'type': 'string'}, 'account_no': {'type': 'string'}, 'amount_vnd': {'type': 'integer'},
                     'add_info': {'type': 'string'}, 'account_name': {'type': 'string'}}, 'required': ['bank', 'account_no']}}},
+    {'type': 'function', 'function': {'name': 'create_transfer', 'description': 'Prepare a money transfer draft from the customer own account when they explicitly ask to send money. Nothing is sent: the customer reviews it and confirms with an OTP in the app.',
+     'parameters': {'type': 'object', 'properties': {'to_bank': {'type': 'string', 'description': 'NovaBank for internal IDs like ACC-BOB-001, else the bank name'},
+                    'to_account': {'type': 'string'}, 'amount_vnd': {'type': 'integer'}, 'content': {'type': 'string'}}, 'required': ['to_account', 'amount_vnd']}}},
 ]
 
 
@@ -93,15 +82,14 @@ class ToolDispatcher:
         if tool_name == 'search_banking_faq':
             result = search(parsed['query'])
         elif tool_name == 'get_account_balance':
-            account_id = parsed.get('account_id') or user.accounts[0]
-            result = {'account_id': account_id, **ACCOUNTS[account_id], 'demo': True}
+            account = self.db.account(parsed.get('account_id') or user.accounts[0])
+            result = {'account_id': account['id'], 'balance_vnd': account['balance_vnd'], 'currency': 'VND', 'demo': True}
         elif tool_name == 'get_transaction_status':
-            transaction_id = parsed['transaction_id']
-            result = {'transaction_id': transaction_id, **TRANSACTIONS[transaction_id], 'demo': True}
+            tx = self.db.transaction(parsed['transaction_id'])
+            result = {'transaction_id': tx['id'], **{k: tx[k] for k in ('amount_vnd', 'status', 'description', 'direction', 'date')}, 'demo': True}
         elif tool_name == 'get_recent_transactions':
-            owned = sorted((dict(transaction_id=t, **TRANSACTIONS[t]) for t, owner in TRANSACTION_OWNERS.items() if owner == user.id),
-                           key=lambda t: t['date'], reverse=True)
-            result = {'transactions': owned[:parsed['limit']], 'demo': True}
+            owned = self.db.transactions_of(user.id, parsed['limit'])
+            result = {'transactions': [{'transaction_id': t.pop('id'), **t} for t in owned], 'demo': True}
         elif tool_name == 'create_support_ticket':
             ticket = self.db.create_ticket(user.id, parsed['subject'], parsed['description'])
             result = {'ticket_id': ticket['id'], 'status': ticket['status'], 'demo': True}
@@ -109,6 +97,14 @@ class ToolDispatcher:
             try:
                 result = await vietqr.generate(**parsed)
             except vietqr.VietQRError as exc:
+                result = {'error': 'TOOL_FAILED', 'reason_code': exc.reason_code}
+        elif tool_name == 'create_transfer':
+            try:
+                draft = await transfers.prepare(self.db, user, parsed)
+                # No recipient name and no OTP: the model gets only what the customer already typed.
+                result = {'transfer_id': draft['id'], 'to_bank': draft['to_bank'], 'to_account': draft['to_account'],
+                          'amount_vnd': draft['amount_vnd'], 'status': draft['status'], 'demo': True}
+            except transfers.TransferError as exc:
                 result = {'error': 'TOOL_FAILED', 'reason_code': exc.reason_code}
         else:
             # Defensive deny; impossible without a programming error upstream.
