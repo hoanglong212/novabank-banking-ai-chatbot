@@ -1,0 +1,13 @@
+{
+    email {$ACME_EMAIL}
+}
+{$DEMO_DOMAIN} {
+    # Bundled credentials are public. Restrict the entire review environment.
+    basic_auth {
+        {$DEMO_USER} {$DEMO_PASSWORD_HASH}
+    }
+    header Strict-Transport-Security "max-age=31536000"
+    reverse_proxy bank:8000 {
+        flush_interval -1
+    }
+}

@@ -1,0 +1,28 @@
+{
+  "verified_at_utc": "2026-11-01T07:30:07.536458+00:00",
+  "backend_passed": 224,
+  "component_groups_passed": 15,
+  "browser_tests_passed": 12,
+  "financial_executed_line_coverage_percent": 93.27,
+  "source_databases_unchanged": {
+    "novabank_demo.sqlite3": true,
+    "backend/novabank_demo.sqlite3": true
+  },
+  "migration_version": 8,
+  "restore_tables": 52,
+  "research_run": "run-20261101-133455-2e8df7",
+  "research_expected_observations": 1790,
+  "research_dataset_and_engine_hashes_match": true,
+  "raw_archive_crc_ok": true,
+  "raw_archive_members": [
+    "results.json"
+  ],
+  "relative_document_links_ok": true,
+  "ui_snapshots": 44,
+  "slides": 10,
+  "limitations": [
+    "UI visual review preceded notification-preference addition; final 12-test browser suite covers the new setting.",
+    "No Docker runtime, public HTTPS, remote CI or independent review evidence.",
+    "Browser log includes PowerShell NativeCommandError formatting for uvicorn stderr; process exit was 0 and all 12 tests passed."
+  ]
+}

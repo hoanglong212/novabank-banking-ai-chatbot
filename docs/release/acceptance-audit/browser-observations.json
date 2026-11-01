@@ -1,0 +1,92 @@
+{
+  "errors": [],
+  "snapshots": [
+    {
+      "name": "login",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "login",
+      "width": 768,
+      "scroll": 768
+    },
+    {
+      "name": "login",
+      "width": 1280,
+      "scroll": 1280
+    },
+    {
+      "name": "dashboard",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "dashboard",
+      "width": 768,
+      "scroll": 768
+    },
+    {
+      "name": "dashboard",
+      "width": 1280,
+      "scroll": 1280
+    },
+    {
+      "name": "transfer",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "transfer",
+      "width": 768,
+      "scroll": 768
+    },
+    {
+      "name": "transfer",
+      "width": 1280,
+      "scroll": 1280
+    },
+    {
+      "name": "receipt",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "receipt",
+      "width": 768,
+      "scroll": 768
+    },
+    {
+      "name": "receipt",
+      "width": 1280,
+      "scroll": 1280
+    },
+    {
+      "name": "history",
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "name": "history",
+      "width": 768,
+      "scroll": 768
+    },
+    {
+      "name": "history",
+      "width": 1280,
+      "scroll": 1280
+    }
+  ],
+  "observations": {
+    "DSH_01_visibility_persists": false,
+    "NF_05_otp_form_preserved": true,
+    "NF_05_same_idempotency_key": true,
+    "NF_05_debited_once": true,
+    "NF_08_keyboard_transfer": true,
+    "SEC_06_transfer_text_escaped": true,
+    "BEN_02_html_escaped": true,
+    "AI_12_cancel_control_present": false,
+    "AI_08_timeout_recovers_ui": true,
+    "NF_06_no_horizontal_overflow": true
+  }
+}

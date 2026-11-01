@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 
-// Only VietQR's own image service or an inline PNG from its API may render as an image.
-const VIETQR = /^!\[VietQR\]\((https:\/\/img\.vietqr\.io\/image\/[^\s)"'<>]+|data:image\/png;base64,[A-Za-z0-9+/=]+)\)$/;
+// Saved tool messages retain their legacy marker; only inline demo PNGs render.
+const VIETQR = /^!\[VietQR\]\((data:image\/png;base64,[A-Za-z0-9+/=]+)\)$/;
 
 export function formatTime(value: string) {
   const parsed = new Date(value);
@@ -27,10 +27,10 @@ export function safeMessageParts(text: string) {
   return text.split(/(!\[VietQR\]\([^)\s]+\))/g).map((part, idx) => {
     const qr = part.match(VIETQR);
     return qr ? <figure className="qr-card" key={idx}>
-      <img src={qr[1]} alt="VietQR payment code" loading="lazy" />
+      <img src={qr[1]} alt="NovaBank demo QR code" loading="lazy" />
       <figcaption>
-        <span>Scan with any banking app</span>
-        <a href={qr[1]} target="_blank" rel="noopener noreferrer">Open image</a>
+        <span>NovaBank simulator only</span>
+        <a href={qr[1]} download="NovaBank-demo-QR.png">Download image</a>
       </figcaption>
     </figure> : <Fragment key={idx}>
       {emphasis(part.trimEnd())}

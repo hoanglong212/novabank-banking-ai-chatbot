@@ -207,7 +207,7 @@ def render_qr(result: dict) -> str:
     info = f' with content "{result["add_info"]}"' if result.get('add_info') else ''
     # The chat UI renders this line as an image only for VietQR sources.
     return (f'VietQR code created for **{result["bank"]}** account **••••{result["account_no"][-4:]}**{amount}{info}. '
-            'Scan it with any banking app and confirm the recipient name before paying.\n\n'
+            'Use it only in the NovaBank simulator. It cannot be paid with real banking apps.\n\n'
             f'![VietQR]({result["image"]})')
 
 

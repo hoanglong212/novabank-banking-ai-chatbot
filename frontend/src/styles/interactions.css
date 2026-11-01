@@ -12,24 +12,21 @@
 @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 /* Page enter: sections cascade in, restarted by App's key on every tab change. */
-.page > :not(dialog), .home-main > *, .home-side > * { animation: rise .45s var(--ease) both; }
-.page > :nth-child(2), .home-main > :nth-child(1), .home-side > :nth-child(1) { animation-delay: .05s; }
-.page > :nth-child(3), .home-main > :nth-child(2), .home-side > :nth-child(2) { animation-delay: .1s; }
-.page > :nth-child(4), .home-main > :nth-child(3) { animation-delay: .15s; }
-.page > :nth-child(5) { animation-delay: .2s; }
+.page > :not(dialog), .dash > * { animation: rise .45s var(--ease) both; }
+.page > :nth-child(2), .dash > :nth-child(2) { animation-delay: .05s; }
+.page > :nth-child(3), .dash > :nth-child(3) { animation-delay: .1s; }
+.page > :nth-child(4), .dash > :nth-child(4) { animation-delay: .15s; }
+.page > :nth-child(5), .dash > :nth-child(5) { animation-delay: .2s; }
 .page > :nth-child(n + 6) { animation-delay: .25s; }
-.home-grid { animation: none !important; }
+.dash { animation: none !important; }
 .tx-list li, .bank-list li, .settings-list li { animation: rise .35s var(--ease) both; }
 .tx-list li:nth-child(2), .settings-list li:nth-child(2) { animation-delay: .04s; }
 .tx-list li:nth-child(3), .settings-list li:nth-child(3) { animation-delay: .08s; }
 .tx-list li:nth-child(n + 4) { animation-delay: .12s; }
-.service { animation: pop .4s var(--ease) both; }
-.service:nth-child(2) { animation-delay: .03s; } .service:nth-child(3) { animation-delay: .06s; } .service:nth-child(4) { animation-delay: .09s; }
-.service:nth-child(5) { animation-delay: .12s; } .service:nth-child(6) { animation-delay: .15s; } .service:nth-child(7) { animation-delay: .18s; } .service:nth-child(8) { animation-delay: .21s; }
 
 /* Press feedback on everything tappable. */
-:is(.primary-button, .secondary-button, .danger-button, .tool-button, .service, .quick-actions button, .tx, .banner,
-  .suggestion, .assistant-card, .chips button, .amount-chips button, .nav-item, .eye-button, .account-no, .bank-trigger):active:not(:disabled) { transform: scale(.97); }
+:is(.primary-button, .secondary-button, .danger-button, .tool-button, .topic, .quick-actions button, .tx, .banner,
+  .suggestion, .fake-input, .chips button, .amount-chips button, .nav-item, .eye-button, .account-no, .bank-trigger):active:not(:disabled) { transform: scale(.97); }
 
 /* Skeletons while the profile loads. */
 .skeleton { display: block; border-radius: 8px; background: linear-gradient(90deg, #ece9f4 25%, #f7f5fb 50%, #ece9f4 75%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; }

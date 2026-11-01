@@ -8,6 +8,7 @@
 *.sqlite3-shm
 *.sqlite3-wal
 *.sqlite3-journal
+*.mfa.key
 *.db
 *.db-shm
 *.db-wal

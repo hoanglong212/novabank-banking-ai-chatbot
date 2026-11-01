@@ -1,32 +1,32 @@
 @media (max-width: 1023px) {
-  .home-grid, .qr-layout { grid-template-columns: minmax(0, 1fr); }
+  .qr-layout { grid-template-columns: minmax(0, 1fr); }
+  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'account' 'month' 'nova' 'tx' 'safety'; }
+  .dash-month .month-totals { grid-template-columns: 1fr 1fr; }
   .qr-result { position: static; min-height: 0; padding-top: 28px; padding-bottom: 28px; }
-  .banner-strip { grid-template-columns: 1fr 1fr; }
+  /* Tablets: the sidebar shrinks to an icon rail. */
+  .app-nav { width: 76px; padding: 18px 10px; align-items: center; }
+  .brand-word, .nav-label, .nav-user-name { display: none; }
+  .nav-brand { padding: 0; }
+  .nav-item { justify-content: center; width: 48px; padding: 0; }
+  .nav-user { flex-direction: column; padding: 12px 0 0; }
 }
 
-/* ── Phones: bottom tab bar with a raised QR button, bottom sheets ── */
+/* ── Phones: bottom tab bar, bottom sheets ── */
 @media (max-width: 767px) {
   .app-shell { flex-direction: column-reverse; }
-  .app-nav { position: fixed; inset: auto 0 0 0; height: auto; gap: 0; padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -8px 24px -16px rgb(26 16 52 / .3); }
+  .app-nav { position: fixed; inset: auto 0 0 0; width: auto; flex-direction: row; gap: 0; padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); border-right: 0; box-shadow: 0 -8px 24px -16px rgb(26 16 52 / .3); }
   .nav-brand, .nav-user { display: none; }
-  .nav-profile-item { display: flex !important; }
+  .nav-label { display: inline; }
   .nav-items { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 0; width: 100%; }
-  .nav-item { flex-direction: column; justify-content: center; gap: 3px; height: auto; min-height: 54px; padding: 2px 0; font-size: 11px; }
-  .nav-item::after { display: none; }
-  .nav-item[aria-current='page'] { color: var(--brand-700); }
-  .nav-item[aria-current='page'] .nav-icon { transform: translateY(-2px); }
-  .nav-qr .nav-icon { width: 56px; height: 56px; margin-top: -26px; border: 4px solid #fff; border-radius: 50%; background: var(--hero); color: #fff; box-shadow: 0 8px 18px -6px rgb(59 18 134 / .7); }
-  .nav-qr[aria-current='page'] .nav-icon { transform: translateY(-2px) scale(1.05); }
+  .nav-item { flex-direction: column; justify-content: center; gap: 3px; width: 100%; min-height: 54px; padding: 2px 0; font-size: 11px; }
+  .nav-item[aria-current='page'] { background: transparent; color: var(--brand-700); }
+  .nav-item[aria-current='page'] .nav-icon { padding: 2px 14px; border-radius: 999px; background: var(--brand-100); }
+  .dash { gap: 14px; }
   .app-main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .page { gap: 14px; padding: 18px 14px 28px; }
   .page-title { font-size: 22px; }
   .card { padding: 16px; }
-  .service-grid { gap: 16px 4px; }
-  .service { font-size: 12px; }
-  .service-icon { width: 46px; height: 46px; }
-  .banner-strip { display: flex; gap: 10px; margin: 0 -14px; padding: 0 14px 4px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .banner { flex: 0 0 82%; scroll-snap-align: start; }
-  .month-totals strong { font-size: 17px; }
+  .month-totals strong { font-size: 16px; }
   .sheet, .sheet-right { width: 100%; height: fit-content; margin: auto 0 0; }
   .sheet-body, .sheet-right .sheet-body { width: 100%; height: auto; max-height: 88dvh; border-radius: 22px 22px 0 0; padding-bottom: env(safe-area-inset-bottom); animation: slide-up .3s var(--ease) both; }
   .sheet-head::before { content: ''; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; border-radius: 4px; background: var(--line-strong); transform: translateX(-50%); }

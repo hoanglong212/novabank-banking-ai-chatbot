@@ -1,5 +1,8 @@
 """Input guard, PII pseudonymization, VietQR tool and the LangGraph agent (fake LLM, no network)."""
 import pytest
+import base64
+import re
+from app.local_qr import uploaded_png
 from langchain_core.messages import AIMessage
 from app import vietqr
 from app.guard import Pseudonymizer, inspect_prompt, mask
@@ -65,7 +68,8 @@ def test_audit_mask():
 def test_mock_vietqr_flow(client, alice):
     _, reply = send(client, alice, 'Tạo mã QR chuyển 500k vào tài khoản 0123456789 ngân hàng Vietcombank nội dung tiền ăn')
     content = reply['message']['content']
-    assert '![VietQR](https://img.vietqr.io/image/970436-0123456789-compact.png?amount=500000&addInfo=tien+an)' in content
+    assert '![VietQR](data:image/png;base64,' in content
+    assert 'img.vietqr.io' not in content  # Private simulator QR, never a real payment network.
     event = reply['tool_events'][-1]
     assert (event['tool_name'], event['executed']) == ('create_vietqr', 1)
     assert event['arguments']['account_no'] == '******6789'
@@ -112,7 +116,8 @@ def test_langgraph_explicit_qr_request_bypasses_the_model(client, alice, monkeyp
     _, reply = send(client, alice, 'Create a VietQR for account 0123456789 at VCB, 500k, tên NGUYEN VAN A')
     content = reply['message']['content']
     assert content.startswith('VietQR code created for **Vietcombank** account **••••6789**')
-    assert 'img.vietqr.io/image/970436-0123456789-compact.png?amount=500000&accountName=NGUYEN+VAN+A' in content
+    payload = uploaded_png(base64.b64decode(re.search(r'data:image/png;base64,([A-Za-z0-9+/=]+)', content)[1]))
+    assert (payload['bank'], payload['account_no'], payload['amount_vnd'], payload['account_name']) == ('Vietcombank', '0123456789', 500000, 'NGUYEN VAN A')
     assert llm.seen == []
 
 
@@ -148,7 +153,8 @@ def test_langgraph_qr_values_come_from_the_user_not_the_model(client, alice, mon
     monkeypatch.setenv('LLM_PROVIDER', 'langgraph')
     monkeypatch.setattr(graph_agent, 'ChatOllama', lambda **kw: llm)
     _, reply = send(client, alice, 'Create a VietQR for Sacombank account 05541616539, 50k, content coffee')
-    assert 'img.vietqr.io/image/970403-05541616539-compact.png?amount=50000&addInfo=coffee)' in reply['message']['content']
+    payload = uploaded_png(base64.b64decode(re.search(r'data:image/png;base64,([A-Za-z0-9+/=]+)', reply['message']['content'])[1]))
+    assert (payload['bank'], payload['account_no'], payload['amount_vnd'], payload['add_info']) == ('Sacombank', '05541616539', 50000, 'coffee')
     assert reply['message']['content'].startswith('VietQR code created for **Sacombank**')
 
 

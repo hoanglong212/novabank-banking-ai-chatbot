@@ -1,5 +1,7 @@
 # 5-minute demonstration for Robert (13 October Week-3 feedback)
 
+Current login prerequisite (1 November): after the demo password, complete **Verify sign-in** using the `LOGIN_OTP` code from the local inbox, or your configured authenticator. See [MFA instructions](SESSIONS_MFA_VI.md). The script below describes the earlier AI demonstration; the current banking/MFA acceptance is `cd frontend; npm run test:e2e`.
+
 For the single-port launcher or Docker image, use `http://127.0.0.1:8080`
 instead of port 5173 below. See [simple demo setup](SIMPLE_DEMO.md) for startup,
 model preflight, reset behavior and an acceptance checklist.

@@ -2,4 +2,6 @@
 @import './styles/chat.css';
 @import './styles/app.css';
 @import './styles/interactions.css';
+@import './styles/banking.css';
+@import './styles/auth.css';
 @import './styles/responsive.css';

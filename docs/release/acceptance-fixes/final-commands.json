@@ -1,0 +1,25 @@
+[
+  {
+    "check": "pytest",
+    "command": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe -m pytest -q",
+    "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend",
+    "exit_code": 0
+  },
+  {
+    "check": "components",
+    "command": "cmd /c \"npm run test:components\"",
+    "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend",
+    "exit_code": 0
+  },
+  {
+    "check": "e2e",
+    "command": "cmd /c \"npm run test:e2e\"",
+    "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend",
+    "exit_code": 0
+  },
+  {
+    "check": "reconcile",
+    "command": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\scripts\\reconcile.py --db C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\e2e\\run-34kqraqr\\acceptance.sqlite3",
+    "exit_code": 0
+  }
+]

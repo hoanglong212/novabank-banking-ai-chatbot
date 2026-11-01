@@ -5,16 +5,22 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from .guard import mask
+from .ledger import initialize_ledger
+from .experience_schema import initialize_experience
+from .identity_schema import initialize_identity
+from .session_schema import initialize_sessions
+from .banking_schema import initialize_banking
 
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-# Fictional seed data; balances then change only through transfers.post().
+# Fictional seed data; subsequent balance changes go through the posting service.
 SEED_ACCOUNTS = [
     ('ACC-ALICE-001', 'alice', 'ALICE NGUYEN', 12500000),
     ('ACC-BOB-001', 'bob', 'BOB TRAN', 8750000),
+    ('ACC-CHARLIE-001', 'charlie', 'CHARLIE LE', 0),
 ]
 SEED_TRANSACTIONS = [
     ('TX-1001', 'ACC-ALICE-001', 300000, 'out', 'COMPLETED', 'Transfer to Minh Anh', '2026-10-24'),
@@ -113,9 +119,22 @@ class Database:
               completed_at TEXT
             );
             ''')
-            conn.executemany('INSERT OR IGNORE INTO accounts VALUES (?,?,?,?)', SEED_ACCOUNTS)
-            conn.executemany('INSERT OR IGNORE INTO transactions VALUES (?,?,?,?,?,?,?,?)',
-                             [(*t, t[-1] + 'T00:00:00+00:00') for t in SEED_TRANSACTIONS])
+            conn.execute('BEGIN IMMEDIATE')
+            conn.executemany('INSERT OR IGNORE INTO accounts (id,owner_id,holder_name,balance_vnd) VALUES (?,?,?,?)', SEED_ACCOUNTS)
+            conn.executemany('INSERT INTO transactions SELECT ?,?,?,?,?,?,?,? '
+                             'WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE id=?)',
+                             [(*t, t[-1] + 'T00:00:00+00:00', t[0]) for t in SEED_TRANSACTIONS])
+            initialize_ledger(conn, now())
+            initialize_experience(conn, now())
+            initialize_identity(conn, now())
+            initialize_sessions(conn, now())
+            initialize_banking(conn, now())
+            from .settlement import initialize_settlement
+            initialize_settlement(conn, now())
+            from .agent_schema import initialize_agent
+            initialize_agent(conn, now())
+            from .notification_preferences import initialize as initialize_notification_preferences
+            initialize_notification_preferences(conn, now())
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())

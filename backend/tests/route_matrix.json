@@ -1,0 +1,1133 @@
+[
+  {
+    "method": "GET",
+    "path": "/openapi.json",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "HEAD",
+    "path": "/openapi.json",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "GET",
+    "path": "/docs",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "HEAD",
+    "path": "/docs",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "GET",
+    "path": "/docs/oauth2-redirect",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "HEAD",
+    "path": "/docs/oauth2-redirect",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "GET",
+    "path": "/redoc",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "HEAD",
+    "path": "/redoc",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "GET",
+    "path": "/api/customer/notification-preferences",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/customer/notification-preferences",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/customer/beneficiaries/lookup",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/customer/profile",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/customer/profile/change",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "GET",
+    "path": "/api/customer/accounts",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/customer/accounts/{account_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/customer/beneficiaries",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/customer/beneficiaries",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/customer/beneficiaries/{beneficiary_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/actions/confirm",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products/{kind}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/products/actions",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/insights",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/insights/budgets",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/transactions/{transaction_id}/category",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statements.{fmt}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/savings-goals",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/savings-goals",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/savings-goals/{goal_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/bills/{bill_id}/saved",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/support/tickets",
+    "roles": [
+      "customer",
+      "support",
+      "auditor",
+      "admin"
+    ],
+    "scope": "owner-or-support"
+  },
+  {
+    "method": "POST",
+    "path": "/api/support/tickets",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "owner-or-support"
+  },
+  {
+    "method": "GET",
+    "path": "/api/support/tickets/{ticket_id}",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "owner-or-support"
+  },
+  {
+    "method": "POST",
+    "path": "/api/support/tickets/{ticket_id}/messages",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "owner-or-support"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/support/tickets/{ticket_id}",
+    "roles": [
+      "support",
+      "admin"
+    ],
+    "scope": "owner-or-support"
+  },
+  {
+    "method": "POST",
+    "path": "/api/support/tickets/{ticket_id}/attachments",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "owner-or-support"
+  },
+  {
+    "method": "GET",
+    "path": "/api/support/attachments/{attachment_id}",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "owner-or-support"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/overview",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/users",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/users/{user_id}",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/accounts",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/accounts/{account_id}",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/settings",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/admin/settings",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/reconcile",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/audit",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "POST",
+    "path": "/api/qr/decode",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/knowledge",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "GET",
+    "path": "/api/knowledge/search",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "GET",
+    "path": "/api/knowledge/{document_id}",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/knowledge",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/admin/knowledge/{document_id}",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/knowledge-index",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "POST",
+    "path": "/api/agent/runs",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/agent/context",
+    "roles": [
+      "delegated"
+    ],
+    "scope": "run-owner-session"
+  },
+  {
+    "method": "POST",
+    "path": "/api/agent/tools",
+    "roles": [
+      "delegated"
+    ],
+    "scope": "run-owner-session"
+  },
+  {
+    "method": "POST",
+    "path": "/api/agent/finish",
+    "roles": [
+      "delegated"
+    ],
+    "scope": "run-owner-session"
+  },
+  {
+    "method": "GET",
+    "path": "/api/agent/runs",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/agent/runs/{run_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/agent/approvals",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/agent/approvals/{approval_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/conversations/{conversation_id}/stream",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/research/runs",
+    "roles": [
+      "admin"
+    ],
+    "scope": "sandbox-enabled"
+  },
+  {
+    "method": "GET",
+    "path": "/api/research/runs/{run_id}",
+    "roles": [
+      "admin"
+    ],
+    "scope": "sandbox-enabled"
+  },
+  {
+    "method": "GET",
+    "path": "/api/research/runs/{run_id}/cases",
+    "roles": [
+      "admin"
+    ],
+    "scope": "sandbox-enabled"
+  },
+  {
+    "method": "GET",
+    "path": "/api/research/runs/{run_id}/export/{filename}",
+    "roles": [
+      "admin"
+    ],
+    "scope": "sandbox-enabled"
+  },
+  {
+    "method": "POST",
+    "path": "/api/research/runs",
+    "roles": [
+      "admin"
+    ],
+    "scope": "sandbox-enabled"
+  },
+  {
+    "method": "GET",
+    "path": "/api/health",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "GET",
+    "path": "/api/ready",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "GET",
+    "path": "/api/me",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/transfers",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/transfers/{transfer_id}/otp",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/transfers/{transfer_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/transfers/{transfer_id}/confirm",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/vietqr/banks",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/vietqr",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/conversations",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/conversations",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/conversations/{conversation_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/conversations/{conversation_id}/messages",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/conversations/{conversation_id}/tool-events",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/conversations/{conversation_id}/messages",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/conversations/{conversation_id}/demo/tool-check",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/transactions",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/transactions/{transaction_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/transactions/{transaction_id}/receipt.pdf",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/notifications",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/notifications/{notification_id}/read",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/notifications/read-all",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/transactions",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/transfers/{transfer_id}/audit",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/register",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/resend-verification",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/verify-email",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/forgot-password",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/reset-password",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/login",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/mfa/verify",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/mfa/email",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/refresh",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public"
+  },
+  {
+    "method": "GET",
+    "path": "/api/auth/sessions",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/auth/sessions/{session_id}",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/logout",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/activity",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "GET",
+    "path": "/api/auth/login-history",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "GET",
+    "path": "/api/auth/mfa",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/mfa/setup",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/mfa/enable",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/mfa/disable-request",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/mfa/disable",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/customer/beneficiaries/{beneficiary_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/agent/preview",
+    "roles": [
+      "delegated"
+    ],
+    "scope": "run-owner-session"
+  },
+  {
+    "method": "POST",
+    "path": "/api/agent/runs/{run_id}/cancel",
+    "roles": [
+      "customer"
+    ],
+    "scope": "run-owner-session"
+  },
+  {
+    "method": "MOUNT",
+    "path": "",
+    "roles": [
+      "anonymous",
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "compiled-frontend-only",
+    "optional": true
+  }
+]

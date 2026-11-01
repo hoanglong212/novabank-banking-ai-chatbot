@@ -1,0 +1,81 @@
+{
+  "method": "Python stdlib trace, executed source lines; not branch coverage",
+  "pytest_exit_code": 0,
+  "modules": [
+    {
+      "file": "backend\\app\\posting.py",
+      "executable_lines": 105,
+      "covered_lines": 93,
+      "coverage_percent": 88.57,
+      "missing_lines": [
+        22,
+        36,
+        43,
+        55,
+        58,
+        62,
+        67,
+        69,
+        71,
+        78,
+        92,
+        113
+      ]
+    },
+    {
+      "file": "backend\\app\\transfers.py",
+      "executable_lines": 158,
+      "covered_lines": 149,
+      "coverage_percent": 94.3,
+      "missing_lines": [
+        64,
+        67,
+        68,
+        115,
+        143,
+        144,
+        146,
+        188,
+        189
+      ]
+    },
+    {
+      "file": "backend\\app\\ledger.py",
+      "executable_lines": 53,
+      "covered_lines": 52,
+      "coverage_percent": 98.11,
+      "missing_lines": [
+        53
+      ]
+    },
+    {
+      "file": "backend\\app\\products.py",
+      "executable_lines": 152,
+      "covered_lines": 139,
+      "coverage_percent": 91.45,
+      "missing_lines": [
+        17,
+        36,
+        60,
+        64,
+        76,
+        81,
+        83,
+        85,
+        89,
+        92,
+        95,
+        171,
+        172
+      ]
+    },
+    {
+      "file": "backend\\app\\settlement.py",
+      "executable_lines": 52,
+      "covered_lines": 52,
+      "coverage_percent": 100.0,
+      "missing_lines": []
+    }
+  ],
+  "financial_line_coverage_percent": 93.27
+}

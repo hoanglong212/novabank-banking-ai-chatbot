@@ -1,0 +1,34 @@
+.auth-links { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 16px; row-gap: 2px; }
+.auth-links button { min-height: 44px; padding: 8px 0; border: 0; background: none; color: var(--brand-700); font-size: 13.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.auth-success { padding: 12px; border-radius: var(--radius-sm); background: var(--ok-bg); color: var(--ok); font-size: 13.5px; line-height: 1.5; }
+.auth-hint { font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.login-card h1[tabindex]:focus { outline: none; }
+.login-card .field input:disabled { background: var(--subtle); }
+.security-center { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.security-center .page-heading { flex-wrap: wrap; }
+.security-center .page-heading h2 { margin: 16px 0 0; font-size: 22px; letter-spacing: -.03em; }
+.security-center .page-heading .secondary-button { margin-top: 4px; }
+.security-heading { display: flex; align-items: center; gap: 10px; }
+.security-heading svg { color: var(--brand-700); flex-shrink: 0; }
+.security-section h3 { margin: 0; font-size: 16px; }
+.security-section > p { margin-block: 10px; line-height: 1.6; }
+.session-list, .login-history { list-style: none; padding: 0; margin: 12px 0 0; }
+.session-row, .login-history li { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 0; }
+.session-row + .session-row, .login-history li + li { border-top: 1px solid var(--line); }
+.session-summary { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; width: 100%; }
+.session-summary strong { font-size: 14px; }
+.session-summary time { font-size: 12px; color: var(--muted); }
+.security-section details { max-width: 100%; font-size: 12px; }
+.security-section details p { overflow-wrap: anywhere; line-height: 1.6; }
+.security-section summary { cursor: pointer; min-height: 32px; padding-block: 6px; color: var(--brand-700); }
+.security-section .secondary-button, .security-section .danger-button { min-height: 44px; }
+.session-confirm { width: 100%; border-radius: var(--radius-sm); padding: 12px; background: var(--subtle); }
+.session-confirm p { margin: 0; }
+.security-form { display: flex; flex-direction: column; gap: 18px; }
+.security-form p { margin: 0; line-height: 1.6; }
+.security-form .setup-key { font-family: monospace; font-size: 12px; }
+@media (max-width: 767px) {
+  .security-section { padding: 16px; }
+  .session-summary { flex-direction: column; gap: 6px; }
+  .security-center .page-heading h2 { font-size: 20px; }
+}

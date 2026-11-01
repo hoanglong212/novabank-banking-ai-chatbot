@@ -1,0 +1,40 @@
+{
+  "source_pdf": "Kế hoạch kiểm thử NovaBank (Banking Web App + AI Agent).pdf",
+  "source_pages": 21,
+  "cases": 121,
+  "case_counts": {
+    "Đã kiểm chứng": 82,
+    "Khác đặc tả": 4,
+    "Một phần / thiếu bằng chứng": 24,
+    "Chưa đạt": 10,
+    "Chưa kiểm chứng": 1
+  },
+  "existing_backend_passed": 224,
+  "existing_component_groups_passed": 15,
+  "existing_browser_passed": 12,
+  "new_probes": 23,
+  "new_probes_failed": 14,
+  "new_probes_passed": 9,
+  "failed_probe_names": [
+    "test_BEN_01_edit_saved_nickname",
+    "test_BEN_01_search_saved_recipients",
+    "test_PFM_02_budget_alert_created_by_crossing_threshold",
+    "test_STM_01_statement_includes_period_totals",
+    "test_SEC_01_pdf_permission_matrix[operations-/api/support/tickets-403]",
+    "test_SEC_01_pdf_permission_matrix[operations-/api/research/runs-403]",
+    "test_SEC_01_pdf_permission_matrix[auditor-/api/research/runs-403]",
+    "test_SEC_01_pdf_permission_matrix[support-/api/notifications-403]",
+    "test_SEC_01_auditor_reads_customer_ticket",
+    "test_SEC_01_operations_can_freeze_account",
+    "test_ADM_02_audit_contains_before_and_after",
+    "test_ADM_03_changed_fee_applies_to_next_confirmation",
+    "test_TRF_14_recipient_lookup_via_draft_is_rate_limited",
+    "test_AI_02_transaction_tool_supports_period_and_recipient_filters"
+  ],
+  "git_head": "b9535069f15990424ad5cee3e66b226b883604a6",
+  "working_tree_uncommitted": true,
+  "application_source_sha256": "bb28331e988d92c794eff2a2109a10ce738fd5ea7656f7ef6b9217c4457cef04",
+  "product_code_changed_by_this_audit": false,
+  "full_research_matrix_rerun": false,
+  "independent_reviewer": null
+}

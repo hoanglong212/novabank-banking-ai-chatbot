@@ -1,0 +1,69 @@
+{
+  "recorded_browser_actions_passed": true,
+  "script_duration_seconds": 301,
+  "export_duration_seconds": 311.12,
+  "bytes": 4558962,
+  "audio": false,
+  "steps": [
+    {
+      "elapsed_seconds": 2,
+      "caption": "NovaBank: ngân hàng mô phỏng phục vụ nghiên cứu prompt injection. Video dùng dữ liệu giả, 5 khách hàng và lịch sử 6 tháng."
+    },
+    {
+      "elapsed_seconds": 19,
+      "caption": "Alice nhập người nhận Bob và 2.000.000 VND. Backend xác minh tài khoản, hạn mức và số dư. Chưa có tiền được ghi sổ."
+    },
+    {
+      "elapsed_seconds": 36,
+      "caption": "Màn hình xác nhận hiển thị người nhận, phí và tổng tiền trừ. OTP thuộc luồng ngân hàng, không gửi cho AI."
+    },
+    {
+      "elapsed_seconds": 54,
+      "caption": "Giao dịch hoàn tất. Số dư, lịch sử, ledger và thông báo được ghi trong cùng giao dịch database. Gửi lại cùng khóa idempotency không trừ lần hai."
+    },
+    {
+      "elapsed_seconds": 71,
+      "caption": "Thống kê theo tháng cộng phí chuyển tiền, loại tiền chuyển vào tiết kiệm và hoàn tiền giao dịch lỗi. Có ngân sách và sao kê PDF/CSV."
+    },
+    {
+      "elapsed_seconds": 88,
+      "caption": "Thẻ debit và credit dùng tiền giả. Khóa/mở thẻ, mua hàng và trả nợ đều cần xác nhận. Mọi sản phẩm dùng chung bộ ghi sổ cân bằng."
+    },
+    {
+      "elapsed_seconds": 107,
+      "caption": "Qwen chạy local truy xuất chính sách bằng nomic embeddings. Agent là tiến trình riêng, gọi Banking API bằng token ủy quyền ngắn hạn."
+    },
+    {
+      "elapsed_seconds": 127,
+      "caption": "AI tạo đề xuất chuyển 200.000 VND. Khách hàng phải duyệt, sau đó xác nhận OTP ở Banking API. Agent không có quyền gọi confirm."
+    },
+    {
+      "elapsed_seconds": 144,
+      "caption": "Alice từ chối đề xuất. Không có tiền nào được chuyển bởi AI. Trace lưu model, profile, quyết định tool và thời gian xử lý."
+    },
+    {
+      "elapsed_seconds": 162,
+      "caption": "Bob đăng nhập qua MFA và nhận thông báo tiền vào từ Alice. Quyền sở hữu được kiểm tra ở backend cho lịch sử và biên lai."
+    },
+    {
+      "elapsed_seconds": 181,
+      "caption": "Dashboard nghiên cứu: 35 kịch bản trên 7 vector, 2 model, 3 profile, 5 lần lặp. 100 tác vụ hợp lệ và thí nghiệm bỏ từng lớp phòng vệ."
+    },
+    {
+      "elapsed_seconds": 198,
+      "caption": "1.790 quan sát hoàn tất, không có lỗi chạy. Utility defended: Qwen 99%, Llama 90%. ASR 0 trong bộ thử này không chứng minh an toàn tuyệt đối."
+    },
+    {
+      "elapsed_seconds": 215,
+      "caption": "Một quan sát lưu thật: baseline lab chấp nhận đề xuất chuyển sai người nhận. Defended chặn cùng payload. Baseline này vẫn cần người duyệt trước khi chuyển tiền."
+    },
+    {
+      "elapsed_seconds": 232,
+      "caption": "Giới hạn: nguồn truy xuất được đưa sẵn vào model, payload còn theo mẫu và ablation nhỏ. Cần đánh giá tấn công thích ứng trước mọi ứng dụng thực tế."
+    },
+    {
+      "elapsed_seconds": 249,
+      "caption": "Bằng chứng bàn giao gồm test, migration giữ dữ liệu cũ, đối soát, phục hồi backup, raw thí nghiệm và cấu hình Docker/Caddy. HTTPS công khai và CI remote còn cần môi trường phát hành."
+    }
+  ]
+}

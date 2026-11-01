@@ -8,6 +8,7 @@ import { Composer } from './Composer';
 import { ConversationList } from './ConversationList';
 import { MessageThread } from './MessageThread';
 import { Welcome } from './Welcome';
+import { AgentActivity } from './AgentActivity';
 
 // One chat column; history and the security log open as drawers instead of permanent side panels.
 export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useBankingChat>; openTransfer: (draftId: string) => void }) {
@@ -26,11 +27,14 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
       <section className="chat-column" aria-label="Chat with Nova">
         <div className="messages-scroller" ref={chat.scrollerRef}>
           <div className="messages-inner">
+            {chat.health?.agent_mode === 'service' && <label className="agent-profile">Assistant safeguards <select value={chat.defenseProfile} disabled={chat.busy} onChange={e => chat.setDefenseProfile(e.target.value as 'baseline' | 'defended')}><option value="defended">Defended</option><option value="baseline">Baseline (bank permissions still apply)</option></select></label>}
             {chat.messages.length === 0 ? (
               <Welcome user={chat.user} busy={chat.busy} pickSuggestion={chat.pickSuggestion} />
             ) : (
               <MessageThread messages={chat.messages} busy={chat.busy} openTransfer={openTransfer} />
             )}
+            {chat.busy && chat.progress && <p role="status" className="muted small">{chat.progress}</p>}
+            {chat.active && <AgentActivity user={chat.user} conversationId={chat.active} revision={chat.messages.length} openTransfer={openTransfer} />}
             <div ref={chat.endRef} />
           </div>
         </div>
@@ -44,6 +48,7 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
           hasMessages={chat.messages.length > 0}
           textareaRef={chat.textareaRef}
           sendMessage={chat.sendMessage}
+          stopResponse={chat.stopResponse}
           pickSuggestion={chat.pickSuggestion}
         />
       </section>

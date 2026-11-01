@@ -1,0 +1,10 @@
+{
+  "novabank_demo.sqlite3": {
+    "unchanged": true,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "backend/novabank_demo.sqlite3": {
+    "unchanged": true,
+    "sha256": "bff3b2bc9f7336287a4e2409bc4b49407606e835a1ac0e17400ebc7c26d4aff5"
+  }
+}

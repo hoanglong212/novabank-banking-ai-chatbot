@@ -1,5 +1,14 @@
 **
 !Dockerfile
+!Dockerfile.agent
+!agent_service/
+!agent_service/**
+!research/
+!research/**
+!scripts/
+!scripts/dev-outbox.py
+!scripts/backup.py
+!scripts/backup-loop.py
 !backend/
 !backend/requirements.txt
 !backend/app/

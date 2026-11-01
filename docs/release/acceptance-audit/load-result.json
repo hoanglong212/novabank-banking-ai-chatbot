@@ -1,0 +1,16 @@
+{
+  "virtual_users": 20,
+  "distinct_customers": 20,
+  "duration_seconds": 120.65,
+  "transfers_attempted": 3300,
+  "completed": 3300,
+  "errors": [],
+  "database_locked_responses": 0,
+  "p95_transfer_flow_ms": 989.44,
+  "balanced": true,
+  "backup_during_load_balanced": true,
+  "database": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\acceptance-audit\\load-h92d1lta\\bank.sqlite3",
+  "backup_note": "Snapshot taken after 15s while all 20 clients were active; archive encrypted and restored to a new path.",
+  "restored_app_login_and_account_read": true,
+  "passed": true
+}

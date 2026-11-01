@@ -16,7 +16,7 @@ repeatable-demo principles while retaining NovaBank's protected-chatbot purpose.
 | --- | --- |
 | Fictional product with realistic features | Retain the existing banking UI and simulated data. |
 | Simple startup and one exposed app port | Add a tracked PowerShell launcher and optional Docker image. |
-| Self-contained offline demonstration | Mock mode runs without Ollama or outbound application requests. |
+| Offline chat demonstration | Mock chat runs without Ollama; QR still depends on external VietQR services. |
 | Non-root container, no build-time secrets | Runtime user is UID 10001; only application code and compiled UI are copied. |
 | Reproducible outcomes and explicit acceptance steps | Use the checklist below plus automated ownership/policy tests. |
 | Intentional IDOR, flag, self-registration | Not adopted: these change the protected-chatbot objective. |
@@ -24,7 +24,7 @@ repeatable-demo principles while retaining NovaBank's protected-chatbot purpose.
 | Reset on every restart | Not adopted locally: saved history is a demonstrated feature. Fresh containers can reset disposable demos. |
 
 This remains a guarded hybrid prototype, not autonomous model reasoning or a
-production banking service. Demo identity tokens are public by design, and the
+production banking service. Demo passwords and the fake local inbox are public demo facilities, and the
 Group 10 remote gateway is still a proposed adapter awaiting a real contract.
 
 ## Windows: one terminal
@@ -36,6 +36,8 @@ powershell -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Setup -Mode mock
 ```
 
 Then open http://127.0.0.1:8080. Later starts can omit `-Setup`.
+Sign-in now requires an email code from the local inbox after the password; see
+[MFA instructions](SESSIONS_MFA_VI.md), including `docker exec` commands for containers.
 Use `-Mode ollama` for the real model; install Ollama, start it, and run
 `ollama pull llama3.2:3b` first. An existing `backend/.env` is preserved.
 To use its provider setting, omit `-Mode`. Environment variables take precedence
@@ -105,17 +107,17 @@ Engine networking can differ from Docker Desktop.
 
 The longer walkthrough remains in [DEMO_SCRIPT.md](DEMO_SCRIPT.md).
 
-With the application running, repeat the HTTP acceptance checks from the repo root:
+Run the current isolated browser acceptance from `frontend/`:
 
 ```powershell
-backend/.venv/Scripts/python.exe scripts/check-demo.py http://127.0.0.1:8080 ollama
+npm run test:e2e
 ```
 
-Use `mock` instead of `ollama` for offline mode, and change the URL if needed.
-This checks compiled assets, readiness, own-account access, foreign-account
-denial, conversation isolation and dry-run behavior. It creates and deletes a
-temporary conversation; it does not remove existing conversations. It is an
-HTTP integration check, not a browser rendering or independent security review.
+This builds the UI and starts a separate real backend with mock AI and a disposable
+DB. It covers MFA, banking, recovery and session controls without modifying the
+working DB. The historical `scripts/check-demo.py` uses retired static tokens and
+is not a supported acceptance command. Real-model evaluation and independent
+security review remain separate work.
 
 ## Troubleshooting
 

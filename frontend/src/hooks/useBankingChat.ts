@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../api';
+import { api, streamMessage } from '../api';
 import type { ChatMessage, Conversation, DemoUser, Health, ToolEvent } from '../types';
 
 // Owns session state and request coordination. Presentation components do not call the API.
-export function useBankingChat(user: DemoUser) {
+export function useBankingChat(user: DemoUser, enabled = true) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selection, setSelection] = useState<{ id: string; ownerId: string; } | null>(null);
   const active = selection?.ownerId === user?.id ? selection?.id ?? null : null;
@@ -15,12 +15,37 @@ export function useBankingChat(user: DemoUser) {
   const [health, setHealth] = useState<Health | null>(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [defenseProfile, setDefenseProfile] = useState<'baseline' | 'defended'>('defended');
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pending = useRef<{ controller: AbortController; runId?: string; stopping: boolean } | null>(null);
+
+  useEffect(() => () => {
+    pending.current?.controller.abort();
+    pending.current = null;
+  }, [user, enabled]);
+
+  async function stopResponse() {
+    const request = pending.current;
+    if (!request) return;
+    request.stopping = true;
+    request.controller.abort();
+    setProgress('Stopping response…');
+    try {
+      if (request.runId) await api.cancelRun(user, request.runId);
+      setMessages(previous => previous.filter(m => !m.id.startsWith('stream-')));
+    } catch {
+      setError('Stop requested, but the server could not confirm it. Check the conversation before trying again.');
+    } finally {
+      if (pending.current === request) { pending.current = null; setBusy(false); setProgress(''); }
+    }
+  }
 
   useEffect(() => {
+    if (!enabled) return;
     let alive = true;
     api.health().then(status => {
       if (alive) setHealth(status);
@@ -30,10 +55,10 @@ export function useBankingChat(user: DemoUser) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !enabled) return;
     let cancelled = false;
     setActive(null);
     setMessages([]);
@@ -51,7 +76,7 @@ export function useBankingChat(user: DemoUser) {
     return () => {
       cancelled = true;
     };
-  }, [user, setActive]);
+  }, [user, enabled, setActive]);
 
   useEffect(() => {
     if (!user || !active) {
@@ -61,7 +86,9 @@ export function useBankingChat(user: DemoUser) {
     }
     let cancelled = false;
     Promise.all([api.messages(user, active), api.toolEvents(user, active)]).then(([chat, log]) => {
-      if (cancelled) return;
+      // A history read started by selecting a new conversation must not erase
+      // live text that arrived while that read was in flight.
+      if (cancelled || pending.current) return;
       setMessages(chat);
       setEvents(log);
     }).catch(err => {
@@ -109,6 +136,8 @@ export function useBankingChat(user: DemoUser) {
   async function sendMessage(value = draft, fresh = false) {
     if (!user || busy || !value.trim()) return;
     const content = value.trim();
+    const request = { controller: new AbortController(), stopping: false, runId: undefined as string | undefined };
+    pending.current = request;
     setBusy(true);
     setDraft('');
     setError(null);
@@ -119,21 +148,37 @@ export function useBankingChat(user: DemoUser) {
         id = created.id;
         setActive(created.id);
       }
+      if (request.controller.signal.aborted || pending.current !== request) return;
       // Render local user intent promptly; authoritative history is reloaded after completion.
       setMessages(previous => [...(fresh ? [] : previous), {
         id: 'pending-' + Date.now(), conversation_id: id!, role: 'user', content, created_at: new Date().toISOString(),
       }]);
-      const response = await api.sendMessage(user, id, content);
+      const response = health?.agent_mode === 'service'
+        ? await streamMessage(user, id, content, defenseProfile, setProgress, {
+          signal: request.controller.signal,
+          run: runId => { request.runId = runId; },
+          text: text => {
+            if (pending.current !== request || request.controller.signal.aborted) return;
+            const message = { id: 'stream-' + id, conversation_id: id!, role: 'assistant' as const, content: text, created_at: new Date().toISOString() };
+            setMessages(previous => [...previous.filter(m => m.id !== message.id), message]);
+          },
+        })
+        : await api.sendMessage(user, id, content, request.controller.signal);
+      if (request.controller.signal.aborted || pending.current !== request) return;
       const [chat, log] = await Promise.all([api.messages(user, id), api.toolEvents(user, id)]);
+      if (request.controller.signal.aborted || pending.current !== request) return;
       setMessages(chat);
       setEvents(log);
       await refreshConversations(user);
       if (response.message.role !== 'assistant') throw new Error('Unexpected backend response');
     } catch (err) {
+      if (request.controller.signal.aborted || pending.current !== request) return;
       setError((err as Error).message + ' · Your message may have been saved. Check the conversation before sending it again.');
       if (active) api.messages(user, active).then(setMessages).catch(() => { });
     } finally {
-      setBusy(false);
+      if (pending.current === request && !request.stopping) {
+        pending.current = null; setBusy(false); setProgress('');
+      }
     }
   }
 
@@ -154,6 +199,7 @@ export function useBankingChat(user: DemoUser) {
     draft,
     setDraft,
     busy,
+    progress, defenseProfile, setDefenseProfile,
     error,
     setError,
     endRef,
@@ -162,6 +208,7 @@ export function useBankingChat(user: DemoUser) {
     startConversation,
     deleteConversation,
     sendMessage,
+    stopResponse,
     activeTitle,
     pickSuggestion,
     askNew: (text: string) => sendMessage(text, true),

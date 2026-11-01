@@ -1,15 +1,16 @@
-import { House, LogOut, MessageCircle, QrCode, ReceiptText, UserRound } from 'lucide-react';
+import { Bell, House, LogOut, MessageCircle, Compass, ReceiptText, UserRound, ShieldCheck, LifeBuoy } from 'lucide-react';
 
 import type { DemoUser } from '../../types';
 import { initials } from '../../format';
 
-export type Tab = 'home' | 'activity' | 'qr' | 'assistant' | 'profile';
+export type Tab = 'home' | 'activity' | 'qr' | 'assistant' | 'profile' | 'notifications' | 'admin' | 'explore' | 'support';
 
 const ITEMS: { id: Tab; label: string; icon: typeof House }[] = [
   { id: 'home', label: 'Home', icon: House },
   { id: 'activity', label: 'Activity', icon: ReceiptText },
-  { id: 'qr', label: 'VietQR', icon: QrCode },
   { id: 'assistant', label: 'Assistant', icon: MessageCircle },
+  { id: 'explore', label: 'Explore', icon: Compass },
+  { id: 'notifications', label: 'Alerts', icon: Bell },
   { id: 'profile', label: 'Profile', icon: UserRound },
 ];
 
@@ -20,8 +21,13 @@ interface NavBarProps {
   logout: () => void;
 }
 
-// One navigation: a top bar on desktop, a bottom tab bar with a raised QR button on phones.
+// One navigation: a left sidebar on desktop, a bottom tab bar on phones.
 export function NavBar({ tab, setTab, user, logout }: NavBarProps) {
+  const items = !user.role || user.role === 'customer' ? ITEMS : [
+    ...(user.permissions?.includes('admin:transactions:read') ? [{ id: 'admin' as const, label: 'Operations', icon: ShieldCheck }] : []),
+    ...(user.permissions?.includes('support:read') ? [{ id: 'support' as const, label: 'Support', icon: LifeBuoy }] : []),
+    ...ITEMS.filter(item => item.id === 'notifications' || item.id === 'profile'),
+  ];
   return (
     <nav className="app-nav" aria-label="Main">
       <div className="nav-brand">
@@ -29,23 +35,18 @@ export function NavBar({ tab, setTab, user, logout }: NavBarProps) {
         <span className="brand-word">nova<span>bank</span></span>
       </div>
       <ul className="nav-items">
-        {ITEMS.map(({ id, label, icon: Icon }) => (
-          <li key={id} className={id === 'profile' ? 'nav-profile-item' : undefined}>
-            <button
-              className={`nav-item ${id === 'qr' ? 'nav-qr' : ''}`}
-              aria-current={tab === id ? 'page' : undefined}
-              onClick={() => setTab(id)}>
-              <span className="nav-icon"><Icon size={id === 'qr' ? 24 : 20} aria-hidden="true" /></span>
+        {items.map(({ id, label, icon: Icon }) => (
+          <li key={id}>
+            <button className="nav-item" data-tab={id} aria-label={label} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>
+              <span className="nav-icon"><Icon size={20} aria-hidden="true" /></span>
               <span className="nav-label">{label}</span>
             </button>
           </li>
         ))}
       </ul>
       <div className="nav-user">
-        <button className="nav-user-button" onClick={() => setTab('profile')} aria-label="Open profile">
-          <span className="avatar" aria-hidden="true">{initials(user.name)}</span>
-          <span className="nav-user-name">{user.name}</span>
-        </button>
+        <span className="avatar" aria-hidden="true">{initials(user.name)}</span>
+        <span className="nav-user-name">{user.name}<small>@{user.id}</small></span>
         <button className="icon-button" aria-label="Sign out" title="Sign out" onClick={logout}>
           <LogOut size={18} />
         </button>

@@ -1,74 +1,50 @@
-"""VietQR client (https://www.vietqr.io). Called only by ToolDispatcher after authorization.
+"""Compatibility facade for the private NovaBank demo QR and bank simulator.
 
-With VIETQR_CLIENT_ID/VIETQR_API_KEY set, /v2/generate returns the QR image; otherwise the
-public Quick Link image service renders the same NAPAS payload without credentials.
+Historical tool/API names remain for saved conversations. No network or NAPAS
+payload is generated; new UI calls these NovaBank demo QR codes.
 """
-from urllib.parse import urlencode
-import httpx
-from .config import setting
+import base64
 from .faq import fold
 
-API = 'https://api.vietqr.io/v2'
-_banks: list[dict] = []
+_banks: list[dict] = []  # Kept as an injectable offline catalogue for compatibility tests.
+DEMO_BANKS = [
+    {'bin': 'NOVA', 'code': 'NVB', 'shortName': 'NovaBank', 'name': 'NovaBank (simulated)', 'logo': ''},
+    {'bin': 'DEMOA', 'code': 'DEMOA', 'shortName': 'Demo Bank A', 'name': 'Demo Bank A (simulated)', 'logo': ''},
+    {'bin': 'DEMOB', 'code': 'DEMOB', 'shortName': 'Demo Bank B', 'name': 'Demo Bank B (simulated)', 'logo': ''},
+]
 
 
 class VietQRError(Exception):
-    def __init__(self, reason_code: str):
+    def __init__(self, reason_code):
         super().__init__(reason_code)
         self.reason_code = reason_code
 
 
-async def banks() -> list[dict]:
-    global _banks
-    if not _banks:
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(API + '/banks')
-                response.raise_for_status()
-                _banks = response.json()['data']
-        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
-            raise VietQRError('VIETQR_UNAVAILABLE') from exc
-    return _banks
+async def banks():
+    return [*_banks, *[b for b in DEMO_BANKS if not any(x.get('bin') == b['bin'] for x in _banks)]]
 
 
-def find_bank(items: list[dict], key: str) -> dict | None:
+def find_bank(items, key):
     key = fold(key).replace(' ', '')
     for bank in items:
-        names = (bank.get('bin', ''), bank.get('code', ''), bank.get('shortName', ''))
-        if key in (fold(str(n)).replace(' ', '') for n in names):
+        if key in (fold(str(bank.get(k, ''))).replace(' ', '') for k in ('bin', 'code', 'shortName')):
             return bank
     return None
 
 
-def plain(text: str, limit: int) -> str:
-    # NAPAS fields accept ASCII only.
+def plain(text, limit):
     return ''.join(c for c in fold(text) if c.isalnum() or c == ' ')[:limit].strip()
 
 
-async def generate(bank: str, account_no: str, amount_vnd: int | None = None,
-                   add_info: str | None = None, account_name: str | None = None) -> dict:
+async def generate(bank, account_no, amount_vnd=None, add_info=None, account_name=None):
+    from .local_qr import encode, png
     found = find_bank(await banks(), bank)
     if found is None:
         raise VietQRError('UNKNOWN_BANK')
-    info = plain(add_info or '', 25)
-    name = plain(account_name or '', 50).upper()
-    client_id, api_key = setting('VIETQR_CLIENT_ID'), setting('VIETQR_API_KEY')
-    if client_id and api_key:
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.post(API + '/generate', headers={'x-client-id': client_id, 'x-api-key': api_key}, json={
-                    'accountNo': account_no, 'accountName': name, 'acqId': int(found['bin']),
-                    'amount': amount_vnd or 0, 'addInfo': info, 'format': 'text', 'template': 'compact'})
-                response.raise_for_status()
-                body = response.json()
-                if body.get('code') != '00':
-                    raise VietQRError('VIETQR_REJECTED')
-                image, source = body['data']['qrDataURL'], 'vietqr_api'
-        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
-            raise VietQRError('VIETQR_UNAVAILABLE') from exc
-    else:
-        query = {k: v for k, v in (('amount', amount_vnd), ('addInfo', info), ('accountName', name)) if v}
-        image = f'https://img.vietqr.io/image/{found["bin"]}-{account_no}-compact.png' + (f'?{urlencode(query)}' if query else '')
-        source = 'vietqr_quicklink'
+    info, name = plain(add_info or '', 25), plain(account_name or '', 50).upper()
+    payload = encode(dict(bank=found['shortName'], account_no=account_no, amount_vnd=amount_vnd,
+                          add_info=info, account_name=name))
+    image = 'data:image/png;base64,' + base64.b64encode(png(payload)).decode()
     return {'bank': found['shortName'], 'bin': found['bin'], 'account_no': account_no, 'account_name': name,
-            'amount_vnd': amount_vnd, 'add_info': info, 'image': image, 'source': source}
+            'amount_vnd': amount_vnd, 'add_info': info, 'image': image, 'payload': payload,
+            'source': 'novabank_internal', 'demo_only': True}

@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CheckCircle2, MessageSquareText } from 'lucide-react';
 
-import { api } from '../../api';
+import { api, request } from '../../api';
 import type { Bank, DemoUser, Transfer, TransferStart } from '../../types';
 import { vnd } from '../../format';
 import { BankPicker } from '../qr/BankPicker';
 import { Sheet } from '../ui/Sheet';
+import { ReceiptButton } from '../activity/ReceiptButton';
 
-const NOVABANK: Bank = { bin: 'NovaBank', code: 'NOVA', shortName: 'NovaBank', name: 'Internal transfer · instant, free', logo: '' };
+const NOVABANK: Bank = { bin: 'NovaBank', code: 'NOVA', shortName: 'NovaBank', name: 'Internal transfer · instant', logo: '' };
 const AMOUNTS = [50000, 100000, 200000, 500000];
 const ERRORS: Record<string, string> = {
   INSUFFICIENT_FUNDS: 'Your balance is lower than this amount.',
@@ -23,6 +24,11 @@ const ERRORS: Record<string, string> = {
   DAILY_LIMIT_EXCEEDED: 'This transfer exceeds your daily limit.',
   TRANSFER_NOT_FOUND: 'Transfer not found.',
   VIETQR_UNAVAILABLE: 'The bank list is unavailable. Try again shortly.',
+  DRAFT_EXPIRED: 'This transfer draft has expired. Close this window and start a new transfer.',
+  ACCOUNT_NOT_ACTIVE: 'A sending or receiving account is frozen or closed. This transfer was cancelled.',
+  IDEMPOTENCY_CONFLICT: 'This confirmation key belongs to another transfer. Close this window and try again.',
+  POSTING_FAILED: 'The transfer could not be recorded. Check your activity before starting a new transfer.',
+  LEDGER_MISMATCH: 'The account needs a balance check. No transfer was made. Please contact support.',
 };
 const explain = (err: unknown) => ERRORS[(err as Error).message] ?? (err as Error).message;
 
@@ -58,9 +64,11 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
   const validAccount = internal ? /^ACC-[A-Z0-9-]{3,30}$/.test(account) : /^\d{6,19}$/.test(account);
 
   const otpRequested = useRef(false);
+  const submitting = useRef(false);
+  const confirmationKey = useRef<string | null>(null);
 
   useEffect(() => {
-    api.banks(user).then(list => setBanks([NOVABANK, ...list])).catch(() => { /* NovaBank transfers still work */ });
+    api.banks(user).then(list => setBanks([NOVABANK, ...list.filter(b => b.shortName !== 'NovaBank')])).catch(() => { /* NovaBank transfers still work */ });
     // A draft prepared by Nova: fetch it with a fresh OTP and go straight to review.
     // Once only: StrictMode's second run would issue a second OTP and race the first.
     if (start.draftId && !otpRequested.current) {
@@ -69,16 +77,30 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
     }
   }, [user, start.draftId]);
 
+  useEffect(() => {
+    if (transfer?.status !== 'PENDING') return;
+    let active = true;
+    const timer = window.setInterval(() => {
+      request<Transfer>('/transfers/' + transfer.id, user).then(result => {
+        if (active) setTransfer(previous => previous && ({ ...previous, ...result }));
+      }).catch(err => { if (active) setError(explain(err)); });
+    }, 2000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [user, transfer?.id, transfer?.status]);
+
   async function run(action: () => Promise<Transfer>) {
+    if (submitting.current) return;
+    submitting.current = true;
     setBusy(true);
     setError(null);
     try {
       const result = await action();
       setTransfer(result);
-      if (result.status === 'COMPLETED') onDone();
+      if (result.status === 'COMPLETED' || result.status === 'PENDING') onDone();
     } catch (err) {
       setError(explain(err));
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -93,14 +115,17 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
 
   function confirm(event: FormEvent) {
     event.preventDefault();
-    void run(() => api.confirmTransfer(user, transfer!.id, otp));
+    // A lost HTTP response must retry the same confirmation, including after an OTP correction.
+    const key = confirmationKey.current ??= crypto.randomUUID();
+    void run(() => api.confirmTransfer(user, transfer!.id, otp, key));
   }
 
-  if (transfer?.status === 'COMPLETED') {
+  if (transfer && transfer.status !== 'PENDING_OTP') {
     return (
       <div className="tx-detail">
         <span className="tx-icon tx-icon-lg in"><CheckCircle2 size={30} aria-hidden="true" /></span>
-        <strong>Transfer successful</strong>
+        <strong>{transfer.status === 'COMPLETED' ? 'Transfer successful' : transfer.status === 'PENDING' ? 'Transfer pending' : 'Transfer failed — money refunded'}</strong>
+        {transfer.status === 'PENDING' && <p className="muted" role="status">The simulated receiving bank is processing this transfer. This view updates automatically.</p>}
         <strong className="tx-detail-amount">-{vnd(transfer.amount_vnd)}</strong>
         <dl className="detail-list">
           <div><dt>To</dt><dd>{transfer.to_name || 'Name not verified'}</dd></div>
@@ -109,6 +134,8 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
           <div><dt>Reference</dt><dd>{transfer.transaction_id}</dd></div>
           {transfer.balance_vnd !== undefined && <div><dt>New balance</dt><dd>{vnd(transfer.balance_vnd)}</dd></div>}
         </dl>
+        {transfer.transaction_id && transfer.status === 'COMPLETED' && <ReceiptButton user={user} transactionId={transfer.transaction_id} />}
+        {error && <p className="form-error" role="alert">{error}</p>}
         <button className="primary-button" onClick={onClose}>Done</button>
       </div>
     );
@@ -122,7 +149,8 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
           <div><dt>To</dt><dd>{transfer.to_name || 'Name not verified (other bank)'}</dd></div>
           <div><dt>Bank</dt><dd>{transfer.to_bank} · {transfer.to_account}</dd></div>
           <div><dt>Amount</dt><dd>{vnd(transfer.amount_vnd)}</dd></div>
-          <div><dt>Fee</dt><dd>Free</dd></div>
+          <div><dt>Fee</dt><dd>{transfer.fee_vnd ? vnd(transfer.fee_vnd) : 'Free'}</dd></div>
+          <div><dt>Total debit</dt><dd>{vnd(transfer.amount_vnd + (transfer.fee_vnd ?? 0))}</dd></div>
           <div><dt>Content</dt><dd>{transfer.content}</dd></div>
         </dl>
         {transfer.demo_otp && (

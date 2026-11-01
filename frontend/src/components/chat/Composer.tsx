@@ -16,6 +16,7 @@ interface ComposerProps {
   hasMessages: boolean;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   sendMessage: () => void;
+  stopResponse?: () => void;
   pickSuggestion: (text: string) => void;
 }
 
@@ -29,6 +30,7 @@ export function Composer({
   hasMessages,
   textareaRef,
   sendMessage,
+  stopResponse,
   pickSuggestion,
 }: ComposerProps) {
   return (
@@ -70,13 +72,13 @@ export function Composer({
             }
           }}
           aria-label="Message" />
-        <button
+        {busy ? <button className="send-button" aria-label="Stop response" onClick={stopResponse}><X size={18} /></button> : <button
           className="send-button"
           aria-label="Send message"
           disabled={!draft.trim() || busy || !user}
           onClick={() => void sendMessage()}>
           <Send size={18} strokeWidth={2.25} />
-        </button>
+        </button>}
       </div>
       <div className="composer-foot">
         <span>

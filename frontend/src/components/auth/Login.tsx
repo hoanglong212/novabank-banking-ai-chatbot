@@ -1,14 +1,17 @@
 import { useState, type FormEvent } from 'react';
-import { Eye, EyeOff, LockKeyhole, MessageCircle, QrCode, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
+import { AuthShell } from './AuthShell';
 
 interface LoginProps {
   onLogin: (username: string, password: string) => Promise<void>;
   notice: string | null;
+  success?: string | null;
+  onNavigate?: (mode: 'register' | 'forgot' | 'resend') => void;
 }
 
 const DEMO_ACCOUNTS = [['alice', 'Alice@2026'], ['bob', 'Bob@2026']];
 
-export function Login({ onLogin, notice }: LoginProps) {
+export function Login({ onLogin, notice, success, onNavigate }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -28,24 +31,12 @@ export function Login({ onLogin, notice }: LoginProps) {
   }
 
   return (
-    <div className="login-page">
-      <section className="login-hero" aria-hidden="true">
-        <div className="nav-brand">
-          <span className="brand-mark">N</span>
-          <span className="brand-word">nova<span>bank</span></span>
-        </div>
-        <h2>Your money, with an assistant that never sleeps.</h2>
-        <ul>
-          <li><MessageCircle size={18} /> Ask Nova about balances, payments and banking questions</li>
-          <li><QrCode size={18} /> Create VietQR payment codes in seconds</li>
-          <li><ShieldCheck size={18} /> Every AI action is permission-checked; personal data stays hidden from the AI</li>
-        </ul>
-      </section>
-      <main className="login-panel">
+    <AuthShell>
         <form className="login-card" onSubmit={submit} noValidate>
           <span className="brand-mark login-mark" aria-hidden="true">N</span>
           <h1>Sign in</h1>
           <p className="login-sub">Welcome back to NovaBank.</p>
+          {success && <div className="auth-success" role="status">{success}</div>}
           {(error || notice) && <div className="form-error" role="alert">{error || notice}</div>}
           <label className="field">
             <span>Username</span>
@@ -66,17 +57,20 @@ export function Login({ onLogin, notice }: LoginProps) {
           <button className="primary-button" type="submit" disabled={busy || !username.trim() || !password}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
+          <div className="auth-links">
+            <button type="button" disabled={busy} onClick={() => onNavigate?.('register')}>Create an account</button>
+            <button type="button" disabled={busy} onClick={() => onNavigate?.('forgot')}>Forgot password?</button>
+            <button type="button" disabled={busy} onClick={() => onNavigate?.('resend')}>Verify your email</button>
+          </div>
           <div className="demo-accounts">
             <span><LockKeyhole size={14} aria-hidden="true" /> Demo accounts</span>
             {DEMO_ACCOUNTS.map(([name, secret]) => (
-              <button type="button" key={name} onClick={() => { setUsername(name); setPassword(secret); }}>
+              <button type="button" key={name} disabled={busy} onClick={() => { setUsername(name); setPassword(secret); }}>
                 {name} · {secret}
               </button>
             ))}
           </div>
         </form>
-        <p className="login-foot">Fictional bank for a classroom demo. Never use real banking credentials.</p>
-      </main>
-    </div>
+    </AuthShell>
   );
 }

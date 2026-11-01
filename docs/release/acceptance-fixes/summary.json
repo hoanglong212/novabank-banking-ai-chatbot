@@ -1,0 +1,43 @@
+{
+  "pytest_passed": 271,
+  "component_groups_passed": 17,
+  "e2e_passed": 15,
+  "reconcile": {
+    "id": "6add5582-4f21-4581-9691-9358f54d0e13",
+    "created_at": "2026-11-01T10:54:07+00:00",
+    "balanced": true,
+    "ledger_total_vnd": 0,
+    "mismatches": [],
+    "unbalanced_journals": []
+  },
+  "route_matrix_entries": 113,
+  "api_route_methods": 104,
+  "case_ids": [
+    "TRF-14",
+    "SEC-01",
+    "BEN-01",
+    "ADM-02",
+    "PFM-02",
+    "STM-01",
+    "DSH-01",
+    "AI-02",
+    "AI-12",
+    "AI-11"
+  ],
+  "spec_decisions": [
+    "AUTH-03",
+    "ADM-03",
+    "AI-13",
+    "NF-07"
+  ],
+  "deferred": [
+    "AI-14",
+    "PI-05",
+    "PI-06"
+  ],
+  "demo_server_restarted": false,
+  "independent_review": false,
+  "financial_line_coverage_percent": 93.58,
+  "compileall_exit_code": 0,
+  "git_diff_check_exit_code": 0
+}

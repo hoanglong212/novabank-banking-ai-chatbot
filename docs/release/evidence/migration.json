@@ -1,0 +1,57 @@
+{
+  "checks": [
+    {
+      "source": "novabank_demo.sqlite3",
+      "original_unchanged": true,
+      "old_rows_preserved": true,
+      "tables": {},
+      "versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "integrity": "ok",
+      "ledger_balanced": true
+    },
+    {
+      "source": "backend\\novabank_demo.sqlite3",
+      "original_unchanged": true,
+      "old_rows_preserved": true,
+      "tables": {
+        "conversations": true,
+        "messages": true,
+        "tool_events": true,
+        "support_tickets": true,
+        "accounts": true,
+        "transactions": true,
+        "transfers": true,
+        "schema_migrations": true,
+        "ledger_accounts": true,
+        "ledger_entries": true,
+        "reconciliation_runs": true,
+        "idempotency_keys": true,
+        "banking_audit": true,
+        "transaction_details": true,
+        "notifications": true
+      },
+      "versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "integrity": "ok",
+      "ledger_balanced": true
+    }
+  ],
+  "passed": true
+}

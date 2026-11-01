@@ -1,0 +1,272 @@
+{
+  "screenshots": [
+    {
+      "file": "1440-home.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-explore.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-0.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-1.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-2.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-3.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-4.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-5.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-6.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-7.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-service-8.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-profile.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "768-home.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-explore.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-0.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-1.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-2.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-3.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-4.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-5.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-6.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-7.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-service-8.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "768-profile.png",
+      "width": 768,
+      "scroll": 768,
+      "unlabeled": []
+    },
+    {
+      "file": "375-home.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-explore.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-0.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-1.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-2.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-3.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-4.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-5.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-6.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-7.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-service-8.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "375-profile.png",
+      "width": 375,
+      "scroll": 375,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-agent-proposal.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-agent-transfer-review.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-admin-Overview.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-admin-Customers.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-admin-Settings.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-admin-Knowledge.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-admin-Research.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    },
+    {
+      "file": "1440-admin-Audit.png",
+      "width": 1440,
+      "scroll": 1440,
+      "unlabeled": []
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "Real Ollama SSE proposal and approval open transfer review; Escape closes and restores focus."
+  ]
+}

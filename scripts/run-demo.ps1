@@ -45,7 +45,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Demo preflight failed. Resolve the message above, or use -Mode mock for offline mode.' }
         if (-not $CheckOnly) {
             Write-Host "NovaBank: http://127.0.0.1:$Port (Ctrl+C to stop)"
-            & $pythonExe -m uvicorn app.main:app --host 127.0.0.1 --port $Port
+            & $pythonExe (Join-Path $projectRoot 'scripts/serve.py') --port $Port
             if ($LASTEXITCODE -ne 0) { throw "Server exited with an error. If port $Port is occupied, choose -Port 8081." }
         }
     } finally { Pop-Location }

@@ -7,6 +7,13 @@ from .config import provider, setting
 async def readiness():
     mode = provider()
     result = {'status': 'ready', 'llm_provider': mode}
+    if setting('BANK_REQUIRE_AGENT', 'false') == 'true':
+        try:
+            async with httpx.AsyncClient(timeout=3) as client:
+                r = await client.get(setting('AGENT_SERVICE_URL', 'http://127.0.0.1:8093') + '/health')
+                r.raise_for_status()
+        except httpx.HTTPError:
+            return JSONResponse({**result, 'status': 'not_ready', 'detail': 'Isolated agent service is unavailable.'}, status_code=503)
     if mode == 'mock':
         return JSONResponse(result)
     model = setting('OLLAMA_MODEL', 'llama3.2:3b')

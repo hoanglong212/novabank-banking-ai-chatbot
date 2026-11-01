@@ -2,7 +2,7 @@ import type { ChatMessage } from '../../types';
 
 import { formatTime, safeMessageParts } from './messageFormatting';
 
-const draftId = (text: string) => text.match(/TRF-[0-9A-F]{8}/)?.[0];
+const draftId = (text: string) => text.match(/\bTRF-(?:[0-9A-F]{32}|[0-9A-F]{8})\b/)?.[0];
 
 interface MessageThreadProps {
   messages: ChatMessage[];

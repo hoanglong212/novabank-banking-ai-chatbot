@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "old_otp_status_after_process_restart": 200,
+  "debit_vnd": 3000,
+  "idempotent_replay": true
+}

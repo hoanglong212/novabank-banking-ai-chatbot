@@ -1,0 +1,73 @@
+name: novabank-demo
+services:
+  bank:
+    build: .
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set a persistent random JWT_SECRET}
+      DB_PATH: /data/novabank_demo.sqlite3
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      OLLAMA_URL: http://host.docker.internal:11434
+      EMBEDDING_MODEL: nomic-embed-text:latest
+      AGENT_SERVICE_URL: http://agent:8093
+      BANK_REQUIRE_AGENT: "true"
+      CORS_ORIGINS: https://${DEMO_DOMAIN:?Set your HTTPS hostname}
+    volumes:
+      - bank-data:/data
+      - research-data:/app/.local/research
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on:
+      agent: {condition: service_healthy}
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  agent:
+    build: {context: ., dockerfile: Dockerfile.agent}
+    environment:
+      BANKING_API_URL: http://bank:8000
+      OLLAMA_URL: http://host.docker.internal:11434
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  proxy:
+    image: caddy:2
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DEMO_DOMAIN: ${DEMO_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME contact email}
+      DEMO_USER: ${DEMO_USER:-reviewer}
+      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?Set a Caddy bcrypt password hash}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      bank: {condition: service_healthy}
+    restart: unless-stopped
+  backup:
+    build: .
+    command: [python, /app/scripts/backup-loop.py]
+    environment:
+      DB_PATH: /data/novabank_demo.sqlite3
+      BACKUP_KEY_FILE: /run/secrets/backup_key
+    volumes:
+      - bank-data:/data:ro
+      - backup-data:/backups
+    secrets: [backup_key]
+    depends_on:
+      bank: {condition: service_healthy}
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+secrets:
+  backup_key:
+    file: ${BACKUP_KEY_FILE:?Set the separate backup key file path}
+volumes:
+  bank-data:
+  research-data:
+  backup-data:
+  caddy-data:
+  caddy-config:

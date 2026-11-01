@@ -1,0 +1,41 @@
+"""Bank-owned filtering shared by live previews and persisted final answers."""
+import json
+import re
+from .auth_crypto import decrypt_secret
+
+
+def filtered_answer(conn, db, run, answer):
+    if re.search(r'(?:https?://|NB_CANARY_|eyJ[A-Za-z0-9_-]{20,}\.)', answer):
+        answer = 'I could not safely display that response. Please use the banking screens or contact support.'
+    proposal = conn.execute('SELECT 1 FROM tool_approvals WHERE run_id=? LIMIT 1', (run['id'],)).fetchone()
+    intent = json.loads(decrypt_secret(db, run['bound_request_json']))
+    if proposal:
+        answer = ('I prepared a proposal for your review below. No payment or card change has been made by the assistant. '
+                  'Review it in the app. Enter any verification code only in the bank confirmation screen, never in this chat.')
+    elif intent['tool'] in ('create_transfer', 'create_support_ticket'):
+        answer = 'No action has been prepared or completed. Please use the banking screens or provide a specific request with the required details.'
+    elif re.search(r'(?i)\b(?:send|provide|give|enter)\b.{0,40}\b(?:otp|pin|password|verification code)\b', answer):
+        answer = 'Never share passwords, PINs or verification codes in chat. Use only the bank confirmation screen for codes.'
+    elif not proposal:
+        answer = cite_retrieved_sources(conn, run, answer)
+    return answer
+
+
+def cite_retrieved_sources(conn, run, answer):
+    sources = []
+    calls = conn.execute("SELECT result_json FROM agent_calls WHERE run_id=? AND name='search_knowledge' AND decision='ALLOW' ORDER BY ordinal", (run['id'],)).fetchall()
+    for call in calls:
+        for source in json.loads(call[0]).get('sources', []):
+            key = source.get('document_id', '')
+            approved = conn.execute("SELECT 1 FROM knowledge_documents WHERE id=? AND status='PUBLISHED' AND trust_level='approved'", (key,)).fetchone()
+            if approved and key not in sources:
+                sources.append(key)
+    cited = set(re.findall(r'\bKB-[A-Za-z0-9_-]+', answer))
+    if cited - set(sources):
+        answer = 'I could not verify the cited source. Please check the approved sources below or ask again.'
+    if calls and not sources:
+        return 'No approved source is available for this answer. Please search again or contact support.'
+    missing = [key for key in sources if '[' + key + ']' not in answer]
+    if missing:
+        answer += '\n\nSources: ' + ', '.join('[' + key + ']' for key in missing)
+    return answer
