@@ -1,7 +1,17 @@
 import { expect, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, relative } from 'node:path';
+
+export function clearAuthRequestBudget() {
+  // Shared E2E server only. Production rate limits are tested without resets in pytest.
+  const root = resolve('..');
+  const db = resolve(JSON.parse(readFileSync(resolve(root, '.local/e2e/latest.json'), 'utf8')).db_path);
+  if (relative(resolve(root, '.local/e2e'), db).startsWith('..')) throw new Error('Expected disposable E2E database');
+  const venv = resolve(root, process.platform === 'win32' ? 'backend/.venv/Scripts/python.exe' : 'backend/.venv/bin/python');
+  const python = process.env.NOVABANK_PYTHON || (existsSync(venv) ? venv : 'python');
+  execFileSync(python, ['-c', "import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute(\"DELETE FROM identity_limits WHERE scope LIKE 'request:/api/auth/%'\"); c.commit(); c.close()", db]);
+}
 
 export function localMessage(email: string, kind: string) {
   const root = resolve('..');

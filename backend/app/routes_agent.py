@@ -35,6 +35,7 @@ class FinishInput(IdentityInput):
     output_tokens: int = Field(default=0, ge=0, le=1000000)
     latency_ms: int = Field(ge=0, le=300000)
     status: Literal['COMPLETED', 'FAILED'] = 'COMPLETED'
+    termination_reason: Literal['ROUND_LIMIT', 'TOOL_LIMIT', 'TIME_LIMIT', 'ANOMALOUS_SEQUENCE', 'UPSTREAM_ERROR', 'INVALID_MODEL_RESPONSE'] | None = None
 
 
 class PreviewInput(IdentityInput):
@@ -98,8 +99,8 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
         answer = filtered_answer(conn, db, run, payload.answer)
         restored = vault.restore(answer)
         conn.execute('''UPDATE agent_runs SET status=?,completed_at=?,latency_ms=?,input_tokens=?,output_tokens=?,
-            response_source='agent_service',answer=?,bound_request_json='{}',vault_json='{}' WHERE id=?''',
-            (payload.status, now(), payload.latency_ms, payload.input_tokens, payload.output_tokens, agent_access.trace_safe(answer), run['id']))
+            response_source='agent_service',answer=?,termination_reason=?,bound_request_json='{}',vault_json='{}' WHERE id=?''',
+            (payload.status, now(), payload.latency_ms, payload.input_tokens, payload.output_tokens, agent_access.trace_safe(answer, vault), payload.termination_reason, run['id']))
         import uuid
         message = {'id': str(uuid.uuid4()), 'conversation_id': run['conversation_id'], 'role': 'assistant', 'content': restored, 'created_at': now()}
         conn.execute('INSERT INTO messages VALUES (:id,:conversation_id,:role,:content,:created_at)', message)
@@ -113,7 +114,7 @@ def runs(conversation_id: str = Query(max_length=64), user=Depends(customer_user
     with db.connect() as conn:
         if not conn.execute('SELECT 1 FROM conversations WHERE id=? AND owner_id=?', (conversation_id, user.id)).fetchone():
             raise HTTPException(404, 'Conversation not found.')
-        rows = conn.execute('''SELECT id,status,profile,model,created_at,completed_at,latency_ms,input_tokens,output_tokens
+        rows = conn.execute('''SELECT id,status,profile,model,created_at,completed_at,latency_ms,input_tokens,output_tokens,termination_reason
             FROM agent_runs WHERE conversation_id=? AND owner_id=? ORDER BY created_at DESC,rowid DESC LIMIT 50''', (conversation_id, user.id))
         return {'items': [dict(r) for r in rows]}
 
@@ -121,7 +122,7 @@ def runs(conversation_id: str = Query(max_length=64), user=Depends(customer_user
 @router.get('/agent/runs/{run_id}')
 def run_detail(run_id: str, user=Depends(customer_user), db=Depends(get_db)):
     with db.connect() as conn:
-        row = conn.execute('''SELECT id,status,profile,model,created_at,completed_at,latency_ms,input_tokens,output_tokens,answer
+        row = conn.execute('''SELECT id,status,profile,model,created_at,completed_at,latency_ms,input_tokens,output_tokens,answer,termination_reason
             FROM agent_runs WHERE id=? AND owner_id=?''', (run_id, user.id)).fetchone()
         if not row:
             raise HTTPException(404, 'Run not found.')

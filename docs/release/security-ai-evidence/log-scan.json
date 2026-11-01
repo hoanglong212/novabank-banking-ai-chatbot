@@ -1,0 +1,12 @@
+{
+  "case": "SEC-09",
+  "inputs": [
+    "final2-pytest.log",
+    "final-components.log",
+    "final-e2e.log"
+  ],
+  "sanitized_before_scan": false,
+  "findings": [],
+  "passed": true,
+  "runtime_canary_test": "backend/tests/test_SEC_09.py"
+}

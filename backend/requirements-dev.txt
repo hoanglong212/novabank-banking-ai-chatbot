@@ -1,2 +1,4 @@
 -r requirements.txt
 pytest>=8.2,<10
+pip>=26.2.0,<27
+pip-audit==2.10.1

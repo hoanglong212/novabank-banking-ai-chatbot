@@ -1,4 +1,13 @@
 from tests.acceptance_helpers import *
+from app import recipient_security
+
+
+@pytest.fixture(autouse=True)
+def recipient_quota_window(monkeypatch):
+    # These tests exhaust a single fixed window. Wall-clock rollover during
+    # slower/coverage runs must not split their requests across two buckets.
+    stamp = recipient_security.timestamp()
+    monkeypatch.setattr(recipient_security, 'timestamp', lambda: stamp)
 
 
 def resolve(client, who, path, account='ACC-BOB-001'):

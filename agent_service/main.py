@@ -40,6 +40,7 @@ def health():
 
 async def run_events(authorization, context):
     started = time.perf_counter(); input_tokens = output_tokens = 0; answer = ''; failed = False
+    termination_reason = None
     defended = context['profile'] == 'defended'
     messages = [{'role': 'system', 'content': SYSTEM + ('\n' + HARDENED if defended else '')}, *context['messages']]
     used = 0
@@ -98,6 +99,7 @@ async def run_events(authorization, context):
                     messages.append({'role': 'assistant', 'content': content, 'tool_calls': calls})
                     for call in calls:
                         if used >= min(context['max_tool_calls'], 8):
+                            termination_reason = 'TOOL_LIMIT'
                             raise ValueError('Tool budget exhausted')
                         fn = call.get('function', {}); name = fn.get('name', '')
                         arguments = fn.get('arguments', {})
@@ -109,21 +111,27 @@ async def run_events(authorization, context):
                         response.raise_for_status(); result = response.json(); used += 1
                         yield event('tool', {'name': name, 'status': result['decision'].lower(), 'reason': result['reason']})
                         if result.get('halt'):
+                            termination_reason = 'ANOMALOUS_SEQUENCE'
                             raise ValueError('Anomalous sequence stopped')
                         text = json.dumps(result, ensure_ascii=False)
                         if defended:
                             text = '<untrusted_tool_data>\n' + text + '\n</untrusted_tool_data>'
                         messages.append({'role': 'tool', 'tool_name': name, 'content': text[:24000]})
                 else:
+                    failed = True
+                    termination_reason = 'ROUND_LIMIT'
                     answer = 'I reached the tool-round limit. Please narrow your request or use the banking screens.'
-    except (TimeoutError, httpx.HTTPError, ValueError, KeyError, TypeError):
+    except (TimeoutError, httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
         failed = True
+        termination_reason = termination_reason or ('TIME_LIMIT' if isinstance(exc, (TimeoutError, httpx.TimeoutException)) else
+            'UPSTREAM_ERROR' if isinstance(exc, httpx.HTTPError) else 'INVALID_MODEL_RESPONSE')
         answer = 'The assistant could not finish this request within its limits. Please retry or use the banking screens.'
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(BANKING_URL + '/api/agent/finish', headers={'Authorization': authorization}, json={
                 'answer': answer[:24000], 'input_tokens': input_tokens, 'output_tokens': output_tokens,
-                'latency_ms': min(300000, int((time.perf_counter() - started) * 1000)), 'status': 'FAILED' if failed else 'COMPLETED'})
+                'latency_ms': min(300000, int((time.perf_counter() - started) * 1000)), 'status': 'FAILED' if failed else 'COMPLETED',
+                'termination_reason': termination_reason})
             response.raise_for_status()
             yield event('complete', response.json())
     except httpx.HTTPError:

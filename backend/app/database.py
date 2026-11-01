@@ -135,6 +135,8 @@ class Database:
             initialize_agent(conn, now())
             from .notification_preferences import initialize as initialize_notification_preferences
             initialize_notification_preferences(conn, now())
+            from .agent_schema import initialize_agent_termination
+            initialize_agent_termination(conn, now())
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())

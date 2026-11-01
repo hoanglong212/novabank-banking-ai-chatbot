@@ -1,0 +1,135 @@
+{
+  "timestamp": "2026-11-01T14:26:20.812950+00:00",
+  "checks": [
+    {
+      "check": "pip-audit",
+      "argv": [
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pip_audit",
+        "--strict",
+        "--progress-spinner",
+        "off",
+        "--format",
+        "json",
+        "--output",
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\sec10-upgrade\\pip-audit.json"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot",
+      "exit_code": 0,
+      "log": "pip-audit.log"
+    },
+    {
+      "check": "npm-audit",
+      "argv": [
+        "cmd",
+        "/c",
+        "npm audit --json"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend",
+      "exit_code": 0,
+      "log": "npm-audit.log"
+    },
+    {
+      "check": "pip-check",
+      "argv": [
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot",
+      "exit_code": 0,
+      "log": "pip-check.log"
+    },
+    {
+      "check": "compileall",
+      "argv": [
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe",
+        "-m",
+        "compileall",
+        "-q",
+        "backend/app",
+        "agent_service",
+        "research",
+        "scripts"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot",
+      "exit_code": 0,
+      "log": "compileall.log"
+    },
+    {
+      "check": "pytest",
+      "argv": [
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend",
+      "exit_code": 0,
+      "log": "pytest.log"
+    },
+    {
+      "check": "financial-coverage",
+      "argv": [
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe",
+        "scripts/financial-coverage.py"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot",
+      "exit_code": 0,
+      "log": "financial-coverage.log"
+    },
+    {
+      "check": "components",
+      "argv": [
+        "cmd",
+        "/c",
+        "npm run test:components"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend",
+      "exit_code": 0,
+      "log": "components.log"
+    },
+    {
+      "check": "e2e",
+      "argv": [
+        "cmd",
+        "/c",
+        "npm run test:e2e"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend",
+      "exit_code": 0,
+      "log": "e2e.log"
+    },
+    {
+      "check": "reconcile",
+      "argv": [
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe",
+        "scripts/reconcile.py",
+        "--db",
+        "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\e2e\\run-la93rmii\\acceptance.sqlite3"
+      ],
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot",
+      "exit_code": 0,
+      "log": "reconcile.log"
+    }
+  ],
+  "all_passed": true,
+  "log_scan": {
+    "findings": [],
+    "sanitized_before_scan": false
+  },
+  "raw_log_hashes": {
+    "pip-audit.log": "4e4757ff226a44b5c448b1c4624619419c22d5272463dc19510b4754871a72f9",
+    "npm-audit.log": "262b75d6902b5c5d6784260ab95ec45f9a41d828ac3db24aa45600ca917340a7",
+    "pip-check.log": "672aec65a45bed50e70229c70934a7eebf0462595c459b83023027645d57cccf",
+    "compileall.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pytest.log": "aa25a9113b71b10dfe6dc8e67a9a6db360c8555dd6984cdd59e317e73b81a081",
+    "financial-coverage.log": "dddc85ef5c4264c92529228ac38475d04fcf846f076c2daf8ba7b46f9b4cb1e2",
+    "components.log": "0358666704bdc66283073d8283322be3ce95c4d9846f2af119e9ae584026688c",
+    "e2e.log": "ecb85aa216b1a3b0c778443779a312775c3cc35c9c33a8321aba66c07b1dfba7",
+    "reconcile.log": "7c89e849e933bf97efca30a9a916f461c99187271e6fd8dbf971da1ecc7bea6c"
+  }
+}

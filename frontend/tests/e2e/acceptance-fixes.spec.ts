@@ -1,17 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { demoLogin } from './auth-helpers';
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { clearAuthRequestBudget, demoLogin } from './auth-helpers';
 
 test.afterEach(() => {
   // This suite shares one disposable server. Do not consume the next test's IP login budget.
   // Rate limits themselves are exercised without resets in backend/tests/test_TRF_14.py and identity tests.
-  const root = resolve('..');
-  const db = resolve(JSON.parse(readFileSync(resolve(root, '.local/e2e/latest.json'), 'utf8')).db_path);
-  if (relative(resolve(root, '.local/e2e'), db).startsWith('..')) throw new Error('Expected disposable E2E database');
-  execFileSync(resolve(root, 'backend/.venv/Scripts/python.exe'), ['-c',
-    "import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute(\"DELETE FROM identity_limits WHERE scope LIKE 'request:/api/auth/%'\"); c.commit(); c.close()", db]);
+  clearAuthRequestBudget();
 });
 
 test('DSH-01 balance visibility survives reload and total includes all accounts', async ({ page }) => {

@@ -1,0 +1,45 @@
+{
+  "python": [
+    {
+      "name": "certifi",
+      "before": "2026.7.22",
+      "after": "2026.10.19"
+    },
+    {
+      "name": "pip",
+      "before": "26.1.2",
+      "after": "26.2"
+    }
+  ],
+  "node": [
+    {
+      "path": "node_modules/vite",
+      "before": "6.4.4",
+      "after": "6.4.5"
+    },
+    {
+      "path": "node_modules/postcss-selector-parser",
+      "before": "6.1.4",
+      "after": "6.1.5"
+    }
+  ],
+  "dev_tool": "pip-audit==2.10.1",
+  "new_python_dependencies": {
+    "boolean-py": "5.0",
+    "cachecontrol": "0.14.4",
+    "cyclonedx-python-lib": "11.12.0",
+    "defusedxml": "0.7.1",
+    "license-expression": "30.4.4",
+    "msgpack": "1.2.4",
+    "packageurl-python": "0.17.6",
+    "pip-api": "0.0.35",
+    "pip-audit": "2.10.1",
+    "pip-requirements-parser": "32.0.1",
+    "platformdirs": "4.14.2",
+    "pyparsing": "3.3.3",
+    "py-serializable": "2.1.0",
+    "sortedcontainers": "2.4.0",
+    "tomli": "2.5.0",
+    "tomli-w": "1.2.0"
+  }
+}

@@ -1,0 +1,21 @@
+
+> novabank-banking-chatbot@0.1.0 test:components
+> node scripts/check-components.mjs
+
+PASS: loan schedule rounds integer VND, preserves principal and closes the final balance
+PASS NF-07: English VND separators retained by specification decision
+PASS: message emphasis, HTML escaping and busy indicator
+PASS: conversation selection and accessible delete label
+PASS: chat header shows status and opens history and security log
+PASS: sign-in form masks the password and shows session notices
+PASS: account recovery entry points, bounded fragment parsing and masked new passwords without token markup
+PASS: navigation marks the current tab and offers sign out
+PASS: balance hidden by default, skeleton while loading, activity grouped by day
+PASS: security log shows the latest six in plain language
+PASS: empty draft cannot send and welcome has no duplicate quick requests
+PASS AI-12: busy composer exposes Stop response
+PASS: demo QR renders only inline PNGs and blocks external images
+PASS: chat can open both legacy and full-length transfer drafts
+PASS: recorded balances, escaped details, PDF action and role-specific navigation
+PASS: transfer API retains the idempotency key after a lost response
+PASS: refresh single-flight, stale responses, identity binding, interaction throttle and idle/absolute expiry

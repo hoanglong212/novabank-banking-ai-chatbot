@@ -2,6 +2,13 @@
 from .faq import FAQ
 
 
+def initialize_agent_termination(conn, stamp):
+    if conn.execute('SELECT 1 FROM schema_migrations WHERE version=9').fetchone():
+        return
+    conn.execute('ALTER TABLE agent_runs ADD COLUMN termination_reason TEXT')
+    conn.execute('INSERT INTO schema_migrations VALUES (9,?)', (stamp,))
+
+
 def initialize_agent(conn, stamp):
     if conn.execute('SELECT 1 FROM schema_migrations WHERE version=7').fetchone():
         return

@@ -11,9 +11,21 @@ log.setLevel(logging.INFO)
 log.propagate = False
 
 
+class PrivateAccessLog(logging.Filter):
+    """Uvicorn's default access record contains the full path and query string."""
+    def filter(self, record):
+        if isinstance(record.args, tuple) and len(record.args) == 5:
+            peer, method, _path, version, status = record.args
+            record.args = (peer, method, '[path omitted]', version, status)
+        return True
+
+
 class HttpSecurity:
     def __init__(self, app):
         self.app = app
+        access = logging.getLogger('uvicorn.access')
+        if not any(isinstance(f, PrivateAccessLog) for f in access.filters):
+            access.addFilter(PrivateAccessLog())
 
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':

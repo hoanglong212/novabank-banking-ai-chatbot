@@ -1,0 +1,14 @@
+........................................................................ [ 20%]
+....................................................F................... [ 40%]
+........................................................................ [ 60%]
+........................................................................ [ 80%]
+.......................................................................  [100%]
+================================== FAILURES ===================================
+___ test_SEC_10_fresh_dependency_audits_have_no_unresolved_high_or_critical ___
+tests\test_SEC_10.py:24: in test_SEC_10_fresh_dependency_audits_have_no_unresolved_high_or_critical
+    assert not problems, '; '.join(problems)
+E   AssertionError: pip-audit unavailable; OSV supplementary scan does not satisfy the required scanner; GHSA-6q48-6c7w-9gw2: CRITICAL
+E   assert not ['pip-audit unavailable; OSV supplementary scan does not satisfy the required scanner', 'GHSA-6q48-6c7w-9gw2: CRITICAL']
+=========================== short test summary info ===========================
+FAILED tests/test_SEC_10.py::test_SEC_10_fresh_dependency_audits_have_no_unresolved_high_or_critical
+1 failed, 358 passed in 122.03s (0:02:02)

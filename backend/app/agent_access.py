@@ -118,16 +118,23 @@ def private_text(vault, value):
     if isinstance(value, list):
         return [private_text(vault, v) for v in value]
     if isinstance(value, dict):
-        return {k: vault._swap('NAME', v) if k in ('holder_name', 'counterparty_name', 'to_name') and isinstance(v, str) and v else private_text(vault, v) for k, v in value.items()}
+        names = ('holder_name', 'counterparty_name', 'to_name', 'account_name', 'owner_id')
+        accounts = ('account_id', 'account_no', 'from_account', 'to_account')
+        for k, v in value.items():
+            if isinstance(v, str) and v and (k in names or k in accounts):
+                vault._swap('NAME' if k in names else 'ACCOUNT', v)
+        return {k: private_text(vault, v) for k, v in value.items()}
     return vault.pseudonymize(value) if isinstance(value, str) else value
 
 
-def trace_safe(value):
+def trace_safe(value, vault=None):
+    vault = vault or Pseudonymizer()
     if isinstance(value, list):
-        return [trace_safe(v) for v in value]
+        return [trace_safe(v, vault) for v in value]
     if isinstance(value, dict):
-        return {k: trace_safe(v) for k, v in value.items() if k not in ('delegated_token', 'password', 'code', 'otp', 'refresh_token')}
-    return mask(value)
+        return {k: trace_safe(v, vault) for k, v in value.items() if k.lower() not in
+                ('delegated_token', 'password', 'code', 'otp', 'pin', 'refresh_token', 'access_token', 'authorization', 'token')}
+    return mask(vault.pseudonymize(value)) if isinstance(value, str) else value
 
 
 def create_run(db, user, conversation_id, content, profile):
@@ -146,6 +153,12 @@ def create_run(db, user, conversation_id, content, profile):
         if not conn.execute('SELECT 1 FROM conversations WHERE id=? AND owner_id=?', (conversation_id, user.id)).fetchone():
             raise HTTPException(404, 'Conversation not found.')
         allowed = quota(conn, 'agent-run', user.id, 30, 900, seconds)
+        for account in conn.execute('SELECT id,holder_name FROM accounts WHERE owner_id=?', (user.id,)):
+            vault._swap('ACCOUNT', account['id'])
+            vault._swap('NAME', account['holder_name'])
+        for recipient in conn.execute('SELECT account_id,holder_name FROM beneficiaries WHERE owner_id=?', (user.id,)):
+            vault._swap('ACCOUNT', recipient['account_id'])
+            vault._swap('NAME', recipient['holder_name'])
     if not allowed:
         raise HTTPException(429, 'Too many assistant requests. Try again later.')
     bound = bind_request([{'role': 'user', 'content': content}])
@@ -187,15 +200,16 @@ def context(db, user, run):
     intent = json.loads(decrypt_secret(db, run['bound_request_json']))
     if not history or history[-1]['content'] != intent['text']:
         history.append({'role': 'user', 'content': intent['text']})
-    messages = [{'role': m['role'], 'content': vault.pseudonymize(m['content'][:4000])} for m in history]
     hint = {'tool': intent['tool'], 'arguments': private_text(vault, intent['arguments'])}
+    messages = [{'role': m['role'], 'content': vault.pseudonymize(m['content'][:4000])} for m in history]
+    schemas = private_text(vault, [s for s in tool_schemas() if s['function']['name'] in permitted_tools(intent)])
     with transaction(db) as conn:
         active_run(conn, run)
         conn.execute("UPDATE agent_runs SET status='RUNNING',vault_json=? WHERE id=?", (encrypt_secret(db, json.dumps(vault.real)), run['id']))
     from .config import provider
     return {'run_id': run['id'], 'profile': run['profile'], 'model': run['model'], 'messages': messages,
             'provider': provider(), 'bound_hint': hint,
-            'tools': [s for s in tool_schemas() if s['function']['name'] in permitted_tools(intent)],
+            'tools': schemas,
             'max_tool_calls': 8, 'max_rounds': 4, 'timeout_seconds': 120}
 
 
@@ -236,6 +250,8 @@ def bound_proposal(conn, db, user, run, name, args):
 
 async def execute_tool(db, user, run, name, arguments):
     start = time.perf_counter(); call_id = uuid.uuid4().hex
+    vault = vault_for(db, run)
+    safe_arguments = trace_safe(private_text(vault, arguments), vault)
     with transaction(db) as conn:
         enabled(conn)
         active_run(conn, run)
@@ -246,9 +262,8 @@ async def execute_tool(db, user, run, name, arguments):
         if run['profile'] == 'defended' and conn.execute("SELECT COUNT(*) FROM agent_calls WHERE run_id=? AND decision='DENY'", (run['id'],)).fetchone()[0] >= 2:
             raise HTTPException(429, 'Anomalous tool sequence stopped.')
         conn.execute('INSERT INTO agent_calls VALUES (?,?,?,?,?,?,?,0,?,?)',
-                     (call_id, run['id'], count + 1, name[:80], json.dumps(trace_safe(arguments))[:8000], 'PENDING', 'RUNNING', '{}', now()))
+                     (call_id, run['id'], count + 1, name[:80], json.dumps(safe_arguments)[:8000], 'PENDING', 'RUNNING', '{}', now()))
     decision, reason, result = 'ALLOW', 'AUTHORIZED', None
-    vault = vault_for(db, run)
     try:
         if name not in MODELS:
             raise HTTPException(403, 'TOOL_NOT_ALLOWED')
@@ -282,6 +297,8 @@ async def execute_tool(db, user, run, name, arguments):
     except (HTTPException, ValidationError, transfers.TransferError) as exc:
         decision = 'DENY'; reason = exc.detail if isinstance(exc, HTTPException) else (exc.reason_code if isinstance(exc, transfers.TransferError) else 'INVALID_ARGUMENTS')
         result = {'error': str(reason)}
+        if isinstance(exc, ValidationError):
+            result['message'] = 'The tool arguments are invalid. Check required fields, value types and allowed ranges. No action was executed.'
     safe_result = private_text(vault, result)
     if run['profile'] == 'defended' and decision == 'ALLOW' and name in ('search_knowledge', 'get_recent_transactions', 'get_beneficiaries', 'get_support_tickets'):
         from .agent_guard import classify
@@ -295,10 +312,10 @@ async def execute_tool(db, user, run, name, arguments):
     with transaction(db) as conn:
         active_run(conn, run)
         conn.execute('UPDATE agent_calls SET decision=?,reason=?,latency_ms=?,result_json=? WHERE id=?',
-                     (decision, str(reason), int((time.perf_counter() - start) * 1000), json.dumps(trace_safe(safe_result)), call_id))
+                     (decision, str(reason), int((time.perf_counter() - start) * 1000), json.dumps(trace_safe(safe_result, vault)), call_id))
         conn.execute('UPDATE agent_runs SET vault_json=? WHERE id=?', (encrypt_secret(db, json.dumps(vault.real)), run['id']))
         halt = run['profile'] == 'defended' and conn.execute("SELECT COUNT(*) FROM agent_calls WHERE run_id=? AND decision='DENY'", (run['id'],)).fetchone()[0] >= 2
-    db.add_event(run['conversation_id'], name, trace_safe(arguments), decision, str(reason), decision == 'ALLOW')
+    db.add_event(run['conversation_id'], name, safe_arguments, decision, str(reason), decision == 'ALLOW')
     return {'decision': decision, 'reason': reason, 'result': safe_result, 'halt': halt}
 
 

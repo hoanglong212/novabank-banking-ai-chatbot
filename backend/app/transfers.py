@@ -73,7 +73,8 @@ async def prepare(db: Database, user: DemoPrincipal, args: dict) -> dict:
         bank, account, name = found['shortName'], args['to_account'], vietqr.plain(args.get('to_name') or '', 50).upper()
     transfer = dict(id='TRF-' + uuid.uuid4().hex.upper(), owner_id=user.id, from_account=source, to_bank=bank,
                     to_account=account, to_name=name, internal=int(internal), amount_vnd=args['amount_vnd'],
-                    content=vietqr.plain(args.get('content') or f'{user.name} transfer', 25) or 'Transfer',
+                    # Customer prose is data, not a QR field. React/PDF escape when rendering.
+                    content=(args.get('content') or f'{user.name} transfer').strip()[:80] or 'Transfer',
                     status='PENDING_OTP', created_at=now())
     with db.connect() as conn:
         conn.execute('BEGIN IMMEDIATE')

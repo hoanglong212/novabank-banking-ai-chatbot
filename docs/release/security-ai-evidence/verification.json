@@ -1,0 +1,66 @@
+{
+  "step0_commit": "baf4eddb96f01f03a0c54d70e25e25f32210dd15",
+  "overall": "9 of 10 acceptance cases verified; SEC-10 unresolved",
+  "pytest": {
+    "passed": 358,
+    "failed": 1,
+    "failure": "test_SEC_10_fresh_dependency_audits_have_no_unresolved_high_or_critical"
+  },
+  "component_groups_passed": 17,
+  "e2e_passed": 16,
+  "reconcile": {
+    "id": "83905325-e94b-4c7e-b225-283a40b85ca3",
+    "created_at": "2026-11-01T13:51:27+00:00",
+    "balanced": true,
+    "ledger_total_vnd": 0,
+    "mismatches": [],
+    "unbalanced_journals": []
+  },
+  "commands": [
+    {
+      "check": "pytest",
+      "command": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe -m pytest -q --tb=short",
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend",
+      "exit_code": 1,
+      "log": "final2-pytest.log",
+      "note": "Latest full rerun after fixture corrections; only SEC-10 failed."
+    },
+    {
+      "check": "components",
+      "command": "cmd /c \"npm run test:components\"",
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend",
+      "exit_code": 0
+    },
+    {
+      "check": "e2e",
+      "command": "cmd /c \"npm run test:e2e\"",
+      "cwd": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend",
+      "exit_code": 0
+    },
+    {
+      "check": "reconcile",
+      "command": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\scripts\\reconcile.py --db C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\e2e\\run-j3wvhms8\\acceptance.sqlite3",
+      "exit_code": 0
+    }
+  ],
+  "log_scan": {
+    "case": "SEC-09",
+    "inputs": [
+      "final2-pytest.log",
+      "final-components.log",
+      "final-e2e.log"
+    ],
+    "sanitized_before_scan": false,
+    "findings": [],
+    "passed": true,
+    "runtime_canary_test": "backend/tests/test_SEC_09.py"
+  },
+  "raw_log_hashes": {
+    "final2-pytest.log": "cd429d17f6e6cb98e999c48d427fcb3e92b596aa016d3c376a7fb38d4e45e89c",
+    "final-components.log": "0358666704bdc66283073d8283322be3ce95c4d9846f2af119e9ae584026688c",
+    "final-e2e.log": "c2748732924b685cf88cbf52815002db0b48da9300dc1dbe1ff97cc71a814608"
+  },
+  "review": "Self-review; no independent reviewer",
+  "new_round_committed": false,
+  "push_performed": false
+}

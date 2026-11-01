@@ -1,0 +1,9 @@
+{
+  "restored_db": ".local\\security-ai-evidence\\restore-check\\bank.sqlite3",
+  "mfa_key_restored": true,
+  "source_created_at": "2026-11-01T13:23:24.517981+00:00",
+  "archive": ".local\\security-ai-evidence\\backups\\NovaBank-20261101T132324527092Z.backup",
+  "backup_sha256": "1b965a3b4cd86cfb361fa5d6c489e47cf54a701df0b9ac74aeada42e4b477e51",
+  "source_sha256": "3678738ea3bc6a9bc84b79d32d79642f0d4b1baf63a0b051892b537b910e4bf5",
+  "source_open_mode": "ro"
+}

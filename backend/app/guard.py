@@ -19,6 +19,8 @@ CARD = re.compile(r'(?<!\d)(?:\d[ -]?){15,18}\d(?!\d)')
 SECRET = re.compile(
     r'\b(?:otp|pin|cvv|cvc|m[aã]\s*x[aá]c\s*(?:th[uự]c|nh[aậ]n))\b[\s:=]*(?:is|l[aà])?[\s:=]*\d{3,8}\b'
     r'|\b(?:password|passcode|m[aậ]t\s*kh[aẩ]u)\b\s*(?:is|l[aà]|:|=)\s*\S+', re.I)
+CREDENTIAL = re.compile(r'\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b'
+                        r'|https?://[^\s<>]*(?:token=|/reset-password|/verify-email)[^\s<>]*', re.I)
 INJECTION = re.compile(
     r'ignore (?:all |any |the )?(?:previous|prior|above|earlier|your) (?:instructions|rules|prompts?)'
     r'|(?:bo qua|phot lo) (?:moi |tat ca |cac )?(?:huong dan|chi dan|quy tac|lenh)'
@@ -36,6 +38,7 @@ def _pattern(entity: str, expression: str, score: float) -> PatternRecognizer:
 # or ID reading of the same digits. No NLP model: Vietnamese has no Presidio NER, and the patterns need none.
 _registry = RecognizerRegistry(recognizers=[
     _pattern('EMAIL', r'[\w.+-]+@[\w-]+\.[\w.-]+', 1.0),
+    _pattern('ACCOUNT', r'(?i:\bACC-[A-Z0-9-]{3,30}\b)', 1.0),
     # Only digits introduced as an account, so amounts like 500000 stay readable for the model.
     _pattern('ACCOUNT', r'(?<=(?i:\bstk|s[oố]\s*t[aà]i\s*kho[aả]n|t[aà]i\s*kho[aả]n|account(?:\s*(?:no|number))?)\s*[:#]?\s*)\d{6,19}\b', 0.9),
     # VietQR account names are upper case without diacritics.
@@ -63,7 +66,7 @@ def redact_secrets(text: str) -> tuple[str, bool]:
         digits = re.sub(r'\D', '', m.group())
         # shortcut: 16/19-digit Luhn only (Visa/Mastercard/NAPAS); 15-digit Amex is not caught.
         return '[REDACTED CARD]' if len(digits) in (16, 19) and luhn(digits) else m.group()
-    clean = SECRET.sub('[REDACTED SECRET]', CARD.sub(card, text))
+    clean = CREDENTIAL.sub('[REDACTED CREDENTIAL]', SECRET.sub('[REDACTED SECRET]', CARD.sub(card, text)))
     return clean, clean != text
 
 
@@ -102,18 +105,28 @@ class Pseudonymizer:
         return self.token[value]
 
     def pseudonymize(self, text: str) -> str:
+        text, _ = redact_secrets(text)
         found = ANALYZER.analyze(text, language='en', entities=list(KINDS))
         # Number tokens in reading order (the anonymizer replaces right to left); the higher score claims shared digits.
         for r in sorted(found, key=lambda r: (r.start, -r.score)):
             self._swap(r.entity_type, text[r.start:r.end])
         operators = {kind: OperatorConfig('custom', {'lambda': lambda value: self.token[value]}) for kind in KINDS}
-        return ANONYMIZER.anonymize(text, found, operators).text
+        text = ANONYMIZER.anonymize(text, found, operators).text
+        # Known bank identities also occur without a label, in notes and history.
+        # Longest first prevents a short display name from exposing the surname.
+        if self.token:
+            known = {value.casefold(): token for value, token in self.token.items()}
+            expression = '|'.join(re.escape(value) for value in sorted(self.token, key=len, reverse=True))
+            text = re.sub(r'(?<!\w)(?:'+expression+r')(?!\w)', lambda m: known[m.group().casefold()], text, flags=re.I)
+        return text
 
     def restore(self, value):
         if isinstance(value, str):
             return TOKEN.sub(lambda m: self.real.get(m.group(), m.group()), value)
         if isinstance(value, dict):
             return {k: self.restore(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [self.restore(v) for v in value]
         return value
 
 

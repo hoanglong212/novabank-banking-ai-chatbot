@@ -1,0 +1,15 @@
+{
+  "pytest_passed": 359,
+  "component_groups_passed": 17,
+  "e2e_passed": 16,
+  "financial_line_coverage_percent": 93.58,
+  "reconcile_balanced": true,
+  "raw_log_scan_findings": 0,
+  "audit_vulnerabilities": 0,
+  "first_attempt": {
+    "coverage_exit_code": 1,
+    "failed_test": "test_TRF_14_ip_quota_survives_user_rotation_and_forwarded_header",
+    "cause": "Wall-clock requests crossed fixed 300-second window; 20 requests in old bucket and 41 in next bucket",
+    "fix": "Freeze recipient limiter clock within each TRF-14 test; assertions and production unchanged"
+  }
+}

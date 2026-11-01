@@ -1,0 +1,1175 @@
+{
+  "timestamp": "2026-11-01T13:32:11.223590+00:00",
+  "source": "https://api.osv.dev/v1/querybatch",
+  "pip_audit": {
+    "exit_code": 1,
+    "stderr": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\backend\\.venv\\Scripts\\python.exe: No module named pip_audit\n"
+  },
+  "scanned": 94,
+  "packages": [
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "advisories": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "advisories": []
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "advisories": []
+    },
+    {
+      "name": "blis",
+      "version": "1.3.4",
+      "advisories": []
+    },
+    {
+      "name": "catalogue",
+      "version": "2.0.10",
+      "advisories": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "advisories": [
+        "GHSA-6q48-6c7w-9gw2",
+        "PYSEC-2026-4320"
+      ]
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "advisories": []
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "advisories": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "advisories": []
+    },
+    {
+      "name": "cloudpathlib",
+      "version": "0.26.0",
+      "advisories": []
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "advisories": []
+    },
+    {
+      "name": "confection",
+      "version": "1.3.4",
+      "advisories": []
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.2",
+      "advisories": []
+    },
+    {
+      "name": "cymem",
+      "version": "2.0.16",
+      "advisories": []
+    },
+    {
+      "name": "distro",
+      "version": "1.9.0",
+      "advisories": []
+    },
+    {
+      "name": "fastapi",
+      "version": "0.143.2",
+      "advisories": []
+    },
+    {
+      "name": "filelock",
+      "version": "4.2.6",
+      "advisories": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "advisories": []
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "advisories": []
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.16.0",
+      "advisories": []
+    },
+    {
+      "name": "httptools",
+      "version": "0.9.0",
+      "advisories": []
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "advisories": []
+    },
+    {
+      "name": "httpx2",
+      "version": "2.16.0",
+      "advisories": []
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "advisories": []
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.1",
+      "advisories": []
+    },
+    {
+      "name": "Jinja2",
+      "version": "3.1.6",
+      "advisories": []
+    },
+    {
+      "name": "jsonpatch",
+      "version": "1.37",
+      "advisories": []
+    },
+    {
+      "name": "jsonpointer",
+      "version": "3.5",
+      "advisories": []
+    },
+    {
+      "name": "langchain-core",
+      "version": "1.7.0",
+      "advisories": []
+    },
+    {
+      "name": "langchain-ollama",
+      "version": "1.1.0",
+      "advisories": []
+    },
+    {
+      "name": "langchain-protocol",
+      "version": "0.0.20",
+      "advisories": []
+    },
+    {
+      "name": "langgraph",
+      "version": "1.2.17",
+      "advisories": []
+    },
+    {
+      "name": "langgraph-checkpoint",
+      "version": "4.3.0",
+      "advisories": []
+    },
+    {
+      "name": "langgraph-prebuilt",
+      "version": "1.1.1",
+      "advisories": []
+    },
+    {
+      "name": "langgraph-sdk",
+      "version": "0.4.9",
+      "advisories": []
+    },
+    {
+      "name": "langsmith",
+      "version": "0.14.12",
+      "advisories": []
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "advisories": []
+    },
+    {
+      "name": "MarkupSafe",
+      "version": "3.0.4",
+      "advisories": []
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "advisories": []
+    },
+    {
+      "name": "murmurhash",
+      "version": "1.0.16",
+      "advisories": []
+    },
+    {
+      "name": "numpy",
+      "version": "2.4.6",
+      "advisories": []
+    },
+    {
+      "name": "ollama",
+      "version": "0.6.3",
+      "advisories": []
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "advisories": []
+    },
+    {
+      "name": "orjson",
+      "version": "3.13.0",
+      "advisories": []
+    },
+    {
+      "name": "ormsgpack",
+      "version": "1.13.0",
+      "advisories": []
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "advisories": []
+    },
+    {
+      "name": "phonenumbers",
+      "version": "9.0.42",
+      "advisories": []
+    },
+    {
+      "name": "pillow",
+      "version": "13.0.0",
+      "advisories": []
+    },
+    {
+      "name": "pip",
+      "version": "26.1.2",
+      "advisories": [
+        "GHSA-qwm4-qh6w-59xr",
+        "PYSEC-2026-3721"
+      ]
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0",
+      "advisories": []
+    },
+    {
+      "name": "preshed",
+      "version": "3.0.13",
+      "advisories": []
+    },
+    {
+      "name": "presidio_analyzer",
+      "version": "2.2.366",
+      "advisories": []
+    },
+    {
+      "name": "presidio_anonymizer",
+      "version": "2.2.366",
+      "advisories": []
+    },
+    {
+      "name": "pycparser",
+      "version": "3.12",
+      "advisories": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "advisories": []
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.50.1",
+      "advisories": []
+    },
+    {
+      "name": "Pygments",
+      "version": "2.21.0",
+      "advisories": []
+    },
+    {
+      "name": "PyJWT",
+      "version": "2.15.1",
+      "advisories": []
+    },
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "advisories": []
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.4",
+      "advisories": []
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "advisories": []
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "advisories": []
+    },
+    {
+      "name": "reportlab",
+      "version": "4.5.1",
+      "advisories": []
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "advisories": []
+    },
+    {
+      "name": "requests-file",
+      "version": "3.0.1",
+      "advisories": []
+    },
+    {
+      "name": "requests-toolbelt",
+      "version": "1.0.0",
+      "advisories": []
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "advisories": []
+    },
+    {
+      "name": "setuptools",
+      "version": "84.2.1",
+      "advisories": []
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "advisories": []
+    },
+    {
+      "name": "smart_open",
+      "version": "9.0.1",
+      "advisories": []
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "advisories": []
+    },
+    {
+      "name": "spacy",
+      "version": "3.8.18",
+      "advisories": []
+    },
+    {
+      "name": "spacy-legacy",
+      "version": "3.0.12",
+      "advisories": []
+    },
+    {
+      "name": "spacy-loggers",
+      "version": "1.0.5",
+      "advisories": []
+    },
+    {
+      "name": "srsly",
+      "version": "2.5.5",
+      "advisories": []
+    },
+    {
+      "name": "starlette",
+      "version": "1.8.0",
+      "advisories": []
+    },
+    {
+      "name": "tenacity",
+      "version": "9.2.1",
+      "advisories": []
+    },
+    {
+      "name": "thinc",
+      "version": "8.3.14",
+      "advisories": []
+    },
+    {
+      "name": "tldextract",
+      "version": "5.4.0",
+      "advisories": []
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.1",
+      "advisories": []
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.5",
+      "advisories": []
+    },
+    {
+      "name": "typer",
+      "version": "0.27.3",
+      "advisories": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "advisories": []
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "advisories": []
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "advisories": []
+    },
+    {
+      "name": "uuid_utils",
+      "version": "0.19.0",
+      "advisories": []
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0",
+      "advisories": []
+    },
+    {
+      "name": "wasabi",
+      "version": "1.1.3",
+      "advisories": []
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.3.0",
+      "advisories": []
+    },
+    {
+      "name": "weasel",
+      "version": "1.0.1",
+      "advisories": []
+    },
+    {
+      "name": "websockets",
+      "version": "17.2",
+      "advisories": []
+    },
+    {
+      "name": "wrapt",
+      "version": "2.5.2",
+      "advisories": []
+    },
+    {
+      "name": "xxhash",
+      "version": "4.0.2",
+      "advisories": []
+    },
+    {
+      "name": "zstandard",
+      "version": "0.25.0",
+      "advisories": []
+    }
+  ],
+  "advisories": {
+    "GHSA-6q48-6c7w-9gw2": {
+      "id": "GHSA-6q48-6c7w-9gw2",
+      "summary": "certifi bundles emSign root CAs with compromised intermediate CA keys",
+      "details": "Certifi versions before 2026.10.18 include the `emSign ECC Root CA - G3` root certificate in their bundled CA store. Eight eMudhra intermediate CA certificates that chain to this root have compromised private keys and the CA has revoked them. \n\nAn attacker with one of the compromised keys can issue valid-looking certificates for any hostname. If the attacker is also on-path, they can intercept or modify TLS traffic from clients that trust the certifi bundle. Examples include `requests`, `urllib3` and `pip`, and the Python.org macOS installer.\n\nCertifi 2026.10.18 removed all emSign roots from the bundle. Certifi 2026.10.19 restored the emSign roots that are not affected. Upgrade to 2026.10.19 or later, and rebuild container images that vendor certifi.",
+      "aliases": [
+        "PYSEC-2026-4320"
+      ],
+      "modified": "2026-10-26T16:15:35.371128995Z",
+      "published": "2026-10-20T19:35:05Z",
+      "database_specific": {
+        "nvd_published_at": null,
+        "cwe_ids": [
+          "CWE-295"
+        ],
+        "severity": "CRITICAL",
+        "github_reviewed": true,
+        "github_reviewed_at": "2026-10-20T19:35:05Z"
+      },
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2"
+        },
+        {
+          "type": "WEB",
+          "url": "https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576"
+        },
+        {
+          "type": "WEB",
+          "url": "https://emudhra.we-have-a-problem.com"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/certifi/python-certifi"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "certifi",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/certifi"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "2019.03.09"
+                },
+                {
+                  "fixed": "2026.10.18"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "2019.11.28",
+            "2019.3.9",
+            "2019.6.16",
+            "2019.9.11",
+            "2020.11.8",
+            "2020.12.5",
+            "2020.4.5",
+            "2020.4.5.1",
+            "2020.4.5.2",
+            "2020.6.20",
+            "2021.10.8",
+            "2021.5.30",
+            "2022.12.7",
+            "2022.5.18",
+            "2022.5.18.1",
+            "2022.6.15",
+            "2022.6.15.1",
+            "2022.6.15.2",
+            "2022.9.14",
+            "2022.9.24",
+            "2023.11.17",
+            "2023.5.7",
+            "2023.7.22",
+            "2024.12.14",
+            "2024.2.2",
+            "2024.6.2",
+            "2024.7.4",
+            "2024.8.30",
+            "2025.1.31",
+            "2025.10.5",
+            "2025.11.12",
+            "2025.4.26",
+            "2025.6.15",
+            "2025.7.14",
+            "2025.7.9",
+            "2025.8.3",
+            "2026.1.4",
+            "2026.2.25",
+            "2026.4.22",
+            "2026.5.20",
+            "2026.6.17",
+            "2026.7.22"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/10/GHSA-6q48-6c7w-9gw2/GHSA-6q48-6c7w-9gw2.json"
+          }
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N"
+        }
+      ]
+    },
+    "PYSEC-2026-4320": {
+      "id": "PYSEC-2026-4320",
+      "summary": "certifi bundles emSign root CAs with compromised intermediate CA keys",
+      "details": "Certifi versions before 2026.10.18 include the `emSign ECC Root CA - G3` root certificate in their bundled CA store. Eight eMudhra intermediate CA certificates that chain to this root have compromised private keys and the CA has revoked them. \n\nAn attacker with one of the compromised keys can issue valid-looking certificates for any hostname. If the attacker is also on-path, they can intercept or modify TLS traffic from clients that trust the certifi bundle. Examples include `requests`, `urllib3` and `pip`, and the Python.org macOS installer.\n\nCertifi 2026.10.18 removed all emSign roots from the bundle. Certifi 2026.10.19 restored the emSign roots that are not affected. Upgrade to 2026.10.19 or later, and rebuild container images that vendor certifi.",
+      "aliases": [
+        "GHSA-6q48-6c7w-9gw2"
+      ],
+      "modified": "2026-10-30T14:00:02.590922333Z",
+      "published": "2026-10-20T21:41:50.722083Z",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2"
+        },
+        {
+          "type": "WEB",
+          "url": "https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576"
+        },
+        {
+          "type": "WEB",
+          "url": "https://emudhra.we-have-a-problem.com"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/certifi/python-certifi"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://pypi.org/project/certifi"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/advisories/GHSA-6q48-6c7w-9gw2"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "certifi",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/certifi"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "2019.03.09"
+                },
+                {
+                  "fixed": "2026.10.18"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "2019.11.28",
+            "2019.3.9",
+            "2019.6.16",
+            "2019.9.11",
+            "2020.11.8",
+            "2020.12.5",
+            "2020.4.5",
+            "2020.4.5.1",
+            "2020.4.5.2",
+            "2020.6.20",
+            "2021.10.8",
+            "2021.5.30",
+            "2022.12.7",
+            "2022.5.18",
+            "2022.5.18.1",
+            "2022.6.15",
+            "2022.6.15.1",
+            "2022.6.15.2",
+            "2022.9.14",
+            "2022.9.24",
+            "2023.11.17",
+            "2023.5.7",
+            "2023.7.22",
+            "2024.12.14",
+            "2024.2.2",
+            "2024.6.2",
+            "2024.7.4",
+            "2024.8.30",
+            "2025.1.31",
+            "2025.10.5",
+            "2025.11.12",
+            "2025.4.26",
+            "2025.6.15",
+            "2025.7.14",
+            "2025.7.9",
+            "2025.8.3",
+            "2026.1.4",
+            "2026.2.25",
+            "2026.4.22",
+            "2026.5.20",
+            "2026.6.17",
+            "2026.7.22"
+          ],
+          "database_specific": {
+            "source": "https://github.com/pypa/advisory-database/blob/main/vulns/certifi/PYSEC-2026-4320.yaml"
+          }
+        }
+      ],
+      "schema_version": "1.9.2",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N"
+        }
+      ]
+    },
+    "GHSA-qwm4-qh6w-59xr": {
+      "id": "GHSA-qwm4-qh6w-59xr",
+      "summary": "pip would incorrectly handle doubly-encoded package URLs from indexes",
+      "details": "pip would incorrectly handle doubly-encoded package URLs from indexes allowing for files to be installed to arbitrary locations on disk even when installing wheels.\n\nThis vulnerability requires downloading or installing a package from a malicious package index to succeed, malicious packages alone are not able to exploit this vulnerability. Note that this vulnerability only materially impacts users running `pip download` with the `--only-binary` option as installing source distributions from an untrusted index is already an unsafe operation that executes code during install time.",
+      "aliases": [
+        "CVE-2026-13346",
+        "PYSEC-2026-3721"
+      ],
+      "modified": "2026-09-10T03:50:52.923367736Z",
+      "published": "2026-07-29T21:30:59Z",
+      "database_specific": {
+        "severity": "MODERATE",
+        "github_reviewed": true,
+        "github_reviewed_at": "2026-09-01T18:57:42Z",
+        "nvd_published_at": "2026-07-29T19:16:44Z",
+        "cwe_ids": [
+          "CWE-36"
+        ]
+      },
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-13346"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pypa/pip/pull/14110"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pypa/pip/commit/10dfb6b9005484578b386f64b9f36982e3dc6679"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pypa/advisory-database/tree/main/vulns/pip/PYSEC-2026-3721.yaml"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/pypa/pip"
+        },
+        {
+          "type": "WEB",
+          "url": "https://mail.python.org/archives/list/security-announce@python.org/thread/L2BNQGGVQCEV7DROOORQ7WFKKFF2OOQX"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/07/29/7"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "pip",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/pip"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "26.2.0"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "0.2",
+            "0.2.1",
+            "0.3",
+            "0.3.1",
+            "0.4",
+            "0.5",
+            "0.5.1",
+            "0.6",
+            "0.6.1",
+            "0.6.2",
+            "0.6.3",
+            "0.7",
+            "0.7.1",
+            "0.7.2",
+            "0.8",
+            "0.8.1",
+            "0.8.2",
+            "0.8.3",
+            "1.0",
+            "1.0.1",
+            "1.0.2",
+            "1.1",
+            "1.2",
+            "1.2.1",
+            "1.3",
+            "1.3.1",
+            "1.4",
+            "1.4.1",
+            "1.5",
+            "1.5.1",
+            "1.5.2",
+            "1.5.3",
+            "1.5.4",
+            "1.5.5",
+            "1.5.6",
+            "10.0.0",
+            "10.0.0b1",
+            "10.0.0b2",
+            "10.0.1",
+            "18.0",
+            "18.1",
+            "19.0",
+            "19.0.1",
+            "19.0.2",
+            "19.0.3",
+            "19.1",
+            "19.1.1",
+            "19.2",
+            "19.2.1",
+            "19.2.2",
+            "19.2.3",
+            "19.3",
+            "19.3.1",
+            "20.0",
+            "20.0.1",
+            "20.0.2",
+            "20.1",
+            "20.1.1",
+            "20.1b1",
+            "20.2",
+            "20.2.1",
+            "20.2.2",
+            "20.2.3",
+            "20.2.4",
+            "20.2b1",
+            "20.3",
+            "20.3.1",
+            "20.3.2",
+            "20.3.3",
+            "20.3.4",
+            "20.3b1",
+            "21.0",
+            "21.0.1",
+            "21.1",
+            "21.1.1",
+            "21.1.2",
+            "21.1.3",
+            "21.2",
+            "21.2.1",
+            "21.2.2",
+            "21.2.3",
+            "21.2.4",
+            "21.3",
+            "21.3.1",
+            "22.0",
+            "22.0.1",
+            "22.0.2",
+            "22.0.3",
+            "22.0.4",
+            "22.1",
+            "22.1.1",
+            "22.1.2",
+            "22.1b1",
+            "22.2",
+            "22.2.1",
+            "22.2.2",
+            "22.3",
+            "22.3.1",
+            "23.0",
+            "23.0.1",
+            "23.1",
+            "23.1.1",
+            "23.1.2",
+            "23.2",
+            "23.2.1",
+            "23.3",
+            "23.3.1",
+            "23.3.2",
+            "24.0",
+            "24.1",
+            "24.1.1",
+            "24.1.2",
+            "24.1b1",
+            "24.1b2",
+            "24.2",
+            "24.3",
+            "24.3.1",
+            "25.0",
+            "25.0.1",
+            "25.1",
+            "25.1.1",
+            "25.2",
+            "25.3",
+            "26.0",
+            "26.0.1",
+            "26.1",
+            "26.1.1",
+            "26.1.2",
+            "6.0",
+            "6.0.1",
+            "6.0.2",
+            "6.0.3",
+            "6.0.4",
+            "6.0.5",
+            "6.0.6",
+            "6.0.7",
+            "6.0.8",
+            "6.1.0",
+            "6.1.1",
+            "7.0.0",
+            "7.0.1",
+            "7.0.2",
+            "7.0.3",
+            "7.1.0",
+            "7.1.1",
+            "7.1.2",
+            "8.0.0",
+            "8.0.1",
+            "8.0.2",
+            "8.0.3",
+            "8.1.0",
+            "8.1.1",
+            "8.1.2",
+            "9.0.0",
+            "9.0.1",
+            "9.0.2",
+            "9.0.3"
+          ],
+          "database_specific": {
+            "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/07/GHSA-qwm4-qh6w-59xr/GHSA-qwm4-qh6w-59xr.json"
+          }
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:H/AT:P/PR:H/UI:A/VC:N/VI:H/VA:N/SC:N/SI:N/SA:N"
+        }
+      ]
+    },
+    "PYSEC-2026-3721": {
+      "id": "PYSEC-2026-3721",
+      "details": "pip would incorrectly handle doubly-encoded package URLs from indexes allowing for files to be installed to arbitrary locations on disk even when installing wheels.\n\n\n\n\nThis vulnerability requires downloading or installing a package from a malicious package index to succeed, malicious packages alone are not able to exploit this vulnerability. Note that this vulnerability only materially impacts users running `pip download` with the `--only-binary` option as installing source distributions from an untrusted index is already an unsafe operation that executes code during install time.",
+      "aliases": [
+        "CVE-2026-13346",
+        "GHSA-qwm4-qh6w-59xr"
+      ],
+      "modified": "2026-09-10T11:15:08.939447160Z",
+      "published": "2026-07-29T19:16:44.267Z",
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/07/29/7"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://mail.python.org/archives/list/security-announce@python.org/thread/L2BNQGGVQCEV7DROOORQ7WFKKFF2OOQX/"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/pypa/pip/pull/14110"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/advisories/GHSA-qwm4-qh6w-59xr"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "pip",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/pip"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "26.2"
+                }
+              ]
+            }
+          ],
+          "versions": [
+            "0.2",
+            "0.2.1",
+            "0.3",
+            "0.3.1",
+            "0.4",
+            "0.5",
+            "0.5.1",
+            "0.6",
+            "0.6.1",
+            "0.6.2",
+            "0.6.3",
+            "0.7",
+            "0.7.1",
+            "0.7.2",
+            "0.8",
+            "0.8.1",
+            "0.8.2",
+            "0.8.3",
+            "1.0",
+            "1.0.1",
+            "1.0.2",
+            "1.1",
+            "1.2",
+            "1.2.1",
+            "1.3",
+            "1.3.1",
+            "1.4",
+            "1.4.1",
+            "1.5",
+            "1.5.1",
+            "1.5.2",
+            "1.5.3",
+            "1.5.4",
+            "1.5.5",
+            "1.5.6",
+            "10.0.0",
+            "10.0.0b1",
+            "10.0.0b2",
+            "10.0.1",
+            "18.0",
+            "18.1",
+            "19.0",
+            "19.0.1",
+            "19.0.2",
+            "19.0.3",
+            "19.1",
+            "19.1.1",
+            "19.2",
+            "19.2.1",
+            "19.2.2",
+            "19.2.3",
+            "19.3",
+            "19.3.1",
+            "20.0",
+            "20.0.1",
+            "20.0.2",
+            "20.1",
+            "20.1.1",
+            "20.1b1",
+            "20.2",
+            "20.2.1",
+            "20.2.2",
+            "20.2.3",
+            "20.2.4",
+            "20.2b1",
+            "20.3",
+            "20.3.1",
+            "20.3.2",
+            "20.3.3",
+            "20.3.4",
+            "20.3b1",
+            "21.0",
+            "21.0.1",
+            "21.1",
+            "21.1.1",
+            "21.1.2",
+            "21.1.3",
+            "21.2",
+            "21.2.1",
+            "21.2.2",
+            "21.2.3",
+            "21.2.4",
+            "21.3",
+            "21.3.1",
+            "22.0",
+            "22.0.1",
+            "22.0.2",
+            "22.0.3",
+            "22.0.4",
+            "22.1",
+            "22.1.1",
+            "22.1.2",
+            "22.1b1",
+            "22.2",
+            "22.2.1",
+            "22.2.2",
+            "22.3",
+            "22.3.1",
+            "23.0",
+            "23.0.1",
+            "23.1",
+            "23.1.1",
+            "23.1.2",
+            "23.2",
+            "23.2.1",
+            "23.3",
+            "23.3.1",
+            "23.3.2",
+            "24.0",
+            "24.1",
+            "24.1.1",
+            "24.1.2",
+            "24.1b1",
+            "24.1b2",
+            "24.2",
+            "24.3",
+            "24.3.1",
+            "25.0",
+            "25.0.1",
+            "25.1",
+            "25.1.1",
+            "25.2",
+            "25.3",
+            "26.0",
+            "26.0.1",
+            "26.1",
+            "26.1.1",
+            "26.1.2",
+            "6.0",
+            "6.0.1",
+            "6.0.2",
+            "6.0.3",
+            "6.0.4",
+            "6.0.5",
+            "6.0.6",
+            "6.0.7",
+            "6.0.8",
+            "6.1.0",
+            "6.1.1",
+            "7.0.0",
+            "7.0.1",
+            "7.0.2",
+            "7.0.3",
+            "7.1.0",
+            "7.1.1",
+            "7.1.2",
+            "8.0.0",
+            "8.0.1",
+            "8.0.2",
+            "8.0.3",
+            "8.1.0",
+            "8.1.1",
+            "8.1.2",
+            "9.0.0",
+            "9.0.1",
+            "9.0.2",
+            "9.0.3"
+          ],
+          "ecosystem_specific": {},
+          "database_specific": {
+            "source": "https://github.com/pypa/advisory-database/blob/main/vulns/pip/PYSEC-2026-3721.yaml"
+          }
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:N"
+        }
+      ]
+    }
+  }
+}
