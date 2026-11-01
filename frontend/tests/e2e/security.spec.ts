@@ -86,7 +86,13 @@ test('authenticator setup, sign-in, email fallback and disabling use real MFA', 
 
   await page.getByRole('button', { name: 'Disable authenticator', exact: true }).click();
   await page.getByLabel('Current password', { exact: true }).fill('Support@2026');
+  // Exercise a pending real request; inbox reads must not rely on Python startup latency.
+  await page.route('**/api/auth/mfa/disable-request', async route => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await route.continue();
+  });
   await page.getByRole('button', { name: 'Send confirmation code', exact: true }).click();
+  await expect(page.getByLabel('Email confirmation code', { exact: true })).toBeVisible();
   await page.getByLabel('Email confirmation code', { exact: true }).fill(localMessage('support@novabank.test', 'DISABLE_TOTP_OTP').code);
   await page.getByRole('button', { name: 'Confirm disable', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Sign-in verification', exact: true })).toContainText('Email codes enabled');
