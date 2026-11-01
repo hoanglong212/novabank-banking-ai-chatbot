@@ -154,8 +154,18 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
         elif '{session_id}' in path:
             sid=client.get('/api/auth/sessions',headers=who).json()['items'][0]['id']
             path=path.replace('{session_id}',sid)
+        elif path=='/api/admin/knowledge-index':
+            # This probe exercises mass assignment, not a live Ollama installation.
+            # Keep authorization/index writes real and isolate only model inference.
+            from app import knowledge
+            async def fixture_embeddings(texts):
+                return 'sec04-fixture', [[1.0, 0.0] for _ in texts]
+            monkeypatch.setattr(knowledge, 'embed', fixture_embeddings)
         response=client.request(method,path,params=params,headers=who,json=EXTRAS)
         assert response.status_code in (200,204), (method,path,response.status_code)
+        if path=='/api/admin/knowledge-index':
+            assert response.json()['indexed_documents'] > 0
+            assert response.json()['indexed_chunks'] > 0
         assert protected()==before
 
 
