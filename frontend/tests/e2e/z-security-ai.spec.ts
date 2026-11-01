@@ -46,9 +46,19 @@ test('SEC-06 stored XSS stays text in customer, Operations and support screens',
   await inert(page); await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Activity', exact: true }).click();
   await page.getByRole('searchbox', { name: 'Search', exact: true }).fill(tx);
+  // Keep stale day groups visible briefly while the real search request is pending.
+  await page.route('**/api/transactions?**', async route => {
+    if (new URL(route.request().url()).searchParams.get('q') === tx) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    await route.continue();
+  });
   await page.getByRole('button', { name: 'Search transactions', exact: true }).click();
-  await expect(page.locator('.tx-list')).toContainText(img);
-  await page.locator('.tx-list .tx').click();
+  const matchingTransactions = page.locator('.tx-list .tx');
+  await expect(matchingTransactions).toHaveCount(1);
+  await expect(matchingTransactions).toContainText(tx);
+  await expect(matchingTransactions).toContainText(img);
+  await matchingTransactions.click();
   await expect(page.getByRole('dialog')).toContainText(img); await inert(page);
 
   const ops = await browser.newPage({ baseURL: 'http://127.0.0.1:8092' }); observe(ops);
