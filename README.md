@@ -20,7 +20,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Mode o
 
 Open http://127.0.0.1:8080. The launcher builds the frontend and starts the bank plus isolated agent (:8093). Ctrl+C stops both. `-Mode mock` uses explicitly labeled deterministic responses without a model. The command does not install dependencies or pull models. See [deployment and configuration](docs/release/DEPLOYMENT.md).
 
-Demo logins: `alice / Alice@2026`, `bob / Bob@2026`, `charlie / Charlie@2026`; staff `support / Support@2026`, `operations / Operations@2026`, `auditor / Auditor@2026`, `admin / Admin@2026`. Every login requires email MFA or configured TOTP. Retrieve simulated email through `scripts/dev-outbox.py --help`, using the same DB as the server. Never paste OTPs into assistant chat.
+Demo logins: `alice / Alice@2026`, `bob / Bob@2026`, `charlie / Charlie@2026`; staff `support / Support@2026`, `  / Operations@2026`, `auditor / Auditor@2026`, `admin / Admin@2026`. Every login requires email MFA or configured TOTP. Retrieve simulated email through `scripts/dev-outbox.py --help`, using the same DB as the server. Never paste OTPs into assistant chat.
 
 Public demo credentials require a restricted review environment. The supplied Compose/Caddy configuration includes an access gateway. Do not use real banking credentials or PII.
 

@@ -59,10 +59,10 @@ export interface Profile {
 }
 export interface Bank { bin: string; code: string; shortName: string; name: string; logo: string }
 export interface VietQR { bank: string; bin: string; account_no: string; account_name: string; amount_vnd: number | null; add_info: string; image: string; payload: string }
-// A draft is PENDING_OTP until the customer confirms; demo_otp stands in for the bank's SMS.
+// Codes are delivered to the simulated mailbox, never returned with a draft.
 export interface Transfer {
   id: string; from_account: string; to_bank: string; to_account: string; to_name: string; amount_vnd: number;
   content: string; status: 'PENDING_OTP' | 'PENDING' | 'COMPLETED' | 'FAILED'; otp_expires_at?: string; transaction_id?: string | null; fee_vnd?: number;
-  demo_otp?: string; balance_vnd?: number; expires_at?: string;
+  balance_vnd?: number; expires_at?: string;
 }
 export interface TransferStart { draftId?: string; to_bank?: string; to_account?: string; to_name?: string; amount_vnd?: number; content?: string }

@@ -24,6 +24,7 @@ interface NavBarProps {
 // One navigation: a left sidebar on desktop, a bottom tab bar on phones.
 export function NavBar({ tab, setTab, user, logout }: NavBarProps) {
   const items = !user.role || user.role === 'customer' ? ITEMS : [
+    { id: 'assistant' as const, label: 'Staff assistant', icon: MessageCircle },
     ...(user.permissions?.includes('admin:transactions:read') ? [{ id: 'admin' as const, label: 'Operations', icon: ShieldCheck }] : []),
     ...(user.permissions?.includes('support:read') ? [{ id: 'support' as const, label: 'Support', icon: LifeBuoy }] : []),
     ...ITEMS.filter(item => item.id === 'notifications' || item.id === 'profile'),

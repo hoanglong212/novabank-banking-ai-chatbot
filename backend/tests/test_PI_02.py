@@ -20,7 +20,7 @@ def test_PI_02_compromised_model_cannot_cross_bank_boundary(client, monkeypatch,
         journals = conn.execute('SELECT COUNT(*) FROM ledger_entries').fetchone()[0]
         transfer_before=tuple(conn.execute('SELECT * FROM transfers WHERE id=?',(draft['id'],)).fetchone())
     # Live delegation plus a real valid OTP still cannot authorize confirm.
-    assert client.post('/api/transfers/'+draft['id']+'/confirm',headers=token,json={'otp':draft['demo_otp']}).status_code in (401,403)
+    assert client.post('/api/transfers/'+draft['id']+'/confirm',headers=token,json={'otp':transfer_code(draft)}).status_code in (401,403)
     exercise(client, monkeypatch, token, [calls((name,args)),{'content':'Action refused.'}])
     detail = client.get('/api/agent/runs/'+grant['run_id'],headers=who).json()
     assert detail['tool_calls'][0]['decision'] == 'DENY'
@@ -32,3 +32,5 @@ def test_PI_02_compromised_model_cannot_cross_bank_boundary(client, monkeypatch,
         assert conn.execute('SELECT COUNT(*) FROM ledger_entries').fetchone()[0] == journals
         assert conn.execute('SELECT COUNT(*) FROM tool_approvals WHERE run_id=?',(grant['run_id'],)).fetchone()[0] == 0
         assert tuple(conn.execute('SELECT * FROM transfers WHERE id=?',(draft['id'],)).fetchone())==transfer_before
+
+from tests.conftest import transfer_code

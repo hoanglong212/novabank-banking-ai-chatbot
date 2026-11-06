@@ -10,7 +10,7 @@ from . import agent_access
 from .auth_crypto import decrypt_secret
 from .config import setting
 from .database import now
-from .dependencies import customer_user, get_db
+from .dependencies import customer_user, assistant_user, get_db
 from .guard import inspect_prompt
 from .identity import transaction
 from .identity_schemas import IdentityInput
@@ -66,12 +66,12 @@ def preview(payload: PreviewInput, principal=Depends(delegated), db=Depends(get_
 
 
 @router.post('/agent/runs/{run_id}/cancel')
-def cancel(run_id: str, user=Depends(customer_user), db=Depends(get_db)):
+def cancel(run_id: str, user=Depends(assistant_user), db=Depends(get_db)):
     return agent_access.cancel_run(db, user, run_id)
 
 
 @router.post('/agent/runs', status_code=201)
-def create(payload: RunInput, user=Depends(customer_user), db=Depends(get_db)):
+def create(payload: RunInput, user=Depends(assistant_user), db=Depends(get_db)):
     return agent_access.create_run(db, user, payload.conversation_id, payload.content, payload.profile)
 
 
@@ -110,7 +110,7 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
 
 
 @router.get('/agent/runs')
-def runs(conversation_id: str = Query(max_length=64), user=Depends(customer_user), db=Depends(get_db)):
+def runs(conversation_id: str = Query(max_length=64), user=Depends(assistant_user), db=Depends(get_db)):
     with db.connect() as conn:
         if not conn.execute('SELECT 1 FROM conversations WHERE id=? AND owner_id=?', (conversation_id, user.id)).fetchone():
             raise HTTPException(404, 'Conversation not found.')
@@ -120,7 +120,7 @@ def runs(conversation_id: str = Query(max_length=64), user=Depends(customer_user
 
 
 @router.get('/agent/runs/{run_id}')
-def run_detail(run_id: str, user=Depends(customer_user), db=Depends(get_db)):
+def run_detail(run_id: str, user=Depends(assistant_user), db=Depends(get_db)):
     with db.connect() as conn:
         row = conn.execute('''SELECT id,status,profile,model,created_at,completed_at,latency_ms,input_tokens,output_tokens,answer,termination_reason
             FROM agent_runs WHERE id=? AND owner_id=?''', (run_id, user.id)).fetchone()
@@ -146,12 +146,22 @@ async def approve(approval_id: str, payload: ApprovalInput, user=Depends(custome
     return await agent_access.approve(db, user, approval_id, payload.approve)
 
 
+@router.get('/agent/approvals/{approval_id}')
+def approval_detail(approval_id: str, user=Depends(customer_user), db=Depends(get_db)):
+    with db.connect() as conn:
+        row = conn.execute('SELECT * FROM tool_approvals WHERE id=? AND owner_id=?', (approval_id, user.id)).fetchone()
+        if not row:
+            raise HTTPException(404, 'Approval not found.')
+        return {'id': row['id'], 'name': row['name'], 'status': row['status'],
+                'arguments': json.loads(row['arguments_json']), 'expires_at': row['expires_at']}
+
+
 def sse(event, data):
     return f'event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n'
 
 
 @router.post('/conversations/{conversation_id}/stream')
-async def stream(conversation_id: str, payload: StreamInput, request: Request, user=Depends(customer_user), db=Depends(get_db)):
+async def stream(conversation_id: str, payload: StreamInput, request: Request, user=Depends(assistant_user), db=Depends(get_db)):
     if not db.get_conversation(conversation_id, user.id):
         raise HTTPException(404, 'Conversation not found.')
     with db.connect() as conn:

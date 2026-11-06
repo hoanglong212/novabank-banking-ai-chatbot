@@ -3,6 +3,17 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
+def transfer_code(draft):
+    """Test-only simulated email reader; cache to test replays after consumption."""
+    if '_test_otp' not in draft:
+        from app.dependencies import get_db
+        with get_db().connect() as conn:
+            row = conn.execute('SELECT secret_text FROM dev_outbox WHERE challenge_id=? ORDER BY rowid DESC LIMIT 1',
+                               ('transfer:' + draft['id'],)).fetchone()
+        draft['_test_otp'] = row[0] if row else draft.get('demo_otp')
+    return draft['_test_otp']
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv('DB_PATH', str(tmp_path / 'test.sqlite3'))

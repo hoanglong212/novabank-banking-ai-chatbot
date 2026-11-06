@@ -1,3 +1,4 @@
+import { localMessage } from './auth-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { demoLogin } from './auth-helpers';
@@ -28,7 +29,9 @@ test('Alice–Bob: nine-step banking acceptance with real backend', async ({ pag
   // Preparing a transfer does not move funds.
   expect((await (await page.request.get('/api/me', { headers })).json()).accounts[0].balance_vnd).toBe(10_000_000);
   await expect(page.getByRole('dialog')).toContainText('BOB TRAN');
-  await page.getByLabel('Enter OTP').fill(draft.demo_otp);
+  await page.getByRole('button', { name: 'Continue to verification' }).click();
+  const transferCode = localMessage('alice@novabank.test', 'TRANSFER_OTP').code;
+  await page.getByLabel('Enter OTP').fill(transferCode);
   const completion = page.waitForResponse(r => r.url().endsWith('/confirm') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
   const response = await completion;
@@ -89,7 +92,7 @@ test('Alice–Bob: nine-step banking acceptance with real backend', async ({ pag
 
   // Retry the successful confirmation with the exact same request key.
   const replay = await page.request.post(`/api/transfers/${draft.id}/confirm`, {
-    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: draft.demo_otp },
+    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: transferCode },
   });
   expect(replay.status()).toBe(200);
   expect((await replay.json()).transaction_id).toBe(receipt.transaction_id);

@@ -2,10 +2,10 @@
 import json
 import httpx
 from fastapi import HTTPException
-from .auth import DemoPrincipal
-from .config import provider, setting
-from .tools import ToolDispatcher, OLLAMA_TOOLS, TOOL_MODELS
-from .banking_workflow import bind_request, render_result
+from ..auth import DemoPrincipal
+from ..config import provider, setting
+from ..tools import ToolDispatcher, OLLAMA_TOOLS, TOOL_MODELS
+from ..banking_workflow import bind_request, render_result
 from pydantic import ValidationError
 
 
@@ -103,6 +103,6 @@ class OllamaAgent:
 def make_agent():
     mode = provider()
     if mode == 'langgraph':
-        from .graph_agent import LangGraphAgent  # optional heavy dependency; mock mode runs without it
+        from ..graph_agent import LangGraphAgent  # optional heavy dependency; mock mode runs without it
         return LangGraphAgent()
     return OllamaAgent() if mode == 'ollama' else MockAgent()

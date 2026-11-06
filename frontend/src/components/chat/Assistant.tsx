@@ -28,13 +28,14 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
         <div className="messages-scroller" ref={chat.scrollerRef}>
           <div className="messages-inner">
             {chat.health?.agent_mode === 'service' && <label className="agent-profile">Assistant safeguards <select value={chat.defenseProfile} disabled={chat.busy} onChange={e => chat.setDefenseProfile(e.target.value as 'baseline' | 'defended')}><option value="defended">Defended</option><option value="baseline">Baseline (bank permissions still apply)</option></select></label>}
-            {chat.messages.length === 0 ? (
+            {chat.user.role && chat.user.role !== 'customer' && <p className="muted">Staff assistant · read-only reports within your role. No payment or account changes.</p>}
+            {chat.messages.length === 0 && (!chat.user.role || chat.user.role === 'customer') ? (
               <Welcome user={chat.user} busy={chat.busy} pickSuggestion={chat.pickSuggestion} />
             ) : (
               <MessageThread messages={chat.messages} busy={chat.busy} openTransfer={openTransfer} />
             )}
             {chat.busy && chat.progress && <p role="status" className="muted small">{chat.progress}</p>}
-            {chat.active && <AgentActivity user={chat.user} conversationId={chat.active} revision={chat.messages.length} openTransfer={openTransfer} />}
+            {chat.active && (!chat.user.role || chat.user.role === 'customer') && <AgentActivity user={chat.user} conversationId={chat.active} revision={chat.messages.length} openTransfer={openTransfer} />}
             <div ref={chat.endRef} />
           </div>
         </div>

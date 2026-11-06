@@ -109,7 +109,7 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
             path = path.replace('{conversation_id}',cid)
         if model.__name__=='TransferConfirm':
             draft = client.post('/api/transfers',headers=who,json=SAMPLES['TransferArgs']).json()
-            path=path.replace('{transfer_id}',draft['id']);sample['otp']=draft['demo_otp']
+            path=path.replace('{transfer_id}',draft['id']);sample['otp']=transfer_code(draft)
         response = client.request(method,path,headers=who,json={**sample,**extra})
         assert response.status_code in (200,201,202), (path,response.status_code)
         after=protected()
@@ -172,3 +172,5 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
 def test_SEC_04_write_inventory_includes_hidden_routes():
     expected={(m,p) for m,p in route_inventory(app) if m in ('POST','PUT','PATCH','DELETE')}
     assert {(m,p) for m,p,_ in writes()}==expected
+
+from tests.conftest import transfer_code

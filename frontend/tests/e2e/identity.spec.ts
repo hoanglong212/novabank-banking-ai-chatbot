@@ -50,7 +50,9 @@ test('register, verify, recover and revoke previous sessions through the real UI
   await payer.getByRole('textbox', { name: 'Amount', exact: true }).fill('100000');
   const prepared = payer.waitForResponse(response => response.url().endsWith('/api/transfers') && response.request().method() === 'POST');
   await payer.getByRole('button', { name: 'Continue', exact: true }).click();
-  await payer.getByLabel('Enter OTP').fill((await (await prepared).json()).demo_otp);
+  await prepared;
+  await payer.getByRole('button', { name: 'Continue to verification' }).click();
+  await payer.getByLabel('Enter OTP').fill(localMessage('alice@novabank.test', 'TRANSFER_OTP').code);
   await payer.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
   await expect(payer.getByText('Transfer successful', { exact: true })).toBeVisible();
   await payer.close();

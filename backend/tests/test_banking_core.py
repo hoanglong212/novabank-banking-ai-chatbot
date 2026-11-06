@@ -25,7 +25,7 @@ def financial_invariants(client, monkeypatch):
 def confirm(client, headers, transfer, key=None, otp=None):
     return client.post(f'/api/transfers/{transfer["id"]}/confirm',
                        headers={**headers, **({'Idempotency-Key': key} if key is not None else {})},
-                       json={'otp': otp or transfer['demo_otp']})
+                       json={'otp': otp or transfer_code(transfer)})
 
 
 def test_internal_posting_has_balanced_journal_and_one_audit(client, alice, bob):
@@ -84,7 +84,7 @@ def test_idempotency_is_scoped_to_authenticated_user(client, alice, bob):
 
 def test_wrong_otp_does_not_consume_idempotency_key(client, alice):
     t = draft(client, alice).json()
-    wrong = '000000' if t['demo_otp'] != '000000' else '111111'
+    wrong = '000000' if transfer_code(t) != '000000' else '111111'
     assert confirm(client, alice, t, 'retry-key', wrong).json()['detail'] == 'OTP_INVALID'
     assert confirm(client, alice, t, 'retry-key').status_code == 200
     assert confirm(client, alice, t, 'retry-key').status_code == 200
@@ -117,6 +117,7 @@ def test_expired_quote_cannot_be_revived_by_otp_resend(client, alice, monkeypatc
     monkeypatch.setattr(transfers, 'now', lambda: '2026-10-31T10:00:00+00:00')
     t = draft(client, alice).json()
     assert t['expires_at'] == '2026-10-31T10:05:00+00:00'
+    transfer_code(t)  # Read the delivered code before expiry invalidates the mailbox secret.
     monkeypatch.setattr(transfers, 'now', lambda: '2026-10-31T10:05:00+00:00')
     assert client.post(f'/api/transfers/{t["id"]}/otp', headers=alice).json()['detail'] == 'DRAFT_EXPIRED'
     assert confirm(client, alice, t).json()['detail'] in ('DRAFT_EXPIRED', 'ALREADY_PROCESSED')
@@ -129,7 +130,7 @@ def test_otp_expiry_boundary_and_action_binding(client, alice, monkeypatch):
     numbers = iter([123456, 654321])
     monkeypatch.setattr(transfers.secrets, 'randbelow', lambda _: next(numbers))
     a, b = draft(client, alice).json(), draft(client, alice).json()
-    assert confirm(client, alice, b, otp=a['demo_otp']).json()['detail'] == 'OTP_INVALID'
+    assert confirm(client, alice, b, otp=transfer_code(a)).json()['detail'] == 'OTP_INVALID'
     monkeypatch.setattr(transfers, 'now', lambda: '2026-10-31T10:02:00+00:00')
     assert confirm(client, alice, a).json()['detail'] == 'OTP_EXPIRED'
 
@@ -157,7 +158,7 @@ def simultaneous_confirm(db, drafts, keys, otps=None):
         index, t = item
         barrier.wait(timeout=5)
         try:
-            return transfers.confirm(db, USERS['alice'], t['id'], (otps or [d['demo_otp'] for d in drafts])[index], keys[index])
+            return transfers.confirm(db, USERS['alice'], t['id'], (otps or [transfer_code(d) for d in drafts])[index], keys[index])
         except transfers.TransferError as exc:
             return exc.reason_code
     with ThreadPoolExecutor(max_workers=len(drafts)) as pool:
@@ -175,7 +176,7 @@ def test_concurrent_same_key_confirms_post_once(client, alice):
 
 def test_concurrent_wrong_otps_share_three_attempt_budget(client, alice):
     t = draft(client, alice).json()
-    wrong = '000000' if t['demo_otp'] != '000000' else '111111'
+    wrong = '000000' if transfer_code(t) != '000000' else '111111'
     results = simultaneous_confirm(get_db(), [t] * 5, ['wrong'] * 5, [wrong] * 5)
     assert sorted(results) == ['ALREADY_PROCESSED', 'ALREADY_PROCESSED', 'OTP_INVALID', 'OTP_INVALID', 'OTP_LOCKED']
     assert get_db().get_transfer(t['id'], 'alice')['otp_attempts'] == 3
@@ -220,3 +221,5 @@ def test_cors_accepts_idempotency_header(client):
         'Origin': 'http://127.0.0.1:5173', 'Access-Control-Request-Method': 'POST',
         'Access-Control-Request-Headers': 'authorization,content-type,idempotency-key'})
     assert response.status_code == 200
+
+from tests.conftest import transfer_code

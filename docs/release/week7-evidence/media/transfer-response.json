@@ -1,0 +1,17 @@
+{
+  "status": 201,
+  "body": {
+    "id": "TRF-2ABEC2E7C2CC427090C16774AA1707C2",
+    "from_account": "ACC-ALICE-001",
+    "to_bank": "NovaBank",
+    "to_account": "ACC-BOB-001",
+    "to_name": "BOB TRAN",
+    "amount_vnd": 10000,
+    "content": "Alice transfer",
+    "status": "PENDING_OTP",
+    "otp_expires_at": "2026-11-05T16:40:24+00:00",
+    "transaction_id": null,
+    "fee_vnd": 0,
+    "expires_at": "2026-11-05T16:43:24+00:00"
+  }
+}

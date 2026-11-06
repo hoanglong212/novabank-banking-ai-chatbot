@@ -4,7 +4,7 @@ from tests.acceptance_helpers import *
 def test_AI_02_filtered_tool_returns_only_matching_owned_transactions(client):
     who = login(client); payment = pay(client, who, 2345)
     draft = client.post('/api/transfers', headers=who, json={'to_account':'ACC-CHARLIE-001','amount_vnd':3456}).json()
-    assert client.post('/api/transfers/'+draft['id']+'/confirm', headers=who, json={'otp':draft['demo_otp']}).status_code == 200
+    assert client.post('/api/transfers/'+draft['id']+'/confirm', headers=who, json={'otp':transfer_code(draft)}).status_code == 200
     cid = client.post('/api/conversations', headers=who, json={'title':'Filter transactions'}).json()['id']
     run = client.post('/api/agent/runs', headers=who, json={'conversation_id':cid,'content':'Show transactions to Bob today','profile':'baseline'}).json()
     token = {'Authorization':'Bearer '+run['delegated_token']}
@@ -30,3 +30,5 @@ def test_AI_02_transaction_tool_supports_period_and_recipient_filters(client):
     assert False, f'No transaction tool supports date and recipient filters: {supported}'
 
 
+
+from tests.conftest import transfer_code

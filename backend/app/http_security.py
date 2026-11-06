@@ -3,6 +3,8 @@ import json
 import logging
 import time
 import uuid
+import re
+from .request_context import request_id as correlation
 
 log = logging.getLogger('novabank.http')
 if not log.handlers:
@@ -30,7 +32,8 @@ class HttpSecurity:
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':
             return await self.app(scope, receive, send)
-        started = time.perf_counter(); request_id = uuid.uuid4().hex; status = 500
+        supplied = dict(scope.get('headers', [])).get(b'x-request-id', b'').decode('ascii', errors='replace')
+        started = time.perf_counter(); request_id = supplied if re.fullmatch(r'[A-Za-z0-9._:-]{1,80}', supplied) else uuid.uuid4().hex; status = 500
         max_bytes = 4 * 1024 * 1024
         if scope['method'] in ('POST', 'PUT', 'PATCH'):
             parts, total = [], 0
@@ -79,8 +82,10 @@ class HttpSecurity:
             from .recipient_security import peer_address
             # ASGI peer only: arbitrary X-Forwarded-For values are not trusted.
             peer_token = peer_address.set((scope.get('client') or ('unknown',))[0])
+            correlation_token = correlation.set(request_id)
             await self.app(scope, receive, secured)
         finally:
+            correlation.reset(correlation_token)
             peer_address.reset(peer_token)
             # Paths can include identifiers; never log query strings, request bodies or credentials.
             log.info(json.dumps({'event': 'http_request', 'request_id': request_id, 'method': scope['method'],

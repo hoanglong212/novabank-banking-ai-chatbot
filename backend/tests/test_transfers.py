@@ -23,19 +23,19 @@ def test_internal_transfer_moves_money_once_after_otp(client, alice, bob):
     created = draft(client, alice, content='lunch')
     assert created.status_code == 201, created.text
     t = created.json()
-    assert (t['to_name'], t['status'], len(t['demo_otp'])) == ('BOB TRAN', 'PENDING_OTP', 6)
+    assert (t['to_name'], t['status'], len(transfer_code(t))) == ('BOB TRAN', 'PENDING_OTP', 6)
     assert balance(client, alice) == 12500000  # nothing moves before the OTP
 
-    wrong = '000000' if t['demo_otp'] != '000000' else '111111'
+    wrong = '000000' if transfer_code(t) != '000000' else '111111'
     assert client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': wrong}).json()['detail'] == 'OTP_INVALID'
-    done = client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': t['demo_otp']})
+    done = client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': transfer_code(t)})
     assert done.status_code == 200, done.text
     assert done.json()['balance_vnd'] == 12300000
     assert (balance(client, alice), balance(client, bob)) == (12300000, 8950000)
     bob_tx = client.get('/api/me', headers=bob).json()['transactions'][0]
     assert (bob_tx['direction'], bob_tx['amount_vnd'], bob_tx['description']) == ('in', 200000, 'Transfer from ALICE NGUYEN · lunch')
 
-    replay = client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': t['demo_otp']})
+    replay = client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': transfer_code(t)})
     assert replay.json()['detail'] == 'ALREADY_PROCESSED'
     assert balance(client, alice) == 12300000
 
@@ -43,7 +43,7 @@ def test_internal_transfer_moves_money_once_after_otp(client, alice, bob):
 def test_cannot_debit_or_confirm_someone_elses_transfer(client, alice, bob):
     assert draft(client, alice, from_account='ACC-BOB-001').json()['detail'] == 'ACCOUNT_NOT_OWNED'
     t = draft(client, alice).json()
-    assert client.post(f'/api/transfers/{t["id"]}/confirm', headers=bob, json={'otp': t['demo_otp']}).status_code == 404
+    assert client.post(f'/api/transfers/{t["id"]}/confirm', headers=bob, json={'otp': transfer_code(t)}).status_code == 404
     assert client.post(f'/api/transfers/{t["id"]}/otp', headers=bob).status_code == 404
     assert balance(client, bob) == 8750000
 
@@ -60,17 +60,17 @@ def test_invalid_transfers_are_rejected_before_otp(client, alice, body, reason):
 
 def test_three_wrong_otps_fail_the_transfer(client, alice):
     t = draft(client, alice).json()
-    wrong = '000000' if t['demo_otp'] != '000000' else '111111'
+    wrong = '000000' if transfer_code(t) != '000000' else '111111'
     codes = [client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': wrong}).json()['detail'] for _ in range(3)]
     assert codes == ['OTP_INVALID', 'OTP_INVALID', 'OTP_LOCKED']
-    assert client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': t['demo_otp']}).json()['detail'] == 'ALREADY_PROCESSED'
+    assert client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': transfer_code(t)}).json()['detail'] == 'ALREADY_PROCESSED'
     assert balance(client, alice) == 12500000
 
 
 def test_interbank_transfer_debits_only_the_payer(client, alice):
     t = draft(client, alice, to_bank='VCB', to_account='0123456789', to_name='nguyen van a').json()
     assert (t['to_bank'], t['to_name']) == ('Vietcombank', 'NGUYEN VAN A')
-    assert client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': t['demo_otp']}).status_code == 200
+    assert client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': transfer_code(t)}).status_code == 200
     assert balance(client, alice) == 12300000
 
 
@@ -122,3 +122,5 @@ def test_langgraph_transfer_values_come_from_the_user(client, alice, monkeypatch
     _, reply = send(client, alice, 'Chuyển 150k cho ACC-BOB-001')
     assert '**150,000 VND**' in reply['message']['content'] and 'ACC-BOB-001' in reply['message']['content']
     assert llm.seen == []
+
+from tests.conftest import transfer_code

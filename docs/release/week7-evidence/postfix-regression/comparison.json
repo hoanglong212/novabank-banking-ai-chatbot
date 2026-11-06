@@ -1,0 +1,28 @@
+{
+  "scope": "Matched selected trials only; original full results are unchanged",
+  "before": {
+    "trials": 150,
+    "execution_errors": 96,
+    "termination_reasons": {
+      "UPSTREAM_ERROR": 90,
+      "ROUND_LIMIT": 1,
+      "ANOMALOUS_SEQUENCE": 5
+    },
+    "tool_successes": 40,
+    "applicable_trials": 150,
+    "model_declared_in_summary": null,
+    "run_directory": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\week7-live\\run-59e7c91d44"
+  },
+  "after": {
+    "trials": 150,
+    "execution_errors": 6,
+    "termination_reasons": {
+      "ROUND_LIMIT": 1,
+      "ANOMALOUS_SEQUENCE": 5
+    },
+    "tool_successes": 90,
+    "applicable_trials": 150,
+    "model_declared_in_summary": "qwen2.5:7b",
+    "run_directory": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\week7-live\\run-58153d5e3c"
+  }
+}

@@ -137,6 +137,8 @@ class Database:
             initialize_notification_preferences(conn, now())
             from .agent_schema import initialize_agent_termination
             initialize_agent_termination(conn, now())
+            from .request_context import initialize
+            initialize(conn)
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())
@@ -169,14 +171,15 @@ class Database:
         with self.connect() as conn:
             return [dict(x) for x in conn.execute('SELECT * FROM messages WHERE conversation_id=? ORDER BY created_at, rowid', (conversation_id,)).fetchall()]
 
-    def add_event(self, conversation_id: str, tool_name: str, arguments: dict, decision: str, reason_code: str, executed: bool):
+    def add_event(self, conversation_id: str, tool_name: str, arguments: dict, decision: str, reason_code: str, executed: bool, request_id: str | None = None):
         # Event store holds tool metadata. Do not add tool results or secrets here; PII is masked.
-        event = dict(id=str(uuid.uuid4()), conversation_id=conversation_id, tool_name=tool_name,
+        from .request_context import request_id as correlation
+        event = dict(id=str(uuid.uuid4()), conversation_id=conversation_id, tool_name=tool_name, request_id=request_id or correlation.get(),
                      arguments_json=json.dumps(mask(arguments), ensure_ascii=False)[:1500],
                      decision=decision, reason_code=reason_code, executed=int(executed), created_at=now())
         with self.connect() as conn:
-            conn.execute('''INSERT INTO tool_events (id,conversation_id,tool_name,arguments_json,decision,reason_code,executed,created_at)
-                            VALUES (:id,:conversation_id,:tool_name,:arguments_json,:decision,:reason_code,:executed,:created_at)''', event)
+            conn.execute('''INSERT INTO tool_events (id,conversation_id,tool_name,arguments_json,decision,reason_code,executed,created_at,request_id)
+                            VALUES (:id,:conversation_id,:tool_name,:arguments_json,:decision,:reason_code,:executed,:created_at,:request_id)''', event)
         return event
 
     def list_events(self, conversation_id: str):

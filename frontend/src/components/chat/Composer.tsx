@@ -33,6 +33,7 @@ export function Composer({
   stopResponse,
   pickSuggestion,
 }: ComposerProps) {
+  const staff = !!user?.role && user.role !== 'customer';
   return (
     <div className="composer-area">
       {error && <div className="error-banner" role="alert">
@@ -44,7 +45,7 @@ export function Composer({
           <X size={17} />
         </button>
       </div>}
-      {hasMessages && <div className="quick-chips" aria-label="Quick requests">
+      {hasMessages && !staff && <div className="quick-chips" aria-label="Quick requests">
         {suggestions.map(s => <button
           key={s.chip}
           className={`chip tone-${s.tone}`}
@@ -61,7 +62,7 @@ export function Composer({
           id="message-input"
           ref={textareaRef}
           rows={1}
-          placeholder="Ask Nova anything about your money"
+          placeholder={staff ? 'Ask Nova for a report within your role' : 'Ask Nova anything about your money'}
           value={draft}
           disabled={!user || busy}
           onChange={e => setDraft(e.target.value)}

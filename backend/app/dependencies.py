@@ -22,3 +22,9 @@ def require_permission(permission: str):
 
 
 customer_user = require_permission('banking:own')
+
+
+def assistant_user(user: DemoPrincipal = Depends(current_user)) -> DemoPrincipal:
+    if user.role not in ('customer', 'support', 'operations', 'auditor', 'admin'):
+        raise HTTPException(403, 'ROLE_NOT_PERMITTED')
+    return user

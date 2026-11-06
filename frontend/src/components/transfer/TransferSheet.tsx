@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { CheckCircle2, MessageSquareText } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 import { api, request } from '../../api';
 import type { Bank, DemoUser, Transfer, TransferStart } from '../../types';
@@ -37,19 +37,21 @@ interface TransferSheetProps {
   start: TransferStart | null;
   onClose: () => void;
   onDone: () => void;
+  step?: string;
+  onNavigate?: (id: string, step: string) => void;
 }
 
 // Sheet renders its children only while open, so every opening starts a fresh flow.
-export function TransferSheet({ user, start, onClose, onDone }: TransferSheetProps) {
+export function TransferSheet({ user, start, onClose, onDone, step, onNavigate }: TransferSheetProps) {
   return (
     <Sheet open={start !== null} onClose={onClose} title="Transfer money">
-      {start && <TransferFlow user={user} start={start} onClose={onClose} onDone={onDone} />}
+      {start && <TransferFlow key={(start.draftId ?? 'new') + (step ?? '')} user={user} start={start} onClose={onClose} onDone={onDone} step={step} onNavigate={onNavigate} />}
     </Sheet>
   );
 }
 
 // form -> review + OTP (simulated SMS) -> receipt, as in Vietnamese banking apps.
-function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { start: TransferStart }) {
+function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: TransferSheetProps & { start: TransferStart }) {
   const [banks, setBanks] = useState<Bank[]>([NOVABANK]);
   const [bank, setBank] = useState(start.to_bank ?? 'NovaBank');
   const [account, setAccount] = useState(start.to_account ?? '');
@@ -73,7 +75,7 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
     // Once only: StrictMode's second run would issue a second OTP and race the first.
     if (start.draftId && !otpRequested.current) {
       otpRequested.current = true;
-      api.resendOtp(user, start.draftId).then(setTransfer).catch(err => setError(explain(err)));
+      request<Transfer>('/transfers/' + encodeURIComponent(start.draftId), user).then(setTransfer).catch(err => setError(explain(err)));
     }
   }, [user, start.draftId]);
 
@@ -96,6 +98,8 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
     try {
       const result = await action();
       setTransfer(result);
+      if (onNavigate && !start.draftId) onNavigate(result.id, 'review');
+      else if (onNavigate && result.status !== 'PENDING_OTP') onNavigate(result.id, 'receipt');
       if (result.status === 'COMPLETED' || result.status === 'PENDING') onDone();
     } catch (err) {
       setError(explain(err));
@@ -153,13 +157,9 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
           <div><dt>Total debit</dt><dd>{vnd(transfer.amount_vnd + (transfer.fee_vnd ?? 0))}</dd></div>
           <div><dt>Content</dt><dd>{transfer.content}</dd></div>
         </dl>
-        {transfer.demo_otp && (
-          <div className="sms-box" role="status">
-            <MessageSquareText size={18} aria-hidden="true" />
-            <span><strong>Simulated SMS from NovaBank</strong><br />OTP for {transfer.id}: <b>{transfer.demo_otp}</b>. Valid 2 minutes. Never share it, not even with Nova.</span>
-          </div>
-        )}
+        <p className="muted">Read the verification code in the <a href="/outbox" target="_blank" rel="noopener noreferrer">demo inbox</a>. Never send it to the assistant.</p>
         {error && <div className="form-error" role="alert">{error}</div>}
+        {step === 'review' ? <button className="primary-button" type="button" onClick={() => onNavigate?.(transfer.id, 'otp')}>Continue to verification</button> : <>
         <label className="field">
           <span>Enter OTP</span>
           <input className="otp-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} placeholder="••••••"
@@ -167,6 +167,7 @@ function TransferFlow({ user, start, onClose, onDone }: TransferSheetProps & { s
         </label>
         <button className="primary-button" type="submit" disabled={busy || otp.length !== 6}>{busy ? 'Confirming…' : 'Confirm transfer'}</button>
         <button className="link-button" type="button" disabled={busy} onClick={() => run(() => api.resendOtp(user, transfer.id))}>Resend OTP</button>
+        </>}
       </form>
     );
   }

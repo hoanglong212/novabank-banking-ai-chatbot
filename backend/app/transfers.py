@@ -104,6 +104,7 @@ def _fail(conn, t: dict, reason: str, stamp: str):
     changed = conn.execute("UPDATE transfers SET status='FAILED',failure_reason=?,otp_hash=NULL "
                            "WHERE id=? AND status='PENDING_OTP'", (reason, t['id']))
     if changed.rowcount:
+        conn.execute('UPDATE dev_outbox SET secret_text=NULL WHERE challenge_id=?', ('transfer:' + t['id'],))
         audit(conn, t['owner_id'], 'TRANSFER_FAILED', t['id'], reason, stamp)
 
 
@@ -124,6 +125,14 @@ def issue_otp(db: Database, user: DemoPrincipal, transfer_id: str) -> tuple[dict
             expires = min((datetime.fromisoformat(stamp) + OTP_TTL).isoformat(timespec='seconds'), _expires_at(t))
             conn.execute('UPDATE transfers SET otp_hash=?,otp_expires_at=? WHERE id=?',
                          (_otp_hash(transfer_id, otp), expires, transfer_id))
+            conn.execute('UPDATE dev_outbox SET secret_text=NULL WHERE challenge_id=?', ('transfer:' + transfer_id,))
+            email = conn.execute('SELECT email FROM users WHERE id=?', (user.id,)).fetchone()[0]
+            conn.execute('''INSERT INTO dev_outbox
+                (id,user_id,recipient,kind,created_at,expires_at,secret_text,challenge_id,body)
+                VALUES (?,?,?,'TRANSFER_OTP',?,?,?,?,?)''',
+                (uuid.uuid4().hex, user.id, email, int(datetime.fromisoformat(stamp).timestamp()),
+                 int(datetime.fromisoformat(expires).timestamp()), otp, 'transfer:' + transfer_id,
+                 'Verification code for transfer ' + transfer_id + '. Enter it only in the bank confirmation screen.'))
             t = {**t, 'otp_expires_at': expires}
     if error:
         raise error
@@ -159,6 +168,7 @@ def _confirm_locked(conn, user: DemoPrincipal, transfer_id: str, otp: str, key: 
         return TransferError('OTP_INVALID')
     _check_daily_limit(conn, user.id, t['amount_vnd'], stamp)
     posted = post_transfer(conn, t, stamp)
+    conn.execute('UPDATE dev_outbox SET secret_text=NULL WHERE challenge_id=?', ('transfer:' + transfer_id,))
     conn.execute("UPDATE transfers SET status='COMPLETED',otp_hash=NULL,transaction_id=?,completed_at=? WHERE id=?",
                  (posted['transaction_id'], stamp, transfer_id))
     if not t['internal']:

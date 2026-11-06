@@ -525,7 +525,11 @@
     "method": "POST",
     "path": "/api/agent/runs",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -557,7 +561,11 @@
     "method": "GET",
     "path": "/api/agent/runs",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -565,7 +573,11 @@
     "method": "GET",
     "path": "/api/agent/runs/{run_id}",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -589,7 +601,11 @@
     "method": "POST",
     "path": "/api/conversations/{conversation_id}/stream",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -723,7 +739,11 @@
     "method": "GET",
     "path": "/api/conversations",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -731,7 +751,11 @@
     "method": "POST",
     "path": "/api/conversations",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -739,7 +763,11 @@
     "method": "DELETE",
     "path": "/api/conversations/{conversation_id}",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -747,7 +775,11 @@
     "method": "GET",
     "path": "/api/conversations/{conversation_id}/messages",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -755,7 +787,11 @@
     "method": "GET",
     "path": "/api/conversations/{conversation_id}/tool-events",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
     "scope": "own"
   },
@@ -1112,9 +1148,13 @@
     "method": "POST",
     "path": "/api/agent/runs/{run_id}/cancel",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
     ],
-    "scope": "run-owner-session"
+    "scope": "own"
   },
   {
     "method": "MOUNT",
@@ -1129,5 +1169,41 @@
     ],
     "scope": "compiled-frontend-only",
     "optional": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/dev/outbox",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public",
+    "demo-only": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/dev/outbox/{message_id}",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "public",
+    "demo-only": true
+  },
+  {
+    "method": "GET",
+    "path": "/api/agent/approvals/{approval_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
   }
 ]

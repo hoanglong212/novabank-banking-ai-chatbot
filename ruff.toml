@@ -1,0 +1,6 @@
+target-version = "py312"
+exclude = [".local", "backend/.venv", "frontend/node_modules"]
+
+[lint]
+# Phase 1: correctness checks without a repository-wide formatting rewrite.
+select = ["F821", "F822", "F823"]

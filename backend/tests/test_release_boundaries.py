@@ -15,7 +15,7 @@ def test_spending_includes_transfer_fee_and_statement_discloses_it(client, alice
     with get_db().connect() as conn:
         conn.execute("UPDATE bank_settings SET value_json='1000' WHERE key='transfer_fee_vnd'")
     t = draft(client, alice).json()
-    assert client.post('/api/transfers/' + t['id'] + '/confirm', headers=alice, json={'otp': t['demo_otp']}).status_code == 200
+    assert client.post('/api/transfers/' + t['id'] + '/confirm', headers=alice, json={'otp': transfer_code(t)}).status_code == 200
     after = client.get('/api/insights?month=' + month, headers=alice).json()['expense_vnd']
     assert after - before == 201000
     csv = client.get('/api/statements.csv', headers=alice, params={'from_date': month + '-01', 'to_date': business_day(now())})
@@ -77,3 +77,5 @@ def test_model_cannot_claim_proposal_approved_or_solicit_otp(client, alice):
     assert 'approved' not in answer.lower() and 'OTP here' not in answer
     assert 'No payment' in answer and 'bank confirmation' in answer
     assert client.post('/api/agent/finish', headers=token, json={'answer': 'replay', 'latency_ms': 1}).status_code == 401
+
+from tests.conftest import transfer_code
