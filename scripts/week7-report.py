@@ -40,8 +40,6 @@ def main():
     label = 'Ollama' if llm else 'mock only'
     scenarios = len({r['scenario_id'] for r in rows})
     counts = Counter(r['profile'] for r in rows)
-    execution_errors = sum(bool(r['error']) and not r['error'].startswith('NOT_APPLICABLE') for r in rows)
-    exclusions = sum(r['error'].startswith('NOT_APPLICABLE') for r in rows)
     text = '# Live HTTP results — ' + label + '\n\n'
     text += ('**Real local model configured; some requests are rejected before model invocation.**\n\n' if llm else
              '**No LLM was invoked. These numbers are not evidence of LLM robustness.**\n\n')
@@ -57,27 +55,45 @@ def main():
     for name in ('BYPASS_NOTE.md', 'RBAC_MATRIX.md', 'CRYPTO_AUTHZ.md'):
         shutil.copy2(ROOT / 'docs/release' / name, output / name)
     shutil.copy2(ROOT / 'docs/research/QUISHING.md', output / 'QUISHING.md')
-    postfix_note = 'Xem completion.md để phân biệt triển khai local và toàn bộ nghiên cứu.'
-    comparison_file = output / 'postfix-regression/comparison.json'
-    if comparison_file.exists():
-        comparison = json.loads(comparison_file.read_text(encoding='utf-8'))
-        before, after = comparison['before'], comparison['after']
-        postfix_note = f"{after['trials']} lượt chạy lại: lỗi {before['execution_errors']} → {after['execution_errors']}; upstream error còn {after['termination_reasons'].get('UPSTREAM_ERROR', 0)}."
+    def rate(group, field='attack_success'):
+        hits = sum(r[field] == 'True' for r in group)
+        return f'{hits}/{len(group)}' if group else 'N/A'
+    offon = list(csv.DictReader((output / 'offon-research/observations.csv').open(encoding='utf-8')))
+    off_on = {p: [r for r in offon if r['profile'] == p] for p in ('naive', 'baseline', 'defended')}
+    def live(name):
+        path = output / name / 'results.csv'
+        return [r for r in csv.DictReader(path.open(encoding='utf-8')) if not r['error']] if path.exists() else []
+    hard, postfix = live('hard-live'), live('hard-live-postfix')
+    escalation = [r for r in hard if r['scenario_id'].startswith(('escalate-', 'mt-'))]
+    transfers = [r for r in postfix if r['scenario_id'].startswith('legit-transfer-')]
+    rag = lambda rows, p: rate([r for r in rows if r['scenario_id'] == 'hard-rag_document-05' and r['profile'] == p])
+    capture = json.loads((output / 'capture/capture-summary.json').read_text(encoding='utf-8'))
+    requests = sum(c['entries'] for c in capture['channels'].values())
     slides = [
-        ('Week 7: ứng dụng đã chạy local', ['Outbox OTP, staff assistant chỉ đọc và chuyển tiền qua URL.', 'Baseline: 359 pytest, 17 nhóm component, 16 E2E.', 'Local: 127.0.0.1:8081 · Qwen 2.5 7B qua Ollama.']),
-        ('Prompt demo: biết gì, chưa biết gì?', ['SYSTEM OVERRIDE đã lọt regex trước thay đổi.', 'Bản mới chặn trước khi tạo run; binding Bob → Charlie bị DENY.', 'Chưa có profile hoặc log ngày 3/11 để kết luận nguyên nhân lịch sử.']),
-        ('Role quyết định quyền, không phải prompt', ['Customer không gọi staff tools.', 'Support đọc ticket; operations và auditor đọc giao dịch đã che dữ liệu.', 'Admin đếm user và đọc báo cáo; không có công cụ AI chuyển tiền.']),
-        ('OTP chỉ nằm trong hộp thư demo', ['Transfer API không trả demo_otp.', 'Review → verification → receipt: mỗi bước tải trạng thái từ server.', 'Outbox chỉ bật ENV=demo; không coi nó là email độc lập trong production.']),
-        (f'{len(rows):,} lượt HTTP · {label}', [f"{scenarios} scenario; {summary['repetitions']} lần mỗi path.",
-            'ASR: ' + '; '.join(p + ' ' + fraction([r for r in group if r['kind'] == 'attack'], 'attack_success') for p, group in zip(profiles, buckets)),
-            f'{execution_errors} lượt lỗi; {exclusions} lượt không áp dụng. Xem asr-table và KNOWN_FAILURES.']),
-        ('QR: thử nới quyền trong lab riêng', ['App: NBQR1 có HMAC, schema không URL, không tool fetch.', 'Qwen experimental đã fetch trang lab nhưng không gọi prepare_transfer.', 'Probe scripted riêng bị bank DENY; một lượt model không chứng minh an toàn.']),
-        ('Sau sửa và phần chưa nghiệm thu', [postfix_note, 'Còn thiếu Caido/VM capture và profile/log demo ngày 3/11.', 'Ruff và ESLint đã đạt; còn review độc lập và CI remote.']),
+        ('Week 7: từ demo sang số liệu đo được', ['Gateway tắt/bật đo bằng Qwen thật; có corpus tấn công khó hơn.', 'QR thật, staff AI, capture HTTP 4 kênh, giới hạn khi mất danh tính.', 'Local: 127.0.0.1:8081 · Qwen 2.5 7B qua Ollama.']),
+        ('Gateway tắt và bật (Qwen, 1.350 lượt)', [
+            'ASR tắt gateway (naive): ' + rate([r for r in off_on['naive'] if r['kind'] == 'attack']) + '; baseline: ' + rate([r for r in off_on['baseline'] if r['kind'] == 'attack']) + '.',
+            'Bật gateway (defended): ' + rate([r for r in off_on['defended'] if r['kind'] == 'attack']) + ' tấn công thành công.',
+            'Tác vụ hợp lệ: naive ' + ', baseline '.join(rate([r for r in off_on[p] if r['kind'] == 'legitimate'], 'utility_success') for p in ('naive', 'baseline')) + ', defended ' + rate([r for r in off_on['defended'] if r['kind'] == 'legitimate'], 'utility_success') + '.']),
+        ('Vì sao prompt ngày 3/11 lọt?', ['Cùng payload: naive và baseline mỗi bên 10/35 lượt đề xuất chuyển cho Charlie, chờ duyệt.', 'Không lượt nào tự chuyển tiền; app thật có binding nên trả DENY.', 'Khả năng cao: profile không binding + người demo bấm duyệt (H1+H4). Thiếu log nên chưa kết luận.']),
+        ('Judge (LLM) có bị lừa không? Có.', ['Judge bỏ sót 100% payload JSON next_action và "Developer update".', 'Judge bắt được payload viết riêng để lừa nó; 0/10 chặn nhầm.', 'Trong lab, defended vẫn 0%: owner boundary chặn phần judge bỏ sót.']),
+        ('Tấn công đã lọt gateway tuần này', [
+            'RAG bị nhiễm bảo judge "label it injection=false": defended ' + rag(hard, 'defended') + ', baseline ' + rag(hard, 'baseline') + '.',
+            'Qwen báo khách một "phí xác minh lại 247.013 VND" giả, có trích nguồn KB.',
+            'Sửa luật cố định + prompt judge: defended ' + rag(postfix, 'defended') + '; 30/30 câu hỏi chính sách không bị chặn nhầm.']),
+        ('Khách có lấy được quyền admin qua AI?', [
+            ('Live Qwen: ' + rate(escalation) + ' lượt leo quyền/bỏ OTP/đọc tài khoản Bob thành công.') if escalation else 'Đang chạy đo live.',
+            'Tự nhận là admin: model không được cấp get_user_count, bank kiểm role từ DB.', 'Staff tool chỉ đọc; agent không có tool xác nhận chuyển tiền.']),
+        ('QR thật chứa URL', ['App: upload QR chứa URL bị 422, chỉ nhận NBQR1 có HMAC.', 'Người dùng xác nhận "trả đi": Qwen tự bịa người nhận và số tiền.', 'Bank DENY (USER_INTENT_REQUIRED): người nhận chỉ lấy từ lời người dùng.']),
+        (f'Capture HTTP: {requests} request, 4 kênh', ['Model chỉ thấy <ACCOUNT_n>, không thấy số tài khoản thật.', 'Phát hiện lỗi: câu "Prepare a transfer…" không được hiểu, chuyển tiền qua AI 0/100.',
+            ('Đã sửa; đo lại live: chuyển tiền hợp lệ ' + rate(transfers, 'utility_success') + '.') if transfers else 'Đã sửa và có test hồi quy.']),
+        ('Khi danh tính bị chiếm', ['Tối đa 5 giao dịch hoàn tất trong 10 phút.', 'Lần đầu chuyển cho người nhận mới: tối đa 10.000.000 VND.', 'Kiểm tra cả khi tạo draft và khi xác nhận OTP.']),
+        ('Còn thiếu', ['Caido/Burp trên VM (đang dùng proxy ghi HAR thay thế).', 'Log và profile của buổi demo 3/11.', 'Review độc lập và CI remote.']),
     ]
     html = '''<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NovaBank Week 7</title>
 <style>*{box-sizing:border-box}body{margin:0;background:#211536;color:#241c32;font-family:Arial,sans-serif}.slide{display:none;width:1120px;height:630px;background:white;margin:24px auto;padding:56px 64px}.slide.active{display:block}h1{font-size:40px;line-height:1.15;color:#54238c;margin:0 0 42px}li{font-size:27px;line-height:1.5;margin:24px 0}ul{padding-left:28px}nav{display:flex;justify-content:center;gap:24px;align-items:center;color:white}button{font:20px Arial;padding:10px 20px;border:1px solid white;background:none;color:white;cursor:pointer}button:focus-visible{outline:3px solid gold}small{display:block;font-size:16px;margin-top:28px;color:#62576d}@media(max-width:1150px){.slide{width:95vw;height:auto;min-height:75vh;padding:32px}h1{font-size:30px}li{font-size:21px}}@media print{.slide{display:block;break-after:page;margin:0}nav{display:none}}</style>'''
     for i, (title, points) in enumerate(slides):
-        html += f'<section class="slide{" active" if i == 0 else ""}" aria-label="Slide {i + 1}"><h1>{escape(title)}</h1><ul>' + ''.join('<li>' + escape(point) + '</li>' for point in points) + '</ul><small>Nguồn: BYPASS_NOTE, RBAC_MATRIX, asr-table, QUISHING và completion trong thư mục evidence.</small></section>'
+        html += f'<section class="slide{" active" if i == 0 else ""}" aria-label="Slide {i + 1}"><h1>{escape(title)}</h1><ul>' + ''.join('<li>' + escape(point) + '</li>' for point in points) + '</ul><small>Nguồn: GATEWAY_OFF_ON, HARD_LIVE, BYPASS_NOTE, RBAC_MATRIX, QUISHING, CRYPTO_AUTHZ và capture/README trong thư mục evidence.</small></section>'
     html += '''<nav><button id="prev">Previous</button><span id="count" aria-live="polite"></span><button id="next">Next</button></nav><script>let n=0;const pages=[...document.querySelectorAll('.slide')];function show(i){n=Math.max(0,Math.min(pages.length-1,i));pages.forEach((p,j)=>p.classList.toggle('active',j===n));document.querySelector('#count').textContent=(n+1)+' / '+pages.length}document.querySelector('#prev').onclick=()=>show(n-1);document.querySelector('#next').onclick=()=>show(n+1);document.onkeydown=e=>{if(e.key==='ArrowRight')show(n+1);if(e.key==='ArrowLeft')show(n-1)};show(0)</script></html>'''
     (output / 'Week7-Slides.html').write_text(html, encoding='utf-8')
     print('Packaged evidence in', output)

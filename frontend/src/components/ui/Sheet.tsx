@@ -26,12 +26,12 @@ export function Sheet({ open, onClose, title, children, side = 'bottom' }: Sheet
       ref={ref}
       className={`sheet sheet-${side}`}
       aria-label={title}
-      onClose={onClose}
+      onClose={event => { if (event.target === event.currentTarget) onClose(); }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="sheet-body">
         <header className="sheet-head">
           <h2>{title}</h2>
-          <button className="icon-button" aria-label="Close" onClick={onClose}><X size={20} /></button>
+          <button type="button" className="icon-button" aria-label="Close" onClick={onClose}><X size={20} /></button>
         </header>
         <div className="sheet-content">{open && children}</div>
       </div>

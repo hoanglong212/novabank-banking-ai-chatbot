@@ -20,14 +20,18 @@ const SECURITY = [
 
 export function Profile({ user, profile, logout }: ProfileProps) {
   return (
-    <div className="page narrow">
+    <div className="page narrow profile-page">
       <section className="profile-head">
         <span className="avatar avatar-lg" aria-hidden="true">{initials(user.name)}</span>
         <strong>{user.name}</strong>
         <span className="muted">@{user.id} · {user.role && user.role !== 'customer' ? user.role : 'Personal customer'}</span>
       </section>
+      <div className="profile-columns">
+      <div className="profile-col">
       <ProfileEditor user={user} logout={logout} />
       <NotificationPreferences user={user} />
+      </div>
+      <div className="profile-col">
       <h2 className="section-label">Accounts</h2>
       <ul className="card settings-list">
         {profile?.accounts.length === 0 && <li className="muted">No personal payment accounts for this role.</li>}
@@ -47,6 +51,8 @@ export function Profile({ user, profile, logout }: ProfileProps) {
           </li>
         ))}
       </ul>
+      </div>
+      </div>
       <SecurityCenter user={user} />
       <button className="danger-button" onClick={logout}><LogOut size={18} aria-hidden="true" /> Sign out</button>
       <p className="muted small center">NovaBank is a fictional bank for a classroom demo.</p>

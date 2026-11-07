@@ -47,5 +47,26 @@
     "scrollWidth": 1120,
     "height": 630,
     "scrollHeight": 630
+  },
+  {
+    "slide": 8,
+    "width": 1120,
+    "scrollWidth": 1120,
+    "height": 630,
+    "scrollHeight": 630
+  },
+  {
+    "slide": 9,
+    "width": 1120,
+    "scrollWidth": 1120,
+    "height": 630,
+    "scrollHeight": 630
+  },
+  {
+    "slide": 10,
+    "width": 1120,
+    "scrollWidth": 1120,
+    "height": 630,
+    "scrollHeight": 630
   }
 ]

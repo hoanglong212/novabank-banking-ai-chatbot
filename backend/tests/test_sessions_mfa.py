@@ -229,3 +229,26 @@ def test_totp_setup_login_replay_fallback_and_disable(client, monkeypatch):
     with get_db().connect() as conn:
         serialized = json.dumps([dict(r) for r in conn.execute('SELECT * FROM mfa_settings')])
         assert secret not in serialized
+
+
+def test_trusted_device_skips_login_mfa_until_revoked_or_stale(client):
+    from app.mfa import TRUSTED_DEVICE_SECONDS
+    first = signed(client)
+    device = first['device_token']
+    login = lambda user='alice', pw='Alice@2026', token=device: client.post(
+        '/api/auth/login', json={'username': user, 'password': pw, 'device_token': token}).json()
+    session = login()
+    assert session['access_token'] and client.get('/api/me', headers=headers(session)).status_code == 200
+    assert login(pw='wrong').get('access_token') is None  # Password is still checked.
+    assert login(user='bob', pw='Bob@2026').get('mfa_required')  # Token is bound to its user.
+    with get_db().connect() as conn:
+        conn.execute('UPDATE trusted_devices SET last_used_at=last_used_at-?', (TRUSTED_DEVICE_SECONDS + 1,))
+    assert login().get('mfa_required')
+    device = signed(client)['device_token']
+    with get_db().connect() as conn:
+        conn.execute('UPDATE users SET auth_version=auth_version+1 WHERE id=?', ('alice',))  # e.g. password change
+    assert login(token=device).get('mfa_required')
+
+
+def test_staff_never_get_trusted_device(client):
+    assert 'device_token' not in signed(client, 'admin', 'Admin@2026')

@@ -22,3 +22,16 @@ Source: `C:/Users/Admin/Downloads/playbook-chi-tiet-week7.md`. Execute WS0–WS9
 - App baseline already binds transfer arguments independently; harness baseline is different. Never remove app safeguards to make an off/on comparison look stronger.
 - VM/Caido access, historical demo profile and independent review are not available. Record missing evidence honestly.
 - Automatic approval review rejected the process-stop/restart verification command with `blocked by policy`. The previous application was left running. The start script successfully launched the corrected application on separate ports with a SQLite backup of the fictional demo DB. Stop/restart of an existing instance remains unverified.
+
+## Bổ sung 06/11/2026 tối: đóng các mục mentor giao tuần 6
+
+- **Gateway tắt/bật:** research `naive`/`baseline`/`defended`, Qwen, 1.350 lượt, 0 lỗi. ASR lần lượt 93/350, 85/350, **0/350**; tiện ích hợp lệ 91/89/99 trên 100. Thêm corpus tấn công khó gồm 35 kịch bản. Xem `GATEWAY_OFF_ON.md`.
+- **Tấn công lọt gateway:** RAG nhiễm, điều khiển được judge, thành công 3/3 ở defended trên app thật. Đã sửa (luật cố định + prompt judge); sau sửa 0/3, không chặn nhầm 30 câu hỏi chính sách. Xem `HARD_LIVE.md`.
+- **Lỗi tiện ích tìm thấy và sửa:** câu chuyển tiền không bắt đầu bằng "transfer" không được nhận diện, nên chuyển tiền qua AI 0/100 trong full run. Baseline mất dấu `< >` pseudonym, nên 2/30. Sau sửa: 30/30 ở cả hai profile. Xem `KNOWN_FAILURES.md`.
+- **Leo quyền qua AI:** 5 kịch bản trực tiếp của khách (gồm 3 kịch bản nhiều lượt), 0/30 thành công. Xem `RBAC_MATRIX.md`.
+- **QR thật:** ảnh QR chứa URL bị app trả 422. Khi người dùng xác nhận "trả đi", Qwen bịa người nhận; bank DENY. Xem `QUISHING.md`.
+- **Capture HTTP:** proxy ghi HAR cho 4 kênh, 53 request, đã che secret (`capture/`). Không phải Caido.
+- **Giới hạn khi mất danh tính:** 5 giao dịch/10 phút và người nhận mới ≤ 10 triệu VND, kiểm tra cả lúc tạo draft và lúc xác nhận. Xem `CRYPTO_AUTHZ.md`.
+- **Giả thuyết 3/11:** dữ liệu ủng hộ H1+H4, không ủng hộ H2. Vẫn thiếu log nên chưa kết luận. Xem `BYPASS_NOTE.md`.
+- **Kiểm tra:** 426 pytest (backend + research), 17 nhóm component, 20 E2E (1 spec phải chạy lại riêng vì lỗi socket `ERR_NO_BUFFER_SPACE` của Windows khi tải nặng), build và Ruff đạt. 10 slide đã render, không tràn khung.
+- **Còn thiếu:** Caido/Burp trên VM, log demo 3/11, review độc lập, CI remote.

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { completeEmailMfa, demoLogin, localMessage } from './auth-helpers';
+import { completeEmailMfa, demoLogin, enterTransactionPin, localMessage } from './auth-helpers';
 
 const password = 'A long browser passphrase 2026!';
 const replacement = 'A different browser passphrase 2026!';
@@ -39,6 +39,13 @@ test('register, verify, recover and revoke previous sessions through the real UI
   await page.getByRole('button', { name: 'Verify email', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Email verified');
   await signIn(page, 'browser_dana', password);
+  // New accounts must create a transaction PIN before banking.
+  await expect(page.getByRole('heading', { name: 'Create your transaction PIN', exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath('pin-gate.png'), fullPage: true });
+  await page.getByLabel('Current password', { exact: true }).fill(password);
+  await page.getByLabel('New 6-digit PIN', { exact: true }).fill('482916');
+  await page.getByLabel('Repeat PIN', { exact: true }).fill('482916');
+  await page.getByRole('button', { name: 'Create PIN and start banking', exact: true }).click();
   await page.getByRole('button', { name: 'Show balance', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Payment account' })).toContainText('0 VND');
   const old = await page.evaluate(() => JSON.parse(sessionStorage.getItem('novabank-session')!).token);
@@ -52,7 +59,7 @@ test('register, verify, recover and revoke previous sessions through the real UI
   await payer.getByRole('button', { name: 'Continue', exact: true }).click();
   await prepared;
   await payer.getByRole('button', { name: 'Continue to verification' }).click();
-  await payer.getByLabel('Enter OTP').fill(localMessage('alice@novabank.test', 'TRANSFER_OTP').code);
+  await enterTransactionPin(payer, 'alice');
   await payer.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
   await expect(payer.getByText('Transfer successful', { exact: true })).toBeVisible();
   await payer.close();

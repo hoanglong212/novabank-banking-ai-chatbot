@@ -276,6 +276,14 @@
     "scope": "own"
   },
   {
+    "method": "PUT",
+    "path": "/api/savings-goals/{goal_id}",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
     "method": "DELETE",
     "path": "/api/savings-goals/{goal_id}",
     "roles": [
@@ -848,6 +856,18 @@
     "scope": "own-or-approved-knowledge"
   },
   {
+    "method": "GET",
+    "path": "/api/announcements",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "public-bank-news"
+  },
+  {
     "method": "PATCH",
     "path": "/api/notifications/{notification_id}/read",
     "roles": [
@@ -1071,6 +1091,18 @@
   {
     "method": "GET",
     "path": "/api/auth/mfa",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own-or-approved-knowledge"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/pin",
     "roles": [
       "customer",
       "support",

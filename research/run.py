@@ -12,7 +12,7 @@ import uuid
 import httpx
 from .engine import classify, run_case
 from .sandbox import Sandbox, ROOT
-from .scenarios import attacks, legitimate, DEFENSES, VERSION
+from .scenarios import attacks, hard_attacks, legitimate, DEFENSES, VERSION, HARD_VERSION
 
 
 def aggregate(records):
@@ -50,13 +50,15 @@ def main():
     parser.add_argument('--utility-repetitions', type=int, default=1)
     parser.add_argument('--ablations', action='store_true')
     parser.add_argument('--limit', type=int, default=0, help='Smoke-test subset; never label this a full matrix.')
+    parser.add_argument('--corpus', choices=['v1', 'hard', 'all'], default='v1', help='v1.1 attacks, the Week 7 hard corpus, or both.')
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 10 or not 1 <= args.utility_repetitions <= 5:
         parser.error('Repetitions are out of bounds')
     base_url = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11434').rstrip('/')
     root = ROOT / '.local' / 'research'; root.mkdir(parents=True, exist_ok=True)
     directory = root / ('run-' + time.strftime('%Y%m%d-%H%M%S') + '-' + uuid.uuid4().hex[:6]); directory.mkdir()
-    attack_set = attacks()[:args.limit or None]; legit_set = legitimate()[:args.limit or None]
+    corpus = (attacks() if args.corpus != 'hard' else []) + (hard_attacks() if args.corpus != 'v1' else [])
+    attack_set = corpus[:args.limit or None]; legit_set = legitimate()[:args.limit or None]
     dataset = {'attacks': attack_set, 'legitimate': legit_set}
     (directory / 'dataset.json').write_text(json.dumps(dataset, ensure_ascii=False, indent=2), encoding='utf-8')
     matrix = [(model, profile, case, rep, None) for model in args.models for profile in args.profiles
@@ -66,7 +68,7 @@ def main():
         matrix += [(model, 'defended', case, 0, defense) for model in args.models for defense in DEFENSES for case in subset]
     # Group by model so the GPU does not swap weights for every sample.
     matrix.sort(key=lambda item: args.models.index(item[0]))
-    metadata = {'id': directory.name, 'created_at': time.time(), 'scenario_version': VERSION, 'models': args.models,
+    metadata = {'id': directory.name, 'created_at': time.time(), 'scenario_version': {'v1': VERSION, 'hard': HARD_VERSION, 'all': VERSION + '+' + HARD_VERSION}[args.corpus], 'models': args.models,
                 'profiles': args.profiles, 'repetitions': args.repetitions, 'utility_repetitions': args.utility_repetitions,
                 'expected': len(matrix), 'attack_scenarios': len(attack_set), 'legitimate_tasks': len(legit_set),
                 'dataset_sha256': hashlib.sha256((directory / 'dataset.json').read_bytes()).hexdigest(),

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Mail, MailCheck, UserRoundPlus } from 'lucide-react';
 import { api } from '../../api';
 import { AuthShell } from './AuthShell';
 import { Login } from './Login';
 import type { AuthLink } from './authLink';
 import type { LoginResponse, MfaChallenge } from '../../types';
 import { MfaSignIn } from './MfaSignIn';
+import { AuthBack, AuthHeading, AuthSubmit } from './AuthUi';
 
 type Mode = 'login' | 'register' | 'resend' | 'forgot' | 'verify' | 'reset';
 const titles: Record<Mode, string> = { login: 'Sign in', register: 'Create account', resend: 'Verify your email',
@@ -14,9 +15,10 @@ const subtitles: Record<Mode, string> = { login: '', register: 'Start with a fre
   resend: 'Open the verification link in the local demo inbox.', forgot: 'We’ll help you get back into your demo account.',
   verify: 'Confirm your email to open your demo account.', reset: 'Reset links work once and expire after 15 minutes.' };
 
-export function AuthFlow({ onLogin, onVerified, notice, link }: {
-  onLogin: (username: string, password: string) => Promise<MfaChallenge>;
+export function AuthFlow({ onLogin, onVerified, notice, link, onReplayIntro }: {
+  onLogin: (username: string, password: string) => Promise<MfaChallenge | LoginResponse>;
   onVerified: (session: LoginResponse) => void; notice: string | null; link: AuthLink | null;
+  onReplayIntro?: () => void;
 }) {
   const [challenge, setChallenge] = useState<MfaChallenge | null>(null);
   const alive = useRef(true);
@@ -64,57 +66,60 @@ export function AuthFlow({ onLogin, onVerified, notice, link }: {
     finally { setBusy(false); }
   }
 
-  if (challenge) return <MfaSignIn challenge={challenge} complete={onVerified} cancel={() => setChallenge(null)} />;
-  if (mode === 'login') return <Login onLogin={async (username, password) => {
+  return <AuthShell stage={challenge ? 'mfa' : mode} onReplayIntro={mode === 'login' && !challenge ? onReplayIntro : undefined}>
+  {challenge ? <MfaSignIn challenge={challenge} complete={onVerified} cancel={() => setChallenge(null)} />
+  : mode === 'login' ? <Login onLogin={async (username, password) => {
     const result = await onLogin(username, password);
-    if (alive.current) setChallenge(result);
-  }} notice={notice} success={message} onNavigate={navigate} />;
-
-  return <AuthShell>
-    <form className="login-card" onSubmit={submit} aria-busy={busy}>
-      <span className="brand-mark login-mark" aria-hidden="true">N</span>
-      <h1 tabIndex={-1} ref={heading}>{titles[mode]}</h1>
-      <p className="login-sub">{subtitles[mode]}</p>
+    if (!alive.current) return;
+    if ('access_token' in result) onVerified(result);
+    else setChallenge(result);
+  }} notice={notice} success={message} onNavigate={navigate} />
+  : <form className={`auth-form auth-form-${mode}`} onSubmit={submit} aria-busy={busy}>
+      <AuthBack disabled={busy} onClick={() => navigate('login')} />
+      <AuthHeading headingRef={heading} title={titles[mode]} subtitle={subtitles[mode]}
+        eyebrow={mode === 'register' ? 'A FRESH START' : mode === 'reset' || mode === 'forgot' ? 'LET’S GET YOU BACK IN' : 'ONE MORE LITTLE STEP'}
+        icon={mode === 'register' ? UserRoundPlus : mode === 'reset' || mode === 'forgot' ? KeyRound : mode === 'verify' ? MailCheck : Mail} />
       {(error || invalidLink) && <div className="form-error" role="alert">{error || 'This link is invalid or expired. Request a new link.'}</div>}
       {message && <div className="auth-success" role="status">{message}</div>}
+      <div className={`auth-fields ${mode === 'register' ? 'auth-register-grid' : ''}`}>
       {mode === 'register' && <>
-        <label className="field"><span>Display name</span><input autoComplete="name" required minLength={2} maxLength={80}
+        <label className="auth-field"><span>Display name</span><input autoComplete="name" required minLength={2} maxLength={80} placeholder="Your name"
           value={name} onChange={e => setName(e.target.value)} disabled={busy} /></label>
-        <label className="field"><span id="auth-username-label">Username</span><input autoComplete="username" required minLength={3} maxLength={32}
+        <label className="auth-field"><span id="auth-username-label">Username</span><input autoComplete="username" required minLength={3} maxLength={32} placeholder="Choose a username"
           aria-labelledby="auth-username-label"
           pattern="[A-Za-z][A-Za-z0-9_]{2,31}" aria-describedby="username-help"
           value={username} onChange={e => setUsername(e.target.value)} disabled={busy} />
           <small id="username-help">3–32 letters, numbers or underscores; start with a letter.</small></label>
       </>}
-      {['register', 'resend', 'forgot'].includes(mode) && <label className="field"><span>Email</span>
-        <input type="email" autoComplete="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} disabled={busy} />
+      {['register', 'resend', 'forgot'].includes(mode) && <label className="auth-field auth-field-wide"><span>Email</span>
+        <input type="email" autoComplete="email" required maxLength={254} placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} disabled={busy} />
       </label>}
       {withPassword && !invalidLink && <>
-        <label className="field"><span id="auth-password-label">{mode === 'reset' ? 'New password' : 'Password'}</span>
-          <span className="password-wrap">
+        <label className="auth-field"><span id="auth-password-label">{mode === 'reset' ? 'New password' : 'Password'}</span>
+          <span className="auth-password">
             <input type={reveal ? 'text' : 'password'} autoComplete="new-password" required minLength={15} maxLength={128}
               aria-labelledby="auth-password-label" aria-describedby="password-help" value={password} onChange={e => setPassword(e.target.value)} disabled={busy} />
-            <button type="button" className="icon-button" aria-label={reveal ? 'Hide password' : 'Show password'}
-              onClick={() => setReveal(!reveal)}>{reveal ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+            <button type="button" className="auth-reveal" aria-label={reveal ? 'Hide password' : 'Show password'} aria-pressed={reveal}
+              onClick={() => setReveal(!reveal)}>{reveal ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}</button>
           </span><small id="password-help">15–128 characters. A few memorable words work well.</small>
         </label>
-        <label className="field"><span>Confirm password</span>
+        <label className="auth-field"><span>Confirm password</span>
           <input type={reveal ? 'text' : 'password'} autoComplete="new-password" required maxLength={128}
             value={confirmation} onChange={e => setConfirmation(e.target.value)} disabled={busy} />
         </label>
       </>}
-      {!invalidLink && <button className="primary-button" type="submit" disabled={busy}>
-        {busy ? 'Please wait…' : { register: 'Create account', resend: 'Resend verification link', forgot: 'Send reset link',
+      </div>
+      {!invalidLink && <AuthSubmit busy={busy}>
+        {{ register: 'Create account', resend: 'Resend verification link', forgot: 'Send reset link',
           verify: 'Verify email', reset: 'Update password' }[mode]}
-      </button>}
-      {['register', 'resend', 'forgot'].includes(mode) && <p className="auth-hint">Demo email stays on this computer. Open it with the local inbox command in the README; no real email is sent.</p>}
-      <div className="auth-links">
+      </AuthSubmit>}
+      {['register', 'resend', 'forgot'].includes(mode) && <p className="auth-local-note"><Mail size={15} aria-hidden="true" /><span>Demo emails stay in your local inbox. No real email is sent.</span></p>}
+      <div className="auth-secondary-actions">
         {(mode === 'verify' || mode === 'reset') && <button type="button" disabled={busy}
           onClick={() => navigate(mode === 'verify' ? 'resend' : 'forgot')}>
           {mode === 'verify' ? 'Request a new verification link' : 'Request a new reset link'}
         </button>}
-        <button type="button" disabled={busy} onClick={() => navigate('login')}>Back to sign in</button>
       </div>
-    </form>
+    </form>}
   </AuthShell>;
 }

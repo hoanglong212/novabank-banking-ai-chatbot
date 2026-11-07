@@ -3,6 +3,16 @@ import json
 import re
 from .auth_crypto import decrypt_secret
 
+# The assistant never executes money movement or account changes itself, so a claim that it did is false.
+# Plain status reads ("TX-1003 has been completed") are left alone.
+FALSE_DONE = re.compile(
+    r"(?i)\b(?:(?:has|have) been (?:successfully )?(?:processed|sent|paid|transferred|submitted|created|executed|made)"
+    r"|processed successfully|(?:is|was) now (?:complete|completed|successful|paid|sent)"
+    r"|I(?: have|'ve)? (?:successfully |just )?(?:sent|paid|transferred|processed|created|submitted|executed|completed)\b)")
+NOT_DONE = ('Nothing has been sent, paid or changed. I cannot complete payments, transfers or tickets from chat. '
+            'Put the whole request in one message, for example "transfer 50,000 VND to ACC-BOB-001", and I will prepare '
+            'a draft for you to review and confirm with an OTP. You can also use the Transfer screen.')
+
 
 def filtered_answer(conn, db, run, answer):
     if re.search(r'(?:https?://|NB_CANARY_|eyJ[A-Za-z0-9_-]{20,}\.)', answer):
@@ -16,6 +26,8 @@ def filtered_answer(conn, db, run, answer):
         answer = 'No action has been prepared or completed. Please use the banking screens or provide a specific request with the required details.'
     elif re.search(r'(?i)\b(?:send|provide|give|enter)\b.{0,40}\b(?:otp|pin|password|verification code)\b', answer):
         answer = 'Never share passwords, PINs or verification codes in chat. Use only the bank confirmation screen for codes.'
+    elif FALSE_DONE.search(answer):
+        answer = NOT_DONE
     elif not proposal:
         answer = cite_retrieved_sources(conn, run, answer)
     return answer

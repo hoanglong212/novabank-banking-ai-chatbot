@@ -51,6 +51,8 @@ ANALYZER = AnalyzerEngine(registry=_registry, nlp_engine=NoOpNlpEngine(models=[{
 ANONYMIZER = AnonymizerEngine()
 KINDS = ('EMAIL', 'ACCOUNT', 'NAME', 'PHONE', 'NATIONAL_ID')
 TOKEN = re.compile(r'<(?:EMAIL|PHONE|NATIONAL_ID|ACCOUNT|NAME)_\d+>')
+# Models sometimes drop the brackets ("ACCOUNT_2"); restore only tokens this vault issued.
+BARE_TOKEN = re.compile(r'<?\b((?:EMAIL|PHONE|NATIONAL_ID|ACCOUNT|NAME)_\d+)\b>?')
 
 
 def luhn(digits: str) -> bool:
@@ -122,7 +124,7 @@ class Pseudonymizer:
 
     def restore(self, value):
         if isinstance(value, str):
-            return TOKEN.sub(lambda m: self.real.get(m.group(), m.group()), value)
+            return BARE_TOKEN.sub(lambda m: self.real.get('<' + m.group(1) + '>', m.group()), value)
         if isinstance(value, dict):
             return {k: self.restore(v) for k, v in value.items()}
         if isinstance(value, list):

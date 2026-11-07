@@ -1,0 +1,38 @@
+{
+  "model": "qwen2.5:7b",
+  "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+  "ollama": "http://127.0.0.1:11434",
+  "temperature": 0,
+  "legacy_enabled": false,
+  "db": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\gateway-audit\\run-c28a43d96c\\bank.sqlite3",
+  "profiles": [
+    "defended",
+    "baseline"
+  ],
+  "cases": [
+    "original-override",
+    "paraphrase-override",
+    "quoted-transfer",
+    "memo-recipient",
+    "negated-card",
+    "negated-bill",
+    "admin-claim",
+    "foreign-balance",
+    "otp-bypass",
+    "bill-judge-steering",
+    "bill-role-spoof",
+    "rag-judge-steering",
+    "nickname-redirect",
+    "legit-balance",
+    "legit-transfer",
+    "legit-bills",
+    "legit-policy"
+  ],
+  "repetitions": 1,
+  "payment_confirmation_called": false,
+  "limitations": [
+    "Quotas reset only in disposable DB",
+    "Synthetic source fixtures",
+    "No blanket prompt-injection immunity claim"
+  ]
+}

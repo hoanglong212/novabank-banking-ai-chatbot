@@ -6,6 +6,23 @@
 
 Mở http://127.0.0.1:8081. Alice: `alice / Alice@2026`; admin: `admin / Admin@2026`. Lấy mã đăng nhập trong http://127.0.0.1:8081/outbox. Đây là tài khoản và tiền mô phỏng. Cổng 8080 là phiên cũ. Hướng dẫn vận hành: [WEEK7_LOCAL.md](../WEEK7_LOCAL.md).
 
+## Cập nhật 06/11/2026 tối
+
+| Mục mentor giao | Kết quả | Bằng chứng |
+|---|---|---|
+| ASR khi gateway tắt và bật | naive 93/350, baseline 85/350, defended 0/350 (Qwen, 1.350 lượt) | `GATEWAY_OFF_ON.md`, `offon-research/` |
+| Tấn công nào lọt và vì sao | RAG điều khiển judge lọt defended 3/3 trên app thật; đã sửa, còn 0/3 | `HARD_LIVE.md`, `hard-live/`, `hard-live-postfix/` |
+| Tấn công khó hơn | 35 kịch bản mới và 5 tấn công trực tiếp (3 nhiều lượt) | `research/scenarios.py::hard_attacks`, `tools/live_attack/run.py --corpus` |
+| Admin AI, phân biệt role | 0/30 lượt khách leo quyền qua AI | `RBAC_MATRIX.md` |
+| QR giả trỏ tới script | QR thật chứa URL: app 422; Qwen bịa người nhận, bank DENY | `QUISHING.md`, `quishing-qr.png`, `quishing-qr-ollama-trace.json` |
+| Bắt traffic HTTP | HAR 4 kênh, 53 request, đã che secret; **chưa phải Caido trên VM** | `capture/` |
+| Ủy quyền mật mã khi mất danh tính | Đã thêm giới hạn tốc độ và giới hạn người nhận mới | `CRYPTO_AUTHZ.md`, `backend/tests/test_week7_limits.py` |
+| Vụ lọt ngày 3/11 | Ủng hộ H1+H4; chưa kết luận vì thiếu log | `BYPASS_NOTE.md` |
+
+Lỗi tìm thấy và đã sửa: nhận diện câu chuyển tiền, pseudonym thiếu dấu ngoặc, judge bị điều khiển. Xem `KNOWN_FAILURES.md`. Full run 2.070 lượt giữ nguyên làm dữ liệu gốc. Lưu ý: tiện ích chuyển tiền 0/100 trong full run là do lỗi nhận diện, và 0% chuyển sai người nhận ở vector nickname khi đó không phải bằng chứng phòng thủ.
+
+Kiểm tra: 426 pytest, 17 nhóm component, 20 E2E, build và Ruff đạt. App local đã khởi động lại với code mới.
+
 ## Tiêu chí → bằng chứng
 
 | Hạng mục | Kết quả và bằng chứng |

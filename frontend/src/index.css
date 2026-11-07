@@ -5,3 +5,8 @@
 @import './styles/banking.css';
 @import './styles/auth.css';
 @import './styles/responsive.css';
+@import './styles/home.css';
+@import './styles/activity.css';
+@import './styles/assistant.css';
+@import './styles/layout-wide.css';
+@import './styles/motion.css';

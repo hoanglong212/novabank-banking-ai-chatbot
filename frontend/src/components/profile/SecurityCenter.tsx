@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Monitor, ShieldCheck } from 'lucide-react';
+import { KeyRound, Monitor, ShieldCheck } from 'lucide-react';
 import { api } from '../../api';
 import type { DemoUser, LoginAttempt, MfaStatus, Page, UserSession } from '../../types';
 import { Pagination } from '../ui/Pagination';
 import { AuthenticatorSettings } from './AuthenticatorSettings';
+import { TransactionPinSettings } from './TransactionPin';
 
 const moment = (seconds: number) => new Date(seconds * 1000).toLocaleString('en-GB', {
   timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'medium', timeStyle: 'short',
@@ -52,6 +53,11 @@ export function SecurityCenter({ user }: { user: DemoUser }) {
     {error && <p className="form-error" role="alert">{error}</p>}
     {message && <p className="auth-success" role="status">{message}</p>}
     {busy && !history && <p className="muted" role="status">Loading security settings…</p>}
+
+    {mfa && (!user.role || user.role === 'customer') && <section className="card security-section" aria-labelledby="pin-title">
+      <div className="security-heading"><KeyRound size={20} aria-hidden="true" /><h3 id="pin-title">Transaction PIN</h3></div>
+      <TransactionPinSettings user={user} status={mfa} changed={text => { setMessage(text); void reload(); }} />
+    </section>}
 
     <section className="card security-section" aria-labelledby="verification-title">
       <div className="security-heading"><ShieldCheck size={20} aria-hidden="true" /><h3 id="verification-title">Sign-in verification</h3></div>

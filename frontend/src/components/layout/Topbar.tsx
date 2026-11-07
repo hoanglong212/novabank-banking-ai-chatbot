@@ -1,4 +1,4 @@
-import { History, ShieldCheck, SquarePen } from 'lucide-react';
+import { History, ShieldCheck, Sparkles, SquarePen } from 'lucide-react';
 
 import type { Health } from '../../types';
 
@@ -9,18 +9,20 @@ interface TopbarProps {
   openHistory: () => void;
   openLog: () => void;
   startConversation: () => void;
+  safeguards?: string;
 }
 
-export function Topbar({ title, health, busy, openHistory, openLog, startConversation }: TopbarProps) {
+export function Topbar({ title, health, busy, openHistory, openLog, startConversation, safeguards }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar-heading">
-        <span className="assistant-avatar" aria-hidden="true">N</span>
+        <span className="assistant-avatar" aria-hidden="true"><Sparkles size={18} /></span>
         <span>
           <span className="topbar-title">{title}</span>
           <span className={`model-pill ${!health ? 'is-connecting' : ''}`} role="status">
             <span className="status-dot" aria-hidden="true" />
             {health ? 'Online' : 'Connecting'}
+            {health && safeguards && <span className="safeguard-tag"><ShieldCheck size={12} aria-hidden="true" />{safeguards}</span>}
           </span>
         </span>
       </div>

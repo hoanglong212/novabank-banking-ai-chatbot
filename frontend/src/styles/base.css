@@ -14,9 +14,9 @@
   --brand-50: #f6f3ff;
   --accent: #f5b72e;
   --hero: linear-gradient(140deg, #3b1286 0%, #4c1d95 55%, #5b21b6 100%);
-  --surface: #f4f3f8;
+  --surface: #f1efea;  /* warm off-white, a step darker than cards so they stand out */
   --card: #ffffff;
-  --subtle: #faf9fd;
+  --subtle: #f7f6f3;
   --ink: #1a1530;
   --muted: #6b6785;
   --line: #ebe8f3;

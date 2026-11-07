@@ -1,23 +1,31 @@
-import type { ReactNode } from 'react';
-import { MessageCircle, QrCode, ShieldCheck } from 'lucide-react';
+﻿import type { ReactNode } from 'react';
+import { Play } from 'lucide-react';
+import { AuthArtwork } from './AuthArtwork';
+import '../../styles/auth-experience.css';
 
-export function AuthShell({ children }: { children: ReactNode }) {
-  return <div className="login-page">
-    <section className="login-hero" aria-hidden="true">
-      <div className="nav-brand">
-        <span className="brand-mark">N</span>
-        <span className="brand-word">nova<span>bank</span></span>
+export function AuthShell({ children, stage, onReplayIntro }: { children: ReactNode; stage: string; onReplayIntro?: () => void }) {
+  return (
+    <div className="auth-experience">
+      <a className="skip-link" href="#auth-main">Skip to form</a>
+      <header className="auth-masthead">
+        <div className="auth-wordmark" aria-label="NovaBank"><span className="auth-logo" aria-hidden="true">N</span><span>nova<span>bank</span></span></div>
+        <span className="auth-demo-tag">Demo experience</span>
+      </header>
+      <div className="auth-layout">
+        <aside className="auth-editorial" aria-label="About NovaBank">
+          <AuthArtwork />
+          <p className="auth-editorial-bottom">DEMO ENVIRONMENT · SAMPLE DETAILS ONLY</p>
+        </aside>
+        <main id="auth-main" className="auth-main" tabIndex={-1}>
+          <div className={`auth-surface auth-surface-${stage}`}>
+            <div className="auth-stage" key={stage}>{children}</div>
+          </div>
+        </main>
       </div>
-      <h2>Your money, with an assistant that never sleeps.</h2>
-      <ul>
-        <li><MessageCircle size={18} /> Ask Nova about balances, payments and banking questions</li>
-        <li><QrCode size={18} /> Create VietQR payment codes in seconds</li>
-        <li><ShieldCheck size={18} /> Every AI action is permission-checked; personal data stays hidden from the AI</li>
-      </ul>
-    </section>
-    <main className="login-panel">
-      {children}
-      <p className="login-foot">Fictional bank for a classroom demo. Never use real banking credentials.</p>
-    </main>
-  </div>;
+      <footer className="auth-page-footer">
+        {onReplayIntro && <button type="button" className="nova-intro-replay" onClick={onReplayIntro}><Play size={12} aria-hidden="true" /> Replay introduction</button>}
+        <p>Classroom demo. Use sample details only.</p>
+      </footer>
+    </div>
+  );
 }

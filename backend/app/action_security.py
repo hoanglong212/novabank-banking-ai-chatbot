@@ -7,6 +7,7 @@ import uuid
 from fastapi import HTTPException
 from . import auth, session_security as security
 from .identity import digest, quota, transaction
+from .mfa_settings import PIN_MARK, TOTP_MARK, setup_required, transaction_factor, verify_factor
 
 
 def otp_hash(challenge, code):
@@ -30,18 +31,26 @@ def create(conn, user, kind, payload, recipient=None):
     # Creation limit uses its own committed transaction at the router boundary.
     raw = secrets.token_urlsafe(32)
     challenge = digest(raw)
+    # A code sent to another address proves that address (email change), so it stays an email code.
+    factor = 'email' if recipient else transaction_factor(conn, user.id)
+    if factor == 'setup_required':
+        raise setup_required()
     code = f'{secrets.randbelow(1000000):06d}'
     conn.execute('''INSERT INTO action_challenges
         (id,owner_id,session_id,auth_version,kind,payload_json,otp_hash,created_at,expires_at)
         VALUES (?,?,?,?,?,?,?,?,?)''', (challenge, user.id, user.session_id, user.auth_version,
-        kind, json.dumps(payload), otp_hash(challenge, code), stamp, stamp + 120))
+        kind, json.dumps(payload), {'totp': TOTP_MARK, 'pin': PIN_MARK}.get(factor) or otp_hash(challenge, code), stamp, stamp + 120))
+    safe = {k: v for k, v in payload.items() if k not in ('password_hash',)}
+    if factor in ('totp', 'pin'):
+        return {'challenge_id': raw, 'kind': kind, 'summary': safe, 'expires_in': 120, 'method': factor,
+                'delivery': 'authenticator' if factor == 'totp' else 'pin',
+                'message': 'Enter the code from your authenticator app to confirm.' if factor == 'totp' else 'Enter your 6-digit transaction PIN to confirm.'}
     destination = recipient or conn.execute('SELECT email FROM users WHERE id=?', (user.id,)).fetchone()[0]
     conn.execute('''INSERT INTO dev_outbox
         (id,user_id,recipient,kind,created_at,expires_at,secret_text,challenge_id,body)
         VALUES (?,?,?,?,?,?,?,?,?)''', (uuid.uuid4().hex, user.id, destination, 'ACTION_' + kind,
         stamp, stamp + 120, code, challenge, 'Confirm only the action you requested in NovaBank.'))
-    safe = {k: v for k, v in payload.items() if k not in ('password_hash',)}
-    return {'challenge_id': raw, 'kind': kind, 'summary': safe, 'expires_in': 120,
+    return {'challenge_id': raw, 'kind': kind, 'summary': safe, 'expires_in': 120, 'method': 'email',
             'delivery': 'local_demo_outbox', 'message': 'Enter the code from the local demo inbox to confirm.'}
 
 
@@ -78,7 +87,12 @@ def confirm(db, user, raw, code, key):
         remaining = security.lock_remaining(conn, user.id, stamp)
         if remaining:
             raise security.locked(remaining)
-        if not hmac.compare_digest(row['otp_hash'], otp_hash(challenge, code)):
+        # Email-change codes prove the new address, so they never accept the PIN or authenticator.
+        check = None if row['otp_hash'] not in (TOTP_MARK, PIN_MARK) and row['kind'] in ('PROFILE_EMAIL', 'PROFILE_PHONE') else verify_factor(conn, db, user.id, code, stamp)
+        if check == 'locked':
+            raise HTTPException(423, 'Too many wrong PINs. Try again in 15 minutes.')
+        valid = check == 'ok' if check else (row['otp_hash'] not in (TOTP_MARK, PIN_MARK) and hmac.compare_digest(row['otp_hash'], otp_hash(challenge, code)))
+        if not valid:
             conn.execute('UPDATE action_challenges SET attempts=attempts+1 WHERE id=?', (challenge,))
             security.failure(conn, user.id, stamp)
             rejection = HTTPException(400, 'Incorrect verification code.')

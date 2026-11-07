@@ -22,16 +22,16 @@ export interface Decision { decision: 'ALLOW' | 'DENY'; reason_code: string; exe
 export interface MfaChallenge { mfa_required: true; challenge_id: string; method: 'email' | 'totp'; expires_in: number; message: string }
 export interface LoginResponse {
   access_token: string; refresh_token: string; session_id: string; expires_in: number;
-  idle_expires_at: number; absolute_expires_at: number;
-  user: { id: string; name: string; role: UserRole; permissions: string[] };
+  idle_expires_at: number; absolute_expires_at: number; device_token?: string;
+  user:{ id: string; name: string; role: UserRole; permissions: string[] };
 }
 export interface UserSession {
   id: string; created_at: number; last_active_at: number; absolute_expires_at: number;
   ip: string; user_agent: string; method: string; current: boolean;
 }
 export interface LoginAttempt { id: string; created_at: number; ip: string; user_agent: string; result: string; method: string }
-export interface MfaStatus { totp_enabled: boolean; email_fallback: boolean }
-export interface TotpSetup { secret: string; otpauth_uri: string; expires_in: number }
+export interface MfaStatus { totp_enabled: boolean; email_fallback: boolean; pin_set?: boolean; setup_required?: boolean }
+export interface TotpSetup { secret: string; otpauth_uri: string; qr_png?: string; expires_in: number }
 export interface Transaction {
   id: string; amount_vnd: number; status: string; description: string; direction: 'in' | 'out'; date: string;
   account_id?: string; owner_id?: string; holder_name?: string; created_at?: string; transfer_id?: string | null;
@@ -45,9 +45,14 @@ export interface TransactionFilters {
 }
 export interface BankNotification {
   id: string; transaction_id: string | null; kind: string; title: string; body: string;
-  created_at: string; read_at: string | null;
+  created_at: string; read_at: string | null; category?: NotificationCategory;
 }
-export interface NotificationPage extends Page<BankNotification> { unread_count: number }
+export type NotificationCategory = 'transactions' | 'account';
+export interface NotificationPage extends Page<BankNotification> { unread_count: number; unread_by_category?: Record<NotificationCategory, number> }
+export interface Announcement {
+  id: string; kind: 'CAMPAIGN' | 'NOTICE'; title: string; tag: string; body: string;
+  action_label: string | null; action_path: string | null; published_at: string; ends_at: string | null;
+}
 export interface AuditEvent {
   id: string; owner_id: string; action: string; resource_id: string; reason_code: string;
   before_balance_vnd: number | null; after_balance_vnd: number | null; created_at: string;
@@ -63,6 +68,6 @@ export interface VietQR { bank: string; bin: string; account_no: string; account
 export interface Transfer {
   id: string; from_account: string; to_bank: string; to_account: string; to_name: string; amount_vnd: number;
   content: string; status: 'PENDING_OTP' | 'PENDING' | 'COMPLETED' | 'FAILED'; otp_expires_at?: string; transaction_id?: string | null; fee_vnd?: number;
-  balance_vnd?: number; expires_at?: string;
+  balance_vnd?: number; expires_at?: string; otp_method?: 'totp' | 'pin' | 'email';
 }
 export interface TransferStart { draftId?: string; to_bank?: string; to_account?: string; to_name?: string; amount_vnd?: number; content?: string }

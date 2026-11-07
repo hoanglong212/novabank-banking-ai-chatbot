@@ -15,7 +15,21 @@ const ACTIONS: Record<string, string> = {
   create_vietqr: 'VietQR code',
   create_transfer: 'Transfer draft (needs your OTP)',
   input_guard: 'Message screening',
+  get_accounts: 'Account list',
+  get_beneficiaries: 'Saved recipients',
+  get_cards: 'Card list',
+  get_bills: 'Bill list',
+  get_savings: 'Savings check',
+  get_spending_summary: 'Spending summary',
+  get_support_tickets: 'Support tickets',
+  search_knowledge: 'Help article search',
+  prepare_transfer: 'Transfer proposal (needs your OTP)',
+  prepare_bill_payment: 'Bill payment proposal',
+  prepare_support_ticket: 'Support ticket proposal',
+  request_card_freeze: 'Card freeze proposal',
 };
+// Unknown tool names still read as words, e.g. get_user_count -> "User count".
+const label = (name: string) => ACTIONS[name] ?? (s => s.charAt(0).toUpperCase() + s.slice(1))(name.replace(/^(get|prepare|request)_/, '').replaceAll('_', ' '));
 
 const REASONS: Record<string, string> = {
   ACCOUNT_NOT_OWNED: 'Not your account',
@@ -40,7 +54,7 @@ export function ToolActivity({
       </div> : events.slice(-6).reverse().map(e => <div className="event" key={e.id}>
         <div className="event-content">
           <strong title={e.tool_name}>
-            {ACTIONS[e.tool_name] ?? e.tool_name}
+            {label(e.tool_name)}
           </strong>
           <span>
             {e.decision === 'ALLOW' ? 'Allowed by policy' : REASONS[e.reason_code] ?? e.reason_code.toLowerCase().replace(/_/g, ' ')}

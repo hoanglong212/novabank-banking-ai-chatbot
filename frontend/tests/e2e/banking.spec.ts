@@ -1,4 +1,4 @@
-import { localMessage } from './auth-helpers';
+import { DEMO_PIN, enterTransactionPin } from './auth-helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { demoLogin } from './auth-helpers';
@@ -30,8 +30,7 @@ test('Alice–Bob: nine-step banking acceptance with real backend', async ({ pag
   expect((await (await page.request.get('/api/me', { headers })).json()).accounts[0].balance_vnd).toBe(10_000_000);
   await expect(page.getByRole('dialog')).toContainText('BOB TRAN');
   await page.getByRole('button', { name: 'Continue to verification' }).click();
-  const transferCode = localMessage('alice@novabank.test', 'TRANSFER_OTP').code;
-  await page.getByLabel('Enter OTP').fill(transferCode);
+  await enterTransactionPin(page, 'alice');
   const completion = page.waitForResponse(r => r.url().endsWith('/confirm') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
   const response = await completion;
@@ -92,7 +91,7 @@ test('Alice–Bob: nine-step banking acceptance with real backend', async ({ pag
 
   // Retry the successful confirmation with the exact same request key.
   const replay = await page.request.post(`/api/transfers/${draft.id}/confirm`, {
-    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: transferCode },
+    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: DEMO_PIN },
   });
   expect(replay.status()).toBe(200);
   expect((await replay.json()).transaction_id).toBe(receipt.transaction_id);
@@ -127,7 +126,9 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
     await expect(page.getByRole('button', { name: 'Download PDF receipt' })).toBeVisible();
     await page.screenshot({ path: info.outputPath('receipt.png') });
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'Alerts', exact: true }).click();
+    // Phones reach Alerts through the bell on Home; wider screens through the sidebar.
+    await page.getByRole('button', { name: 'Home', exact: true }).click();
+    await page.getByRole('button', { name: /^Notifications/ }).click();
     await expect(page.getByRole('heading', { name: 'Alerts', exact: true })).toBeVisible();
     await page.screenshot({ path: info.outputPath('alerts.png'), fullPage: true });
   });

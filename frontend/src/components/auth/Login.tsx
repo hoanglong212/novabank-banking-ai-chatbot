@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
-import { AuthShell } from './AuthShell';
+import { ArrowUpRight, Eye, EyeOff } from 'lucide-react';
+import { AuthHeading, AuthSubmit } from './AuthUi';
 
 interface LoginProps {
   onLogin: (username: string, password: string) => Promise<void>;
@@ -31,46 +31,50 @@ export function Login({ onLogin, notice, success, onNavigate }: LoginProps) {
   }
 
   return (
-    <AuthShell>
-        <form className="login-card" onSubmit={submit} noValidate>
-          <span className="brand-mark login-mark" aria-hidden="true">N</span>
-          <h1>Sign in</h1>
-          <p className="login-sub">Welcome back to NovaBank.</p>
+        <form className="auth-form" onSubmit={submit} noValidate aria-label="Sign in" aria-busy={busy}>
+          <AuthHeading eyebrow="WELCOME BACK" title="Sign in" subtitle="Use your NovaBank account to continue." />
           {success && <div className="auth-success" role="status">{success}</div>}
           {(error || notice) && <div className="form-error" role="alert">{error || notice}</div>}
-          <label className="field">
-            <span>Username</span>
-            <input autoComplete="username" value={username} onChange={e => setUsername(e.target.value)}
-              placeholder="e.g. alice" required autoFocus />
-          </label>
-          <label className="field">
-            <span>Password</span>
-            <span className="password-wrap">
-              <input type={reveal ? 'text' : 'password'} autoComplete="current-password" value={password}
-                onChange={e => setPassword(e.target.value)} placeholder="Your password" required />
-              <button type="button" className="icon-button" aria-label={reveal ? 'Hide password' : 'Show password'}
-                onClick={() => setReveal(!reveal)}>
-                {reveal ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </span>
-          </label>
-          <button className="primary-button" type="submit" disabled={busy || !username.trim() || !password}>
-            {busy ? 'Signing in…' : 'Sign in'}
-          </button>
-          <div className="auth-links">
-            <button type="button" disabled={busy} onClick={() => onNavigate?.('register')}>Create an account</button>
-            <button type="button" disabled={busy} onClick={() => onNavigate?.('forgot')}>Forgot password?</button>
-            <button type="button" disabled={busy} onClick={() => onNavigate?.('resend')}>Verify your email</button>
+          <div className="auth-fields">
+          <div className="auth-field">
+            <label htmlFor="signin-username">Username</label>
+            <input id="signin-username" name="username" autoComplete="username" value={username} onChange={e => setUsername(e.target.value)}
+              placeholder="Enter your username" required autoFocus />
           </div>
-          <div className="demo-accounts">
-            <span><LockKeyhole size={14} aria-hidden="true" /> Demo accounts</span>
+          <div className="auth-field">
+            <div className="auth-field-heading">
+              <label htmlFor="signin-password">Password</label>
+              <button className="auth-text-button" type="button" disabled={busy || !onNavigate}
+                onClick={() => onNavigate?.('forgot')}>Forgot password?</button>
+            </div>
+            <div className="auth-password">
+              <input id="signin-password" name="password" type={reveal ? 'text' : 'password'} autoComplete="current-password" value={password}
+                onChange={e => setPassword(e.target.value)} placeholder="Enter your password" required />
+              <button type="button" className="auth-reveal" aria-label={reveal ? 'Hide password' : 'Show password'} aria-pressed={reveal}
+                onClick={() => setReveal(!reveal)}>
+                {reveal ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+          </div>
+          <AuthSubmit busy={busy} busyText="Signing in…" disabled={!username.trim() || !password}>Sign in</AuthSubmit>
+          <p className="auth-switch">New around here? <button className="auth-text-button" type="button"
+            disabled={busy || !onNavigate} onClick={() => onNavigate?.('register')}>Create an account</button></p>
+          <section className="auth-demo" aria-labelledby="signin-demo-title">
+            <div className="auth-demo-heading"><h2 id="signin-demo-title">Take a look around</h2><span>DEMO ACCOUNTS</span></div>
+            <p>Choose a profile. We’ll fill in the details.</p>
+            <div className="auth-demo-options">
             {DEMO_ACCOUNTS.map(([name, secret]) => (
               <button type="button" key={name} disabled={busy} onClick={() => { setUsername(name); setPassword(secret); }}>
-                {name} · {secret}
+                <span className="auth-avatar" aria-hidden="true">{name[0].toUpperCase()}</span>
+                <span>{name[0].toUpperCase() + name.slice(1)}</span>
+                <ArrowUpRight size={16} aria-hidden="true" />
               </button>
             ))}
-          </div>
+            </div>
+          </section>
+          <p className="auth-verify-link">Already registered? <button className="auth-text-button" type="button"
+            disabled={busy || !onNavigate} onClick={() => onNavigate?.('resend')}>Verify your email</button></p>
         </form>
-    </AuthShell>
   );
 }

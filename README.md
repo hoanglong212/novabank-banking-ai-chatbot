@@ -10,6 +10,18 @@ Local implementation and research have been verified. The user confirmed local-o
 
 ## Run locally
 
+### With Docker (recommended)
+
+Needs Docker Desktop and, for the assistant, Ollama running on this machine with `qwen2.5:7b` and `nomic-embed-text` pulled.
+
+```powershell
+docker compose -f compose.local.yaml up -d --build
+```
+
+Open http://127.0.0.1:8080 and the demo inbox at http://127.0.0.1:8080/outbox. Both containers use `restart: unless-stopped`, so they start again whenever Docker Desktop starts; enable Docker Desktop's "Start when you sign in" to make that automatic. Run the same command again after changing code. Data lives in the `novabank-local_bank-data` volume (`docker compose -f compose.local.yaml down -v` resets it to the seed). `NOVABANK_PORT=8081` changes the port; set `JWT_SECRET` in a root `.env` to keep sign-ins across restarts. Banking screens work without Ollama; only the assistant needs it.
+
+### Without Docker
+
 For the local instance started on 2026-11-01, use [its login, MFA and restart instructions](docs/release/LOCAL_RUN.md). It uses a separate seeded database under `.local/local-deploy`.
 
 With the repository's existing dependencies and local Ollama models:
@@ -20,7 +32,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Mode o
 
 Open http://127.0.0.1:8080. The launcher builds the frontend and starts the bank plus isolated agent (:8093). Ctrl+C stops both. `-Mode mock` uses explicitly labeled deterministic responses without a model. The command does not install dependencies or pull models. See [deployment and configuration](docs/release/DEPLOYMENT.md).
 
-Demo logins: `alice / Alice@2026`, `bob / Bob@2026`, `charlie / Charlie@2026`; staff `support / Support@2026`, `  / Operations@2026`, `auditor / Auditor@2026`, `admin / Admin@2026`. Every login requires email MFA or configured TOTP. Retrieve simulated email through `scripts/dev-outbox.py --help`, using the same DB as the server. Never paste OTPs into assistant chat.
+Demo logins: `alice / Alice@2026`, `bob / Bob@2026`, `charlie / Charlie@2026`; staff `support / Support@2026`, `  / Operations@2026`, `auditor / Auditor@2026`, `admin / Admin@2026`. Staff logins always require email MFA or configured TOTP. A customer's first login on a browser requires MFA; that browser is then trusted for password-only login until it goes 30 days unused, or the password, authenticator or account status changes. Transfers always require OTP. Retrieve simulated email through `scripts/dev-outbox.py --help`, using the same DB as the server. Never paste OTPs into assistant chat.
 
 Public demo credentials require a restricted review environment. The supplied Compose/Caddy configuration includes an access gateway. Do not use real banking credentials or PII.
 
@@ -33,7 +45,7 @@ Public demo credentials require a restricted review environment. The supplied Co
 - Isolated agent with short delegated grants, RAG citations, approval cards, streamed progress and persisted tool traces. No agent confirm authority.
 - Resettable research sandbox, 35 attack scenarios/7 vectors, 100 legitimate tasks, two models, naive/baseline/defended profiles, D1-D10 ablations and results dashboard.
 
-QR is NovaBank-only, not NAPAS/VietQR. Legacy endpoint names remain for compatibility, but no external bank-list or QR service is called. Email/SMS/KYC are simulated. The Group 10 external gateway remains an adapter contract, not a verified integration.
+QR codes remain NovaBank-only, not NAPAS/VietQR. The bank directory is fetched from VietQR's public `/v2/banks` API and cached; cached/demo banks remain available during outages. Bank logos load from VietQR's image hosts. Personal QR generation stays local and does not call an external QR service. All transfers and email/SMS/KYC remain simulated. The Group 10 external gateway remains an adapter contract, not a verified integration.
 
 ## Verification
 

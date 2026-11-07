@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { AuthFlow } from './components/auth/AuthFlow';
+import { IntroGate } from './components/auth/IntroGate';
 import { parseAuthLink } from './components/auth/authLink';
 import { NavBar, type Tab } from './components/app/NavBar';
 import { Home } from './components/home/Home';
@@ -14,10 +15,12 @@ import { Explore } from './components/explore/Explore';
 import { Support } from './components/explore/Support';
 import './styles/services.css';
 import { Assistant } from './components/chat/Assistant';
+import { NovaBubble } from './components/chat/NovaBubble';
 import { TransferSheet } from './components/transfer/TransferSheet';
 import { useBankingChat } from './hooks/useBankingChat';
 import { useSession } from './hooks/useSession';
-import type { DemoUser, Profile as ProfileData, TransferStart } from './types';
+import type { DemoUser, MfaStatus, Profile as ProfileData, TransferStart } from './types';
+import { SecurityGate } from './components/profile/SecurityGate';
 import { navigate, usePath } from './router';
 import { Outbox } from './components/dev/Outbox';
 import { ApprovalPage } from './components/chat/ApprovalPage';
@@ -40,8 +43,11 @@ export default function App() {
     return () => window.removeEventListener('hashchange', consumeLink);
   }, [logout]);
   if (path === '/outbox') return <Outbox />;
-  if (!session.user || authLink) return <AuthFlow key={authLink ? authLink.mode + authLink.token : 'login'}
-    link={authLink} onLogin={session.login} onVerified={result => { session.completeLogin(result); setAuthLink(null); }} notice={session.notice} />;
+  if (!session.user || authLink) return <IntroGate bypass={!!authLink || !!session.notice}>
+    {replay => <AuthFlow key={authLink ? authLink.mode + authLink.token : 'login'}
+      link={authLink} onLogin={session.login} onVerified={result => { session.completeLogin(result); setAuthLink(null); }} notice={session.notice}
+      onReplayIntro={replay} />}
+  </IntroGate>;
   // Keyed by session so no state from a prior sign-in survives, even for the same customer.
   return <BankApp key={session.user.sessionId} user={session.user} logout={() => { navigate('/'); void session.logout(); }} />;
 }
@@ -52,7 +58,8 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
   const chat = useBankingChat(user);
   const defaultTab: Tab = customer ? 'home' : user.permissions?.includes('admin:transactions:read') ? 'admin' : user.permissions?.includes('support:read') ? 'support' : 'profile';
   const routes: Record<string, Tab> = { '/': defaultTab, '/home': 'home', '/activity': 'activity', '/qr': 'qr', '/assistant': 'assistant', '/admin/assistant': 'assistant', '/profile': 'profile', '/notifications': 'notifications', '/admin': 'admin', '/explore': 'explore', '/support': 'support' };
-  const tab = routes[path] ?? defaultTab;
+  const exploreMatch = path.match(/^\/explore\/([a-z]+)$/);
+  const tab = routes[path] ?? (exploreMatch ? 'explore' : defaultTab);
   const setTab = (next: Tab) => navigate(next === 'assistant' && !customer ? '/admin/assistant' : '/' + next);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -73,10 +80,16 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
     api.me(user).then(setProfile).catch(() => { });
   }, [user, tab, refresh]);
 
+  const [factor, setFactor] = useState<MfaStatus | null>(null);
+  const [factorCheck, setFactorCheck] = useState(0);
+  useEffect(() => { if (customer) api.mfaStatus(user).then(setFactor).catch(() => { }); }, [user, customer, factorCheck]);
+
   const ask = (text: string) => {
     setTab('assistant');
     void chat.askNew(text);
   };
+
+  if (factor?.setup_required) return <SecurityGate user={user} logout={logout} done={() => setFactorCheck(n => n + 1)} />;
 
   return (
     <div className="app-shell">
@@ -90,12 +103,13 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
         {tab === 'notifications' && <Notifications user={user} openTransaction={setTransactionId} />}
         {tab === 'admin' && <AdminConsole user={user} />}
         {tab === 'qr' && <QrStudio user={user} pay={setTransfer} />}
-        {tab === 'explore' && <Explore user={user} pay={setTransfer} />}
+        {tab === 'explore' && <Explore key={path} user={user} pay={setTransfer} initial={exploreMatch?.[1]} />}
         {tab === 'support' && <div className="page"><h1 className="page-title">Support</h1><Support user={user} /></div>}
         {tab === 'profile' && <Profile user={user} profile={profile} logout={logout} />}
         {tab === 'assistant' && <Assistant chat={chat} openTransfer={draftId => setTransfer({ draftId })} />}
         </>}
       </main>
+      {customer && tab !== 'assistant' && !approvalMatch && <NovaBubble chat={chat} pay={setTransfer} />}
       <TransferSheet user={user} start={transfer} step={transferMatch?.[2] ?? (qrMatch ? 'review' : 'new')}
         onNavigate={(id, step) => navigate('/transfer/' + encodeURIComponent(id) + '/' + step)}
         onClose={() => navigate('/home')} onDone={() => setRefresh(n => n + 1)} />

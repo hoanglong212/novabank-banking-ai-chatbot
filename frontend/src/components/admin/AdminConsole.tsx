@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { DemoUser } from '../../types';
 import { vnd } from '../../format';
 import { Operations } from './Operations';
+import { Dashboard, type AdminView } from './Dashboard';
+import '../../styles/admin-dashboard.css';
 import { Knowledge } from '../explore/Knowledge';
 import { Research } from './Research';
 import { Feedback, Field, Loading, send, useOperation, useResource } from '../explore/shared';
@@ -10,14 +12,10 @@ interface Person { id: string; name: string; email: string; role: string; status
 interface Account { id: string; owner_id: string; balance_vnd: number; status: string }
 interface Settings { transfer_fee_vnd: number; transfer_limit_vnd: number; daily_limit_vnd: number; agent_enabled: boolean }
 export function AdminConsole({ user }: { user: DemoUser }) {
-  const [view, setView] = useState('Overview');
-  return <div className="page"><h1 className="page-title">Operations</h1><div className="service-tabs" aria-label="Operations sections">{['Overview', 'Transactions', 'Customers', 'Settings', 'Knowledge', 'Research', 'Audit'].map(t => <button className="secondary-button" key={t} aria-pressed={view === t} onClick={() => setView(t)}>{t}</button>)}</div>
-    {view === 'Transactions' ? <Operations user={user} /> : view === 'Customers' ? <Customers user={user} /> : view === 'Settings' ? <BankSettings user={user} /> : view === 'Knowledge' ? <Knowledge user={user} manage /> : view === 'Research' ? <Research user={user} /> : view === 'Audit' ? <Audit user={user} /> : <Overview user={user} />}
+  const [view, setView] = useState<AdminView>('Overview');
+  return <div className="page admin-page"><header className="admin-page-heading"><div><p className="admin-eyebrow">NOVABANK / STAFF WORKSPACE</p><h1>Operations</h1><p>Keep the bank moving. Know where to focus.</p></div><span className="admin-role">{user.role === 'admin' ? 'Administrator' : user.role}</span></header><div className="admin-tabs" aria-label="Operations sections">{(['Overview', 'Transactions', 'Customers', 'Settings', 'Knowledge', 'Research', 'Audit'] as AdminView[]).map(t => <button className="secondary-button" key={t} aria-pressed={view === t} onClick={() => setView(t)}>{t}</button>)}</div>
+    {view === 'Transactions' ? <Operations user={user} /> : view === 'Customers' ? <Customers user={user} /> : view === 'Settings' ? <BankSettings user={user} /> : view === 'Knowledge' ? <Knowledge user={user} manage /> : view === 'Research' ? <Research user={user} /> : view === 'Audit' ? <Audit user={user} /> : <Dashboard user={user} open={setView} />}
   </div>;
-}
-function Overview({ user }: { user: DemoUser }) {
-  const state = useResource<{ users: number; accounts: number; transactions: number; support_tickets: number; failed_transfers: number; reconciliation: null | { balanced: boolean; created_at: string; mismatches: unknown[]; unbalanced_journals: unknown[] } }>(user, '/admin/overview'); const op = useOperation();
-  return <div className="service-stack"><Loading state={state} /><Feedback state={op} />{state.data && <><div className="service-grid">{(['users', 'accounts', 'transactions', 'support_tickets', 'failed_transfers'] as const).map(k => <section className="card service-section" key={k}><span className="muted">{k.replaceAll('_', ' ')}</span><strong className="service-amount">{state.data![k]}</strong></section>)}</div><section className="card service-section"><h2 className="card-title">Ledger reconciliation</h2><p>{state.data.reconciliation ? state.data.reconciliation.balanced ? 'All recorded journals and account balances match.' : 'A mismatch requires investigation. Review the reconciliation report.' : 'No reconciliation has run yet.'}</p>{state.data.reconciliation && <><small className="muted">Last run: {state.data.reconciliation.created_at}</small><p>Account mismatches: {state.data.reconciliation.mismatches.length} · Unbalanced journals: {state.data.reconciliation.unbalanced_journals.length}</p></>}{user.permissions?.includes('settings:write') && <button className="primary-button" disabled={op.busy} onClick={() => void op.run(async () => { await send(user, '/admin/reconcile'); state.reload(); })}>Run reconciliation</button>}</section></>}</div>;
 }
 function Customers({ user }: { user: DemoUser }) {
   const people = useResource<{ items: Person[] }>(user, '/admin/users'); const accounts = useResource<{ items: Account[] }>(user, '/admin/accounts'); const op = useOperation(); const writable = user.permissions?.includes('settings:write');

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ShieldCheck } from 'lucide-react';
 
 import type { useBankingChat } from '../../hooks/useBankingChat';
 import { Topbar } from '../layout/Topbar';
@@ -13,6 +14,23 @@ import { AgentActivity } from './AgentActivity';
 // One chat column; history and the security log open as drawers instead of permanent side panels.
 export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useBankingChat>; openTransfer: (draftId: string) => void }) {
   const [panel, setPanel] = useState<'history' | 'log' | null>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const hasMessages = useRef(false);
+  hasMessages.current = chat.messages.length > 0;
+  // Proposals and run details load after the messages; keep the latest reply in view unless the reader scrolled up.
+  useEffect(() => {
+    const scroller = chat.scrollerRef.current, inner = innerRef.current;
+    if (!scroller || !inner) return;
+    let pinned = true, last = 0;
+    const onScroll = () => {
+      pinned = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80 || scroller.scrollTop > last;
+      last = scroller.scrollTop;
+    };
+    const observer = new ResizeObserver(() => { if (pinned && hasMessages.current) scroller.scrollTop = scroller.scrollHeight; });
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    observer.observe(inner);
+    return () => { observer.disconnect(); scroller.removeEventListener('scroll', onScroll); };
+  }, [chat.scrollerRef]);
 
   return (
     <div className="assistant">
@@ -23,12 +41,12 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
         openHistory={() => setPanel('history')}
         openLog={() => setPanel('log')}
         startConversation={chat.startConversation}
+        safeguards={chat.health?.agent_mode === 'service' ? (chat.defenseProfile === 'defended' ? 'Defended' : 'Baseline') : undefined}
       />
       <section className="chat-column" aria-label="Chat with Nova">
         <div className="messages-scroller" ref={chat.scrollerRef}>
-          <div className="messages-inner">
-            {chat.health?.agent_mode === 'service' && <label className="agent-profile">Assistant safeguards <select value={chat.defenseProfile} disabled={chat.busy} onChange={e => chat.setDefenseProfile(e.target.value as 'baseline' | 'defended')}><option value="defended">Defended</option><option value="baseline">Baseline (bank permissions still apply)</option></select></label>}
-            {chat.user.role && chat.user.role !== 'customer' && <p className="muted">Staff assistant · read-only reports within your role. No payment or account changes.</p>}
+          <div className="messages-inner" ref={innerRef}>
+            {chat.user.role && chat.user.role !== 'customer' && <p className="staff-note"><ShieldCheck size={16} aria-hidden="true" />Staff assistant · read-only reports within your role. No payment or account changes.</p>}
             {chat.messages.length === 0 && (!chat.user.role || chat.user.role === 'customer') ? (
               <Welcome user={chat.user} busy={chat.busy} pickSuggestion={chat.pickSuggestion} />
             ) : (
@@ -65,6 +83,16 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
         />
       </Sheet>
       <Sheet open={panel === 'log'} onClose={() => setPanel(null)} title="Security log" side="right">
+        {chat.health?.agent_mode === 'service' && <section className="safeguard-panel">
+          <h3>Assistant safeguards</h3>
+          <div className="safeguard-switch" role="radiogroup" aria-label="Assistant safeguards">
+            {([['defended', 'Defended', 'Input screening and output checks on'], ['baseline', 'Baseline', 'Model only; bank permissions still apply']] as const).map(([id, label, hint]) => (
+              <button key={id} role="radio" aria-checked={chat.defenseProfile === id} disabled={chat.busy} onClick={() => chat.setDefenseProfile(id)}>
+                <strong>{label}</strong><small>{hint}</small>
+              </button>
+            ))}
+          </div>
+        </section>}
         <p className="muted small sheet-intro">What Nova tried to do in this conversation, and whether the permission check allowed it.</p>
         <ToolActivity events={chat.events} />
       </Sheet>

@@ -14,7 +14,7 @@ router = APIRouter()
 
 def transfer_failed(exc: transfers.TransferError) -> HTTPException:
     status = {'TRANSFER_NOT_FOUND': 404, 'VIETQR_UNAVAILABLE': 502, 'IDEMPOTENCY_CONFLICT': 409,
-              'POSTING_FAILED': 503, 'LEDGER_MISMATCH': 503}.get(exc.reason_code, 400)
+              'POSTING_FAILED': 503, 'LEDGER_MISMATCH': 503, 'PIN_REQUIRED': 403, 'PIN_LOCKED': 423}.get(exc.reason_code, 400)
     return HTTPException(status_code=status, detail=exc.reason_code)
 
 

@@ -384,7 +384,8 @@ async def approve(db, user, approval_id, approve):
             kind = 'PAY_BILL' if name == 'prepare_bill_payment' else 'FREEZE_CARD'
             payload = {'resource_id': args['bill_id'], 'account_id': args['account_id']} if name == 'prepare_bill_payment' else {'resource_id': args['card_id']}
             payload = products.validate(conn, user, kind, payload)
-            result = {'message': 'Enter the bank confirmation code to finish.', 'action': create(conn, user, kind, payload)}
+            action = create(conn, user, kind, payload)
+            result = {'message': action['message'], 'action': action}
         else:
             conn.execute("UPDATE tool_approvals SET status='PROCESSING' WHERE id=?", (approval_id,))
             result = None

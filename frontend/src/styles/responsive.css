@@ -1,7 +1,5 @@
 @media (max-width: 1023px) {
   .qr-layout { grid-template-columns: minmax(0, 1fr); }
-  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'account' 'month' 'nova' 'tx' 'safety'; }
-  .dash-month .month-totals { grid-template-columns: 1fr 1fr; }
   .qr-result { position: static; min-height: 0; padding-top: 28px; padding-bottom: 28px; }
   /* Tablets: the sidebar shrinks to an icon rail. */
   .app-nav { width: 76px; padding: 18px 10px; align-items: center; }
@@ -21,7 +19,6 @@
   .nav-item { flex-direction: column; justify-content: center; gap: 3px; width: 100%; min-height: 54px; padding: 2px 0; font-size: 11px; }
   .nav-item[aria-current='page'] { background: transparent; color: var(--brand-700); }
   .nav-item[aria-current='page'] .nav-icon { padding: 2px 14px; border-radius: 999px; background: var(--brand-100); }
-  .dash { gap: 14px; }
   .app-main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   .page { gap: 14px; padding: 18px 14px 28px; }
   .page-title { font-size: 22px; }

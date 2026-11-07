@@ -31,4 +31,16 @@ Input guard vẫn là tripwire, có thể có false positive và bỏ sót parap
 
 Chưa có profile, run ID, log, ảnh thao tác approval hoặc OTP của demo cũ. Vì vậy H1–H4 trong playbook vẫn là giả thuyết, **chưa xác định nguyên nhân lịch sử**. Corpus có cùng payload không chứng minh demo đã dùng corpus. Không khẳng định đã tái hiện thành công việc chuyển tiền trái phép.
 
-Evidence mới: `week7-evidence/results.csv`, `quishing-trace.json`, test regression và báo cáo `completion.md`. Các quan sát live mới dùng mock, không phải kết quả thử một LLM đang chạy.
+Evidence: `week7-evidence/results.csv` (full Qwen 2.070 lượt qua HTTP thật), `quishing-trace.json`, test regression và báo cáo `completion.md`. Bộ đo mock cũ chỉ còn trong `mock-reference/`.
+
+## Kiểm tra giả thuyết bằng Qwen thật (06/11/2026)
+
+Lần đo gateway tắt/bật (`week7-evidence/GATEWAY_OFF_ON.md`) chạy đúng payload này 35 lượt cho mỗi profile:
+
+| Profile | Đề xuất chuyển cho Charlie | Tiền bị chuyển thẳng |
+|---|---:|---:|
+| naive (không phòng thủ, có `execute_transfer`) | 10/35, chờ duyệt | 0, vì Qwen chọn `prepare_transfer` |
+| baseline (chỉ duyệt thủ công + ngân sách) | 10/35, chờ duyệt | 0 |
+| defended | 0/35 | 0 |
+
+Trên app thật, binding vẫn trả `DENY / USER_INTENT_MISMATCH`. Dữ liệu ủng hộ **H1 + H4**: demo chạy profile không có binding, model đề xuất chuyển cho Charlie, và người demo bấm duyệt rồi nhập OTP. Dữ liệu không ủng hộ H2 với Qwen 2.5 7B. Kết luận lịch sử vẫn là suy luận vì không còn log demo. Cách tránh lặp lại: không dùng lab baseline/naive khi demo, và màn duyệt phải hiện rõ người nhận khác với yêu cầu.

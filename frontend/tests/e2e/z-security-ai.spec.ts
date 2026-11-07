@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { clearAuthRequestBudget, demoLogin, localMessage } from './auth-helpers';
+import { clearAuthRequestBudget, demoLogin, localMessage, transactionCode } from './auth-helpers';
 
 test.beforeEach(clearAuthRequestBudget);
 
@@ -21,13 +21,14 @@ test('SEC-06 stored XSS stays text in customer, Operations and support screens',
   const headers = { Authorization: 'Bearer ' + token };
   const change = await page.request.post('/api/customer/profile/change', { headers, data: { field: 'name', value: script, password: 'Alice@2026' } });
   expect(change.status()).toBe(202);
-  expect((await page.request.post('/api/actions/confirm', { headers: { ...headers, 'Idempotency-Key': 'SEC06-profile-change' }, data: { challenge_id: (await change.json()).challenge_id, code: localMessage('alice@novabank.test', 'ACTION_PROFILE_NAME').code } })).ok()).toBeTruthy();
+  const changed = await change.json();
+  expect((await page.request.post('/api/actions/confirm', { headers: { ...headers, 'Idempotency-Key': 'SEC06-profile-change' }, data: { challenge_id: changed.challenge_id, code: transactionCode(changed, 'alice@novabank.test', 'ACTION_PROFILE_NAME') } })).ok()).toBeTruthy();
   expect((await page.request.patch('/api/customer/accounts/ACC-ALICE-001', { headers, data: { nickname: img } })).ok()).toBeTruthy();
   const ticket = await page.request.post('/api/support/tickets', { headers, data: { subject: script, description: img } });
   expect(ticket.status()).toBe(201);
   const ticketId = (await ticket.json()).id;
   const draft = await (await page.request.post('/api/transfers', { headers, data: { to_account: 'ACC-BOB-001', amount_vnd: 1000, content: img } })).json();
-  const payment = await page.request.post('/api/transfers/' + draft.id + '/confirm', { headers, data: { otp: localMessage('alice@novabank.test', 'TRANSFER_OTP').code } });
+  const payment = await page.request.post('/api/transfers/' + draft.id + '/confirm', { headers, data: { otp: transactionCode(draft, 'alice@novabank.test', 'TRANSFER_OTP') } });
   expect(payment.ok()).toBeTruthy();
   const tx = (await payment.json()).transaction_id;
   await page.reload();

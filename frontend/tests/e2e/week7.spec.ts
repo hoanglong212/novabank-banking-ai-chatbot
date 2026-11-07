@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { clearAuthRequestBudget, demoLogin } from './auth-helpers';
+import { clearAuthRequestBudget, demoLogin, enterTransactionPin } from './auth-helpers';
 
 test.beforeEach(clearAuthRequestBudget);
 test.use({ video: 'on' });
 
-test('Week 7 transfer URLs survive reload and email codes stay in the mailbox', async ({ page, context }) => {
+test('Week 7 transfer URLs survive reload and confirm with the transaction PIN', async ({ page }) => {
   await demoLogin(page, 'alice');
   await page.goto('/transfer/new');
   await page.getByLabel('NovaBank account ID').fill('ACC-BOB-001');
@@ -17,17 +17,12 @@ test('Week 7 transfer URLs survive reload and email codes stay in the mailbox', 
   await page.getByRole('button', { name: 'Continue to verification' }).click();
   await expect(page).toHaveURL(/\/transfer\/TRF-[^/]+\/otp$/);
   await page.reload();
-  const inbox = await context.newPage();
-  await inbox.goto('/outbox');
-  await inbox.getByRole('button', { name: /TRANSFER_OTP/ }).first().click();
-  const code = await inbox.getByTestId('outbox-code').innerText();
-  await page.getByLabel('Enter OTP').fill(code);
+  await enterTransactionPin(page, 'alice');
   await page.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
   await expect(page).toHaveURL(/\/receipt$/);
   await page.reload();
   await expect(page.getByText('Transfer successful', { exact: true })).toBeVisible();
   expect(page.url()).not.toContain('10000');
-  await inbox.close();
 });
 
 test('Customer cannot open the staff assistant page', async ({ page }) => {
@@ -52,8 +47,8 @@ test('Approval deep link reloads the server proposal and opens separate OTP', as
   await expect(page.getByText('ACC-BOB-001', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Approve proposal', exact: true }).click();
   await expect(page).toHaveURL(/\/transfer\/TRF-[^/]+\/otp$/);
-  await expect(page.getByLabel('Enter OTP')).toHaveValue('');
-  await expect(page.getByRole('button', { name: 'Confirm transfer', exact: true })).toBeDisabled();
+  // Either the PIN field or, for an account without one, the create-PIN step; neither is pre-filled.
+  await expect(page.getByLabel('Transaction PIN', { exact: true }).or(page.getByLabel('New 6-digit PIN', { exact: true }))).toHaveValue('');
 });
 
 test('New conversation stays selected when an earlier history request finishes', async ({ page }) => {

@@ -43,10 +43,14 @@ class Attachment(IdentityInput):
 
 
 @router.get('/tickets')
-def tickets(user=Depends(current_user), db=Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)):
+def tickets(user=Depends(current_user), db=Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
+            status: Literal['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] | None = None):
     if user.role == 'operations':
         raise HTTPException(403, 'Permission denied')
     where, params = ('', []) if 'support:read' in user.permissions else (' WHERE t.owner_id=?', [user.id])
+    if status:
+        where += (' AND ' if where else ' WHERE ') + 't.status=?'
+        params.append(status)
     with db.connect() as conn:
         total = conn.execute('SELECT COUNT(*) FROM support_tickets t' + where, params).fetchone()[0]
         rows = conn.execute('''SELECT t.*,a.assigned_to,COALESCE(a.category,'GENERAL') AS category

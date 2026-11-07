@@ -27,6 +27,8 @@ __pycache__/
 # JavaScript dependencies, build output and tool caches
 node_modules/
 /frontend/dist/
+/frontend/public/ocr/runtime/
+/frontend/.local/
 *.tsbuildinfo
 .vite/
 .eslintcache

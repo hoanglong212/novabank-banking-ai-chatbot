@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, KeyRound } from 'lucide-react';
+import { PinForm } from '../profile/TransactionPin';
 
 import { api, request } from '../../api';
 import type { Bank, DemoUser, Transfer, TransferStart } from '../../types';
@@ -17,11 +18,15 @@ const ERRORS: Record<string, string> = {
   UNKNOWN_BANK: 'This bank is not supported.',
   INVALID_ACCOUNT: 'Other banks use numeric account numbers.',
   ACCOUNT_NOT_OWNED: 'You can only pay from your own account.',
-  OTP_INVALID: 'Wrong OTP. Check the SMS and try again.',
+  OTP_INVALID: 'Wrong code. Check it and try again.',
+  PIN_REQUIRED: 'Create your transaction PIN before making transfers.',
+  PIN_LOCKED: 'Too many wrong PINs. Try again in 15 minutes.',
   OTP_EXPIRED: 'The OTP has expired. Tap “Resend OTP”.',
   OTP_LOCKED: 'Too many wrong OTPs. This transfer was cancelled.',
   ALREADY_PROCESSED: 'This transfer was already completed or cancelled.',
   DAILY_LIMIT_EXCEEDED: 'This transfer exceeds your daily limit.',
+  VELOCITY_LIMIT_EXCEEDED: 'Too many transfers in a short time. Wait 10 minutes and try again.',
+  NEW_RECIPIENT_LIMIT_EXCEEDED: 'First transfers to a new recipient are limited to 10,000,000 VND.',
   TRANSFER_NOT_FOUND: 'Transfer not found.',
   VIETQR_UNAVAILABLE: 'The bank list is unavailable. Try again shortly.',
   DRAFT_EXPIRED: 'This transfer draft has expired. Close this window and start a new transfer.',
@@ -147,7 +152,8 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
 
   if (transfer) {
     return (
-      <form className="qr-form" onSubmit={confirm} noValidate>
+      // A div, not a form: the create-PIN step renders its own form and forms must not nest.
+      <div className="qr-form">
         <dl className="detail-list">
           <div><dt>From</dt><dd>{transfer.from_account}</dd></div>
           <div><dt>To</dt><dd>{transfer.to_name || 'Name not verified (other bank)'}</dd></div>
@@ -157,18 +163,23 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
           <div><dt>Total debit</dt><dd>{vnd(transfer.amount_vnd + (transfer.fee_vnd ?? 0))}</dd></div>
           <div><dt>Content</dt><dd>{transfer.content}</dd></div>
         </dl>
-        <p className="muted">Read the verification code in the <a href="/outbox" target="_blank" rel="noopener noreferrer">demo inbox</a>. Never send it to the assistant.</p>
+        {transfer.otp_method === 'email' && step !== 'review'
+          // No PIN yet: create one here; the server then accepts it for this same draft.
+          ? <div className="pin-first"><p className="otp-hint"><KeyRound size={18} aria-hidden="true" /><span><strong>Create your transaction PIN.</strong> You will use these 6 digits to confirm this and every future payment.</span></p>
+            <PinForm user={user} submitLabel="Save PIN and continue" done={() => setTransfer({ ...transfer, otp_method: 'pin' })} /></div>
+          : <p className="otp-hint"><KeyRound size={18} aria-hidden="true" /><span>{transfer.otp_method === 'totp'
+            ? <>Open your <strong>authenticator app</strong> and enter the current 6-digit NovaBank code.</>
+            : <>Enter your <strong>6-digit transaction PIN</strong>.</>} Never share it, not even with Nova.</span></p>}
         {error && <div className="form-error" role="alert">{error}</div>}
-        {step === 'review' ? <button className="primary-button" type="button" onClick={() => onNavigate?.(transfer.id, 'otp')}>Continue to verification</button> : <>
+        {step === 'review' ? <button className="primary-button" type="button" onClick={() => onNavigate?.(transfer.id, 'otp')}>Continue to verification</button> : transfer.otp_method !== 'email' && <form className="qr-form" onSubmit={confirm} noValidate>
         <label className="field">
-          <span>Enter OTP</span>
-          <input className="otp-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} placeholder="••••••"
-            onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+          <span>{transfer.otp_method === 'totp' ? 'Authenticator code' : 'Transaction PIN'}</span>
+          <input className="otp-input" type={transfer.otp_method === 'pin' ? 'password' : 'text'} inputMode="numeric" autoComplete={transfer.otp_method === 'pin' ? 'off' : 'one-time-code'} maxLength={6} value={otp} placeholder="••••••"
+            autoFocus onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} />
         </label>
         <button className="primary-button" type="submit" disabled={busy || otp.length !== 6}>{busy ? 'Confirming…' : 'Confirm transfer'}</button>
-        <button className="link-button" type="button" disabled={busy} onClick={() => run(() => api.resendOtp(user, transfer.id))}>Resend OTP</button>
-        </>}
-      </form>
+        </form>}
+      </div>
     );
   }
 

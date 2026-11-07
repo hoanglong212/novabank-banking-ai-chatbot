@@ -154,7 +154,13 @@ def bind_request(messages: list[dict]) -> BankingRequest:
         return qr
 
     # Before the balance branch: "transfer 200k to ACC-BOB-001" names an account but is not a balance check.
-    if re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:chuyen|transfer|send)\b', text):
+    if re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:chuyen|transfer|send)\b', text) or (
+            # Imperative phrasings after a polite prefix ("Please help: prepare a transfer of 10000 VND to ...").
+            # Week 7 capture: these were never bound, so prepare_transfer was never offered (utility 0/100).
+            re.search(r'\b(?:prepare|make|create|initiate|send)\s+(?:a |an |the |one )?(?:new )?(?:transfer|payment)\s+of\b'
+                      # Not a bare "transfer 3 million": affordability questions use that wording.
+                      r'|\b(?:please|(?:can|could|would) you)\s+(?:please\s+)?(?:send|transfer)\s+\d', text)
+            and not re.search(r'\b(?:do not|don.t|dont|never|khong|dung)\b.{0,30}\b(?:transfer|send|chuyen|prepare|make)\b', text)):
         return transfer_request(question, text)
 
     ids = re.findall(r'\bTX-[A-Z0-9-]+\b', question, re.I)

@@ -139,6 +139,8 @@ class Database:
             initialize_agent_termination(conn, now())
             from .request_context import initialize
             initialize(conn)
+            from .banking_queries import initialize_announcements
+            initialize_announcements(conn)
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())

@@ -8,6 +8,13 @@ from starlette.responses import FileResponse
 
 class SpaFiles(StaticFiles):
     async def get_response(self, path, scope):
+        response = await self._response(path, scope)
+        if response.media_type == 'text/html':
+            # The shell names hashed bundles; a stale cached shell keeps running old JS after a rebuild.
+            response.headers['Cache-Control'] = 'no-cache'
+        return response
+
+    async def _response(self, path, scope):
         normalized = path.replace('\\', '/').lstrip('/')
         try:
             return await super().get_response(path, scope)

@@ -45,6 +45,7 @@ SAMPLES = {
     'VerifyInput': {'challenge_id':'a'*43,'code':'123456'},
     'ChallengeInput': {'challenge_id':'a'*43}, 'RefreshInput': {'refresh_token':'a'*43},
     'PasswordCheck': {'password':'Alice@2026'}, 'CodeInput': {'code':'123456'},
+    'PinInput': {'password':'Alice@2026','pin':'482916'},
 }
 # Explicit inventory: additions without a reviewed test fail rather than silently skip.
 BODYLESS = {

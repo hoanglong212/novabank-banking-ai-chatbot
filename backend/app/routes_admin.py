@@ -9,6 +9,7 @@ from .identity_schemas import IdentityInput
 from . import session_security as security
 from .posting import audit
 from .ledger import reconcile
+from .admin_dashboard import dashboard
 
 router = APIRouter(prefix='/api/admin')
 reader = require_permission('admin:audit:read')
@@ -32,14 +33,18 @@ class AccountState(IdentityInput):
 
 
 @router.get('/overview')
-def overview(user=Depends(reader), db=Depends(get_db)):
+def overview(user=Depends(reader), db=Depends(get_db), days: int = Query(7, ge=7, le=90)):
+    if days not in (7, 30, 90):
+        raise HTTPException(422, 'Choose 7, 30 or 90 days.')
     with db.connect() as conn:
+        conn.execute('BEGIN')
         counts = {}
         for table in ('users', 'accounts', 'transactions', 'support_tickets'):
             counts[table] = conn.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
         counts['failed_transfers'] = conn.execute("SELECT COUNT(*) FROM transfers t LEFT JOIN interbank_settlements s ON s.transfer_id=t.id WHERE t.status='FAILED' OR s.status='FAILED'").fetchone()[0]
         latest = conn.execute('SELECT report_json FROM reconciliation_runs ORDER BY rowid DESC LIMIT 1').fetchone()
         counts['reconciliation'] = json.loads(latest[0]) if latest else None
+        counts['dashboard'] = dashboard(conn, days)
         return counts
 
 

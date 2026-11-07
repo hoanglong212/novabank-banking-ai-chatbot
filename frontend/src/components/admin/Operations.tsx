@@ -8,7 +8,7 @@ import { recordedTime, TransactionInfo } from '../activity/TransactionDetails';
 import { Pagination } from '../ui/Pagination';
 import { Sheet } from '../ui/Sheet';
 
-function AuditTrail({ user, id }: { user: DemoUser; id: string }) {
+export function AuditTrail({ user, id }: { user: DemoUser; id: string }) {
   const [items, setItems] = useState<AuditEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);

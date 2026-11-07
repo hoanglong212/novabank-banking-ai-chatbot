@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, ConfigDict
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=40)
     password: str = Field(min_length=1, max_length=128)
+    device_token: str | None = Field(default=None, min_length=43, max_length=43, pattern=r'^[A-Za-z0-9_-]+$')
 
 
 class ConversationCreate(BaseModel):

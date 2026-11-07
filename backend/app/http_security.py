@@ -64,8 +64,9 @@ class HttpSecurity:
                 status = message['status']; headers = list(message.get('headers', [])); names = {key.lower() for key, _ in headers}
                 values = {
                     b'x-content-type-options': b'nosniff', b'x-frame-options': b'DENY', b'referrer-policy': b'no-referrer',
-                    b'permissions-policy': b'camera=(), microphone=(), geolocation=()', b'x-request-id': request_id.encode(),
-                    b'content-security-policy': b"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'",
+                    # QR Pay requests camera access only after an explicit user action.
+                    b'permissions-policy': b'camera=(self), microphone=(), geolocation=()', b'x-request-id': request_id.encode(),
+                    b'content-security-policy': b"default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.vietqr.io https://api.vietqr.io; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'",
                 }
                 if scope.get('path') in ('/docs', '/docs/oauth2-redirect', '/redoc'):
                     # FastAPI's documentation shell uses its versioned CDN assets and inline initializer.
