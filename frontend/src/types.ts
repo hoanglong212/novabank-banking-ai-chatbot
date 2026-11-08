@@ -44,7 +44,7 @@ export interface TransactionFilters {
   limit?: number; offset?: number;
 }
 export interface BankNotification {
-  id: string; transaction_id: string | null; kind: string; title: string; body: string;
+  id: string; transaction_id: string | null; resource_id?: string | null; kind: string; title: string; body: string;
   created_at: string; read_at: string | null; category?: NotificationCategory;
 }
 export type NotificationCategory = 'transactions' | 'account';

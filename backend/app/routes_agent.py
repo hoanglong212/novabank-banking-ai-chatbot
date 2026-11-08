@@ -10,7 +10,7 @@ from . import agent_access
 from .auth_crypto import decrypt_secret
 from .config import setting
 from .database import now
-from .dependencies import customer_user, assistant_user, get_db
+from .dependencies import approval_user, assistant_user, get_db
 from .guard import inspect_prompt
 from .identity import transaction
 from .identity_schemas import IdentityInput
@@ -134,7 +134,7 @@ def run_detail(run_id: str, user=Depends(assistant_user), db=Depends(get_db)):
 
 
 @router.get('/agent/approvals')
-def approvals(conversation_id: str = Query(max_length=64), user=Depends(customer_user), db=Depends(get_db)):
+def approvals(conversation_id: str = Query(max_length=64), user=Depends(approval_user), db=Depends(get_db)):
     with db.connect() as conn:
         rows = conn.execute('''SELECT a.* FROM tool_approvals a JOIN agent_runs r ON r.id=a.run_id
             WHERE a.owner_id=? AND r.conversation_id=? ORDER BY a.created_at DESC,a.rowid DESC LIMIT 50''', (user.id, conversation_id))
@@ -142,12 +142,12 @@ def approvals(conversation_id: str = Query(max_length=64), user=Depends(customer
 
 
 @router.post('/agent/approvals/{approval_id}')
-async def approve(approval_id: str, payload: ApprovalInput, user=Depends(customer_user), db=Depends(get_db)):
+async def approve(approval_id: str, payload: ApprovalInput, user=Depends(approval_user), db=Depends(get_db)):
     return await agent_access.approve(db, user, approval_id, payload.approve)
 
 
 @router.get('/agent/approvals/{approval_id}')
-def approval_detail(approval_id: str, user=Depends(customer_user), db=Depends(get_db)):
+def approval_detail(approval_id: str, user=Depends(approval_user), db=Depends(get_db)):
     with db.connect() as conn:
         row = conn.execute('SELECT * FROM tool_approvals WHERE id=? AND owner_id=?', (approval_id, user.id)).fetchone()
         if not row:

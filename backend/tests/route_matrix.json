@@ -593,7 +593,9 @@
     "method": "GET",
     "path": "/api/agent/approvals",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "admin"
     ],
     "scope": "own"
   },
@@ -601,7 +603,9 @@
     "method": "POST",
     "path": "/api/agent/approvals/{approval_id}",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "admin"
     ],
     "scope": "own"
   },
@@ -1234,7 +1238,9 @@
     "method": "GET",
     "path": "/api/agent/approvals/{approval_id}",
     "roles": [
-      "customer"
+      "customer",
+      "support",
+      "admin"
     ],
     "scope": "own"
   }

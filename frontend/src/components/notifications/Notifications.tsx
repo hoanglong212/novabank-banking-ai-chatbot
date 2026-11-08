@@ -188,6 +188,7 @@ export function Notifications({ user, openTransaction }: { user: DemoUser; openT
                 <p>{n.body}</p>
                 {(n.transaction_id || !n.read_at) && <div className="inline-actions">
                   {n.transaction_id && <button className="link-button" onClick={() => { void read(n.id); openTransaction(n.transaction_id!); }}>View transaction <ChevronRight size={15} aria-hidden="true" /></button>}
+                  {n.kind === 'SUPPORT' && n.resource_id && <button className="link-button" onClick={() => { void read(n.id); navigate('/explore/support/' + encodeURIComponent(n.resource_id!)); }}>View ticket <ChevronRight size={15} aria-hidden="true" /></button>}
                   {!n.read_at && <button className="link-button" disabled={changing || busy} onClick={() => read(n.id)}>Mark as read</button>}
                 </div>}
               </div>

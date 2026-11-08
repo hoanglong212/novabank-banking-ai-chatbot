@@ -27,7 +27,7 @@ const groups = [
   { title: 'Make room for tomorrow', text: 'Give your money a plan to follow.', ids: ['savings', 'insights', 'goals'] },
   { title: 'Here when you need us', text: 'Your records, answers and a helping hand.', ids: ['statements', 'support'] },
 ];
-export function Explore({ user, pay, initial }: { user: DemoUser; pay: (start: TransferStart) => void; initial?: string }) {
+export function Explore({ user, pay, initial, ticket }: { user: DemoUser; pay: (start: TransferStart) => void; initial?: string; ticket?: string }) {
   const [section, setSection] = useState<Section | null>(() => items.find(i => i.id === initial)?.id ?? null);
   const [query, setQuery] = useState('');
   const found = items.filter(item => `${item.title} ${item.text}`.toLowerCase().includes(query.toLowerCase().trim()));
@@ -41,6 +41,6 @@ export function Explore({ user, pay, initial }: { user: DemoUser; pay: (start: T
     {section === 'accounts' && <Accounts user={user} pay={pay} />}
     {(section === 'cards' || section === 'bills' || section === 'savings') && <Products key={section} user={user} section={section} />}
     {section === 'insights' && <Insights user={user} />}{section === 'goals' && <Goals user={user} />}{section === 'statements' && <Statements user={user} />}
-    {section === 'support' && <div className="service-stack"><Support user={user} /><Knowledge user={user} /></div>}{section === 'qr' && <QrStudio user={user} pay={pay} />}
+    {section === 'support' && <div className="service-stack"><Support user={user} ticket={ticket} /><Knowledge user={user} /></div>}{section === 'qr' && <QrStudio user={user} pay={pay} />}
   </div>;
 }

@@ -45,3 +45,8 @@ Body cap 4 MiB và no-store áp dụng API. Header auth/OTP/password/refresh kh�
 - Period boundaries and daily grouping use Vietnam calendar dates and transfer confirmation time (creation fallback); effective outcome uses settlement status where present. OTP drafts are excluded. Settled volume counts each completed transfer principal once, excludes fees, and does not double-count internal account entries. Completion rate is completed / (completed + failed), or null without terminal outcomes.
 - Snapshot counts are current, independent of selected period. Pending queue spans all dates; failed queue and recent transfers use selected period. Queues return at most 20 entries each, recent transfers 8, events 5. Counts may exceed displayed rows. Refresh is explicit; `updated_at` identifies the snapshot.
 - The dashboard reuses `POST /api/admin/reconcile` with existing `settings:write` permission. No saved report is displayed as unchecked, never as healthy. No migration or external banking connection is introduced.
+
+
+### Gateway binding hardening (2026-11-08)
+
+The existing agent APIs and payload shapes are unchanged. Customer and staff write proposals require an affirmative request; quoted examples, questions and negations do not grant write capability. Transfer memo text cannot supply a recipient. Staff account/customer states and setting values are checked against the requested action/field. Rejected attempts return the existing DENY / USER_INTENT_REQUIRED or USER_INTENT_MISMATCH decision. In defended mode, get_bills now applies the source guard before returning model-visible content. See [audit evidence](gateway-audit-2026-11-08/REPORT_VI.md); baseline retains its explicitly weaker research behavior.

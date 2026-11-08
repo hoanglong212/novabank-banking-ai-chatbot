@@ -46,14 +46,14 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
       <section className="chat-column" aria-label="Chat with Nova">
         <div className="messages-scroller" ref={chat.scrollerRef}>
           <div className="messages-inner" ref={innerRef}>
-            {chat.user.role && chat.user.role !== 'customer' && <p className="staff-note"><ShieldCheck size={16} aria-hidden="true" />Staff assistant · read-only reports within your role. No payment or account changes.</p>}
+            {chat.user.role && chat.user.role !== 'customer' && <p className="staff-note"><ShieldCheck size={16} aria-hidden="true" />{chat.user.role === 'admin' ? 'Admin assistant · reports, ticket replies, and account, customer and settings changes. Nothing runs until you approve it here.' : chat.user.role === 'support' ? 'Support assistant · reads tickets and drafts replies or status changes. Nothing is sent until you approve it here.' : 'Staff assistant · read-only reports within your role. No payment or account changes.'}</p>}
             {chat.messages.length === 0 && (!chat.user.role || chat.user.role === 'customer') ? (
               <Welcome user={chat.user} busy={chat.busy} pickSuggestion={chat.pickSuggestion} />
             ) : (
               <MessageThread messages={chat.messages} busy={chat.busy} openTransfer={openTransfer} />
             )}
             {chat.busy && chat.progress && <p role="status" className="muted small">{chat.progress}</p>}
-            {chat.active && (!chat.user.role || chat.user.role === 'customer') && <AgentActivity user={chat.user} conversationId={chat.active} revision={chat.messages.length} openTransfer={openTransfer} />}
+            {chat.active && (!chat.user.role || chat.user.role === 'customer' || chat.user.role === 'admin' || chat.user.role === 'support') && <AgentActivity user={chat.user} conversationId={chat.active} revision={chat.messages.length} openTransfer={openTransfer} />}
             <div ref={chat.endRef} />
           </div>
         </div>

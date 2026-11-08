@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, LifeBuoy, ReceiptText, Send, ShieldCheck, Snowflake } from 'lucide-react';
+import { Activity, LifeBuoy, ReceiptText, Scale, Send, ShieldCheck, SlidersHorizontal, Snowflake, UserCog } from 'lucide-react';
 import type { DemoUser } from '../../types';
 import { ConfirmAction, Feedback, Loading, send, useOperation, useResource, type ActionDraft } from '../explore/shared';
 import { Sheet } from '../ui/Sheet';
@@ -17,8 +17,8 @@ export function AgentActivity({ user, conversationId, revision, openTransfer }: 
   async function decide(id: string, approve: boolean) {
     await op.run(async () => { const result = await send<{ message: string; draft_id?: string; action?: ActionDraft }>(user, '/agent/approvals/' + id, { approve }); approvals.reload(); op.setMessage(result.message); if (result.draft_id) openTransfer(result.draft_id); if (result.action) setDraft(result.action); });
   }
-  const labels: Record<string, string> = { prepare_transfer: 'Transfer proposal', prepare_bill_payment: 'Bill payment proposal', prepare_support_ticket: 'Support ticket proposal', request_card_freeze: 'Card freeze proposal' };
-  const icons: Record<string, typeof Send> = { prepare_transfer: Send, prepare_bill_payment: ReceiptText, prepare_support_ticket: LifeBuoy, request_card_freeze: Snowflake };
+  const labels: Record<string, string> = { prepare_transfer: 'Transfer proposal', prepare_bill_payment: 'Bill payment proposal', prepare_support_ticket: 'Support ticket proposal', request_card_freeze: 'Card freeze proposal', propose_account_status: 'Account status change', propose_customer_update: 'Customer access change', propose_settings_change: 'Bank settings change', propose_reconciliation: 'Ledger reconciliation', propose_ticket_reply: 'Ticket reply draft', propose_ticket_status: 'Ticket status change' };
+  const icons: Record<string, typeof Send> = { prepare_transfer: Send, prepare_bill_payment: ReceiptText, prepare_support_ticket: LifeBuoy, request_card_freeze: Snowflake, propose_account_status: Snowflake, propose_settings_change: SlidersHorizontal, propose_customer_update: UserCog, propose_reconciliation: Scale, propose_ticket_reply: LifeBuoy, propose_ticket_status: LifeBuoy };
   const pending = approvals.data?.items.filter(a => a.status === 'PENDING') ?? [];
   return <div className="service-stack agent-review"><Feedback state={op} />{approvals.error && <Loading state={approvals} />}
     {pending.map(a => {
@@ -32,8 +32,8 @@ export function AgentActivity({ user, conversationId, revision, openTransfer }: 
           <span className={`proposal-badge ${expired ? 'is-expired' : ''}`}>{expired ? 'Expired' : 'Needs your approval'}</span>
         </header>
         {amount !== undefined && <p className="proposal-amount">{vnd(Number(amount))}</p>}
-        <dl className="proposal-details">{Object.entries(rest).map(([k, v]) => <div key={k}><dt>{k.replaceAll('_', ' ')}</dt><dd>{String(v)}</dd></div>)}</dl>
-        <p className="proposal-note"><ShieldCheck size={15} aria-hidden="true" />Approving a payment opens a separate OTP confirmation. It does not move money by itself.</p>
+        <dl className="proposal-details">{Object.entries(rest).map(([k, v]) => <div key={k} className={k === 'body' ? 'is-body' : undefined}><dt>{k.replaceAll('_', ' ')}</dt><dd>{String(v)}</dd></div>)}</dl>
+        <p className="proposal-note"><ShieldCheck size={15} aria-hidden="true" />{a.name.startsWith('propose_') ? a.name === 'propose_ticket_reply' ? 'Approving sends this reply to the customer under your name. Read it first.' : 'Approving applies this change immediately under your name.' : 'Approving a payment opens a separate OTP confirmation. It does not move money by itself.'}</p>
         <div className="inline-actions">
           <button className="primary-button" disabled={op.busy || expired} onClick={() => a.name === 'prepare_transfer' ? navigate('/approvals/' + encodeURIComponent(a.id)) : void decide(a.id, true)}>Review and approve</button>
           <button className="secondary-button" disabled={op.busy} onClick={() => void decide(a.id, false)}>Decline</button>

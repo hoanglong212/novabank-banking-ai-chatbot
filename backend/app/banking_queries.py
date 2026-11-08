@@ -79,8 +79,8 @@ def transaction(db, transaction_id: str, owner_id: str) -> dict:
 # Personal alerts split into two tabs; everything that is not money movement is about the account.
 CATEGORY_SQL = "CASE WHEN kind IN ('MONEY_IN','MONEY_OUT','TRANSFER','REFUND','BILL') THEN 'transactions' ELSE 'account' END"
 NOTIFICATION_SOURCE = f"""(SELECT *, {CATEGORY_SQL} AS category FROM
-    (SELECT id,owner_id,transaction_id,kind,title,body,created_at,read_at FROM notifications
-     UNION ALL SELECT id,owner_id,transaction_id,kind,title,body,created_at,read_at FROM service_notifications))"""
+    (SELECT id,owner_id,transaction_id,NULL AS resource_id,kind,title,body,created_at,read_at FROM notifications
+     UNION ALL SELECT id,owner_id,transaction_id,resource_id,kind,title,body,created_at,read_at FROM service_notifications))"""
 
 
 def notifications(db, owner_id: str, limit: int, offset: int, category: str | None = None,

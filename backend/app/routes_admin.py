@@ -38,14 +38,17 @@ def overview(user=Depends(reader), db=Depends(get_db), days: int = Query(7, ge=7
         raise HTTPException(422, 'Choose 7, 30 or 90 days.')
     with db.connect() as conn:
         conn.execute('BEGIN')
-        counts = {}
-        for table in ('users', 'accounts', 'transactions', 'support_tickets'):
-            counts[table] = conn.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
-        counts['failed_transfers'] = conn.execute("SELECT COUNT(*) FROM transfers t LEFT JOIN interbank_settlements s ON s.transfer_id=t.id WHERE t.status='FAILED' OR s.status='FAILED'").fetchone()[0]
-        latest = conn.execute('SELECT report_json FROM reconciliation_runs ORDER BY rowid DESC LIMIT 1').fetchone()
-        counts['reconciliation'] = json.loads(latest[0]) if latest else None
-        counts['dashboard'] = dashboard(conn, days)
-        return counts
+        return {**overview_counts(conn), 'dashboard': dashboard(conn, days)}
+
+
+def overview_counts(conn):
+    counts = {}
+    for table in ('users', 'accounts', 'transactions', 'support_tickets'):
+        counts[table] = conn.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
+    counts['failed_transfers'] = conn.execute("SELECT COUNT(*) FROM transfers t LEFT JOIN interbank_settlements s ON s.transfer_id=t.id WHERE t.status='FAILED' OR s.status='FAILED'").fetchone()[0]
+    latest = conn.execute('SELECT report_json FROM reconciliation_runs ORDER BY rowid DESC LIMIT 1').fetchone()
+    counts['reconciliation'] = json.loads(latest[0]) if latest else None
+    return counts
 
 
 @router.get('/users')
@@ -60,22 +63,26 @@ def users(user=Depends(reader), db=Depends(get_db), offset: int = Query(0, ge=0)
 @router.patch('/users/{user_id}')
 def update_user(user_id: str, payload: UserState, user=Depends(writer), db=Depends(get_db)):
     with transaction(db) as conn:
-        target = conn.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone()
-        if not target:
-            raise HTTPException(404, 'User not found.')
-        if target['role'] != 'customer':
-            raise HTTPException(403, 'This console manages customer identities only.')
-        if target['status'] == 'PENDING':
-            raise HTTPException(409, 'The customer must verify their email before activation.')
-        profile = conn.execute('SELECT kyc_status FROM customer_profiles WHERE user_id=?', (user_id,)).fetchone()
-        previous = {'status': target['status'], 'kyc_status': profile[0] if profile else 'UNVERIFIED'}
-        if payload.status and payload.status != target['status']:
-            conn.execute('UPDATE users SET status=?,auth_version=auth_version+1 WHERE id=?', (payload.status, user_id))
-            security.revoke_user(conn, user_id, security.timestamp(), 'ADMIN_STATUS_CHANGED')
-        if payload.kyc_status:
-            conn.execute('INSERT INTO customer_profiles (user_id,kyc_status) VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET kyc_status=excluded.kyc_status', (user_id, payload.kyc_status))
-        audit(conn, user.id, 'CUSTOMER_UPDATED', user_id,
-              json.dumps({'before': previous, 'after': {**previous, **payload.model_dump(exclude_none=True)}}), now())
+        return apply_user_state(conn, user, user_id, payload)
+
+
+def apply_user_state(conn, user, user_id, payload):
+    target = conn.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone()
+    if not target:
+        raise HTTPException(404, 'User not found.')
+    if target['role'] != 'customer':
+        raise HTTPException(403, 'This console manages customer identities only.')
+    if target['status'] == 'PENDING':
+        raise HTTPException(409, 'The customer must verify their email before activation.')
+    profile = conn.execute('SELECT kyc_status FROM customer_profiles WHERE user_id=?', (user_id,)).fetchone()
+    previous = {'status': target['status'], 'kyc_status': profile[0] if profile else 'UNVERIFIED'}
+    if payload.status and payload.status != target['status']:
+        conn.execute('UPDATE users SET status=?,auth_version=auth_version+1 WHERE id=?', (payload.status, user_id))
+        security.revoke_user(conn, user_id, security.timestamp(), 'ADMIN_STATUS_CHANGED')
+    if payload.kyc_status:
+        conn.execute('INSERT INTO customer_profiles (user_id,kyc_status) VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET kyc_status=excluded.kyc_status', (user_id, payload.kyc_status))
+    audit(conn, user.id, 'CUSTOMER_UPDATED', user_id,
+          json.dumps({'before': previous, 'after': {**previous, **payload.model_dump(exclude_none=True)}}), now())
     return {'message': 'Customer updated. KYC is simulated; no identity verification service was contacted.'}
 
 
@@ -88,19 +95,23 @@ def accounts(user=Depends(reader), db=Depends(get_db)):
 @router.patch('/accounts/{account_id}')
 def account_state(account_id: str, payload: AccountState, user=Depends(writer), db=Depends(get_db)):
     with transaction(db) as conn:
-        row = conn.execute('SELECT * FROM accounts WHERE id=?', (account_id,)).fetchone()
-        if not row:
-            raise HTTPException(404, 'Account not found.')
-        if row['status'] == 'CLOSED':
-            raise HTTPException(409, 'Closed accounts cannot be reopened.')
-        if payload.status == 'CLOSED':
-            pending = conn.execute("SELECT 1 FROM interbank_settlements s JOIN transfers t ON t.id=s.transfer_id WHERE t.from_account=? AND s.status='PENDING'", (account_id,)).fetchone()
-            savings = conn.execute("SELECT 1 FROM savings WHERE account_id=? AND status='ACTIVE'", (account_id,)).fetchone()
-            debt = conn.execute('SELECT 1 FROM cards WHERE account_id=? AND outstanding_vnd>0', (account_id,)).fetchone()
-            if row['balance_vnd'] or savings or debt or pending:
-                raise HTTPException(409, 'Close active savings and repay debt; account balance must be zero.')
-        conn.execute('UPDATE accounts SET status=? WHERE id=?', (payload.status, account_id))
-        audit(conn, user.id, 'ACCOUNT_STATUS', account_id, json.dumps({'before': row['status'], 'after': payload.status}), now())
+        return apply_account_state(conn, user, account_id, payload)
+
+
+def apply_account_state(conn, user, account_id, payload):
+    row = conn.execute('SELECT * FROM accounts WHERE id=?', (account_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, 'Account not found.')
+    if row['status'] == 'CLOSED':
+        raise HTTPException(409, 'Closed accounts cannot be reopened.')
+    if payload.status == 'CLOSED':
+        pending = conn.execute("SELECT 1 FROM interbank_settlements s JOIN transfers t ON t.id=s.transfer_id WHERE t.from_account=? AND s.status='PENDING'", (account_id,)).fetchone()
+        savings = conn.execute("SELECT 1 FROM savings WHERE account_id=? AND status='ACTIVE'", (account_id,)).fetchone()
+        debt = conn.execute('SELECT 1 FROM cards WHERE account_id=? AND outstanding_vnd>0', (account_id,)).fetchone()
+        if row['balance_vnd'] or savings or debt or pending:
+            raise HTTPException(409, 'Close active savings and repay debt; account balance must be zero.')
+    conn.execute('UPDATE accounts SET status=? WHERE id=?', (payload.status, account_id))
+    audit(conn, user.id, 'ACCOUNT_STATUS', account_id, json.dumps({'before': row['status'], 'after': payload.status}), now())
     return {'message': 'Account status updated.'}
 
 
@@ -113,14 +124,18 @@ def settings(user=Depends(reader), db=Depends(get_db)):
 @router.patch('/settings')
 def update_settings(payload: Settings, user=Depends(writer), db=Depends(get_db)):
     with transaction(db) as conn:
-        values = {r['key']: json.loads(r['value_json']) for r in conn.execute('SELECT * FROM bank_settings')}
-        previous = values.copy()
-        values.update(payload.model_dump(exclude_none=True))
-        if values['transfer_limit_vnd'] > values['daily_limit_vnd']:
-            raise HTTPException(422, 'Daily limit must be at least the per-transfer limit.')
-        for key, value in payload.model_dump(exclude_none=True).items():
-            conn.execute('UPDATE bank_settings SET value_json=?,updated_at=? WHERE key=?', (json.dumps(value), now(), key))
-            audit(conn, user.id, 'SETTING_UPDATED', key, json.dumps({'before': previous[key], 'after': value}), now())
+        return apply_settings(conn, user, payload)
+
+
+def apply_settings(conn, user, payload):
+    values = {r['key']: json.loads(r['value_json']) for r in conn.execute('SELECT * FROM bank_settings')}
+    previous = values.copy()
+    values.update(payload.model_dump(exclude_none=True))
+    if values['transfer_limit_vnd'] > values['daily_limit_vnd']:
+        raise HTTPException(422, 'Daily limit must be at least the per-transfer limit.')
+    for key, value in payload.model_dump(exclude_none=True).items():
+        conn.execute('UPDATE bank_settings SET value_json=?,updated_at=? WHERE key=?', (json.dumps(value), now(), key))
+        audit(conn, user.id, 'SETTING_UPDATED', key, json.dumps({'before': previous[key], 'after': value}), now())
     return values
 
 

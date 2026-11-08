@@ -26,3 +26,12 @@
 - Transaction details/PDF downloads and notification read updates require ownership. Financial staff reads require explicit permissions; support is excluded. Transfer notifications and recorded balances are committed in the same transaction as posting, so retries cannot duplicate them and storage failure rolls them back. Notification Center polls while visible; there is no SSE transport.
 - Migration v2 preserves old financial history; only a known v1 payer success audit can supply an old balance snapshot. Older recipient/seed balances stay unknown. These receipts are simulated, not legal bank statements. Server-side PDF escaping prevents markup injection; the PDF route sets `Cache-Control: no-store`.
 - The local dependency audit on 1 November reports two moderate development-tool advisories (`vite` 6.4.4 and `postcss-selector-parser` <6.1.5). They remain pending a separate compatible dependency update; adding Playwright does not establish a clean security audit. No dependency security scanner is configured in CI yet.
+
+
+## Current gateway audit amendment (2026-11-08)
+
+See [the current gateway architecture, reproduced defects and fixes](release/gateway-audit-2026-11-08/REPORT_VI.md) and its separate app/lab results. This amendment supersedes older statements above about no streaming, no settlement, factor methods, and gateway coverage: the current application uses a separate HTTP/SSE agent service, bank-owned delegated tool authorization and the existing settlement worker; verification follows the current demo factor configuration.
+
+The November 8 fixes bind recipients before memo text, require affirmative write requests, screen bill sources in defended mode, and bind staff proposal state/setting values to the actual request. Baseline deliberately remains selectable for demonstration and omits source screening. The legacy PolicyGateway class is not the live agent's complete authorization boundary. Human approval and bank verification remain mandatory; no prompt-only money movement is claimed from a PENDING proposal.
+
+Coverage is bounded to the documented code and corpus. Source screening and output heuristics are not proof against arbitrary prompt injection or fabricated facts. Concurrent edits and code hashes are disclosed with the test evidence.

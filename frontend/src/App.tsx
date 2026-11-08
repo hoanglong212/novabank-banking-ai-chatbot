@@ -58,7 +58,7 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
   const chat = useBankingChat(user);
   const defaultTab: Tab = customer ? 'home' : user.permissions?.includes('admin:transactions:read') ? 'admin' : user.permissions?.includes('support:read') ? 'support' : 'profile';
   const routes: Record<string, Tab> = { '/': defaultTab, '/home': 'home', '/activity': 'activity', '/qr': 'qr', '/assistant': 'assistant', '/admin/assistant': 'assistant', '/profile': 'profile', '/notifications': 'notifications', '/admin': 'admin', '/explore': 'explore', '/support': 'support' };
-  const exploreMatch = path.match(/^\/explore\/([a-z]+)$/);
+  const exploreMatch = path.match(/^\/explore\/([a-z]+)(?:\/([A-Za-z0-9-]+))?$/);
   const tab = routes[path] ?? (exploreMatch ? 'explore' : defaultTab);
   const setTab = (next: Tab) => navigate(next === 'assistant' && !customer ? '/admin/assistant' : '/' + next);
   const [transactionId, setTransactionId] = useState<string | null>(null);
@@ -72,7 +72,14 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
     setPrefill(start);
     navigate(start.draftId ? '/transfer/' + encodeURIComponent(start.draftId) + '/review' : '/transfer/new');
   };
-  const denied = (customer && path.startsWith('/admin')) || (!customer && (path.startsWith('/transfer') || !!qrMatch || !!approvalMatch));
+  // UI mirror of server RBAC (the API enforces it regardless): staff pages need the staff permission, not just the URL.
+  const can = (permission: string) => !!user.permissions?.includes(permission);
+  const denied = (customer && path.startsWith('/admin'))
+    || (!customer && path === '/support' && !can('support:read'))
+    || (!customer && path === '/admin' && !can('admin:audit:read'))
+    || (!customer && (path.startsWith('/transfer') || !!qrMatch || !!approvalMatch));
+  // Customers have their own help page; /support is the staff inbox.
+  useEffect(() => { if (customer && path === '/support') navigate('/explore/support'); }, [customer, path]);
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
@@ -103,7 +110,7 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
         {tab === 'notifications' && <Notifications user={user} openTransaction={setTransactionId} />}
         {tab === 'admin' && <AdminConsole user={user} />}
         {tab === 'qr' && <QrStudio user={user} pay={setTransfer} />}
-        {tab === 'explore' && <Explore key={path} user={user} pay={setTransfer} initial={exploreMatch?.[1]} />}
+        {tab === 'explore' && <Explore key={path} user={user} pay={setTransfer} initial={exploreMatch?.[1]} ticket={exploreMatch?.[2]} />}
         {tab === 'support' && <div className="page"><h1 className="page-title">Support</h1><Support user={user} /></div>}
         {tab === 'profile' && <Profile user={user} profile={profile} logout={logout} />}
         {tab === 'assistant' && <Assistant chat={chat} openTransfer={draftId => setTransfer({ draftId })} />}
