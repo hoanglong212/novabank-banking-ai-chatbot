@@ -137,6 +137,8 @@ class Database:
             initialize_notification_preferences(conn, now())
             from .agent_schema import initialize_agent_termination
             initialize_agent_termination(conn, now())
+            from .agent_gateway import initialize as initialize_agent_gateway
+            initialize_agent_gateway(conn, now())
             from .request_context import initialize
             initialize(conn)
             from .banking_queries import initialize_announcements

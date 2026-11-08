@@ -156,3 +156,8 @@ export const api = {
       method: 'POST', body: JSON.stringify({ tool_name, arguments: args }),
     }),
 };
+
+/** Random idempotency key. crypto.randomUUID needs a secure context, which plain http over the LAN (lab VM) is not. */
+export function newKey() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+}

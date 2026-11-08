@@ -25,7 +25,7 @@ SAMPLES = {
     'Assignment': {'status':'OPEN'}, 'Reply': {'body':'Valid reply'},
     'Attachment': {'name':'hello.txt','content_base64':'aGVsbG8='},
     'UserState': {'status':'ACTIVE'}, 'AccountState': {'status':'ACTIVE'},
-    'Settings': {'transfer_fee_vnd':0}, 'ScanInput': {'payload':'NBQR1.test'},
+    'Settings': {'transfer_fee_vnd':0}, 'GatewaySwitch': {'enabled': True}, 'ScanInput': {'payload':'NBQR1.test'},
     'Document': {'title':'Valid policy','content':'Valid policy content','source':'Internal'},
     'PreviewInput': {'answer':'Balance overview'},
     'RunInput': {'conversation_id':'fixture','content':'What is my balance?'},

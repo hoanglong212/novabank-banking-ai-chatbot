@@ -151,3 +151,19 @@ button.admin-attention-row:hover { background: var(--brand-50); }
   .admin-transfers td:nth-child(5) { grid-column: 2; grid-row: 3; color: var(--muted); font-size: 10px; align-self: end; }
   .admin-transfers td:last-child { grid-column: 2; grid-row: 1; justify-self: end; }
 }
+
+/* Agent gateway lab switch and decision log */
+.gateway-switch { border-left: 4px solid var(--ok); }
+.gateway-switch.is-off { border-left-color: var(--danger, #b42318); }
+.gateway-switch-head { display: flex; gap: 14px; align-items: flex-start; }
+.gateway-switch.is-on .gateway-switch-head svg { color: var(--ok); }
+.gateway-switch.is-off .gateway-switch-head svg { color: var(--danger, #b42318); }
+.gateway-switch-head p { margin: 4px 0 0; }
+.gateway-log-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.gateway-log-head select { min-height: 36px; }
+.gateway-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--subtle); color: var(--muted); }
+.gateway-pill.is-allow, .gateway-pill.is-on { background: var(--ok-bg); color: var(--ok); }
+.gateway-pill.is-deny, .gateway-pill.is-off { background: var(--danger-bg, #fde8e7); color: var(--danger, #b42318); }
+.gateway-pill.is-error { background: #fff4e0; color: #8b5a17; }
+.gateway-ids small { display: block; font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
+.operations-table td small { display: block; color: var(--muted); }

@@ -14,6 +14,7 @@ from .dependencies import approval_user, assistant_user, get_db
 from .guard import inspect_prompt
 from .identity import transaction
 from .identity_schemas import IdentityInput
+from .request_context import request_id
 
 router = APIRouter(prefix='/api')
 
@@ -61,7 +62,7 @@ def preview(payload: PreviewInput, principal=Depends(delegated), db=Depends(get_
     user, run = principal
     with transaction(db) as conn:
         agent_access.active_run(conn, run)
-        answer = filtered_answer(conn, db, run, payload.answer)
+        answer = payload.answer if run.get('gateway') == 'off' else filtered_answer(conn, db, run, payload.answer)
         return {'text': agent_access.vault_for(db, run).restore(answer)}
 
 
@@ -96,7 +97,8 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
         active = conn.execute('SELECT status FROM agent_runs WHERE id=?', (run['id'],)).fetchone()
         if not active or active[0] not in ('READY', 'RUNNING'):
             raise HTTPException(409, 'Run is already finished.')
-        answer = filtered_answer(conn, db, run, payload.answer)
+        # Gateway off (lab): the model's answer is stored as written, without the output filter.
+        answer = payload.answer if run.get('gateway') == 'off' else filtered_answer(conn, db, run, payload.answer)
         restored = vault.restore(answer)
         conn.execute('''UPDATE agent_runs SET status=?,completed_at=?,latency_ms=?,input_tokens=?,output_tokens=?,
             response_source='agent_service',answer=?,termination_reason=?,bound_request_json='{}',vault_json='{}' WHERE id=?''',
@@ -164,10 +166,16 @@ def sse(event, data):
 async def stream(conversation_id: str, payload: StreamInput, request: Request, user=Depends(assistant_user), db=Depends(get_db)):
     if not db.get_conversation(conversation_id, user.id):
         raise HTTPException(404, 'Conversation not found.')
+    from . import agent_gateway
     with db.connect() as conn:
         agent_access.enabled(conn)
+        gateway = agent_gateway.state(conn)
     verdict = inspect_prompt(payload.content)
     if verdict.reason:
+        agent_gateway.record({'created_at': now(), 'gateway': gateway, 'profile': payload.profile, 'owner_id': user.id, 'role': user.role,
+                              'chat_request_id': request_id.get(), 'tool': 'input_guard',
+                              'decision': 'DENY' if gateway == 'on' else 'ALLOW', 'reason': verdict.reason})
+    if verdict.reason and gateway == 'on':
         db.append_message(conversation_id, 'user', verdict.text)
         db.add_event(conversation_id, 'input_guard', {}, 'DENY', verdict.reason, False)
         answer = db.append_message(conversation_id, 'assistant', verdict.reply)

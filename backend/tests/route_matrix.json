@@ -1243,5 +1243,43 @@
       "admin"
     ],
     "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/agent-gateway",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/admin/agent-gateway",
+    "roles": [
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/agent-gateway/log",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/agent-gateway/log.csv",
+    "roles": [
+      "admin",
+      "operations",
+      "auditor"
+    ],
+    "scope": "staff"
   }
 ]

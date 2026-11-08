@@ -9,7 +9,7 @@ import { AuditTrail } from './Operations';
 import { TransferChart } from './TransferChart';
 import { bankTime, count, shortDay, type DashboardResponse, type TransferSummary } from './dashboardTypes';
 
-export type AdminView = 'Overview' | 'Transactions' | 'Customers' | 'Settings' | 'Knowledge' | 'Research' | 'Audit';
+export type AdminView = 'Overview' | 'Transactions' | 'Customers' | 'Settings' | 'Knowledge' | 'Research' | 'Gateway' | 'Audit';
 const statusText = { COMPLETED: 'Completed', PENDING: 'Pending', FAILED: 'Failed' };
 function Status({ status }: { status: TransferSummary['status'] }) { return <span className={`admin-status ${status.toLowerCase()}`}>{status === 'COMPLETED' ? <CircleCheck size={12} /> : status === 'FAILED' ? <CircleAlert size={12} /> : <Clock3 size={12} />}{statusText[status]}</span>; }
 function Metric({ title, value, children, icon }: { title: string; value: ReactNode; children: ReactNode; icon: ReactNode }) { return <section className="admin-metric"><div><span>{title}</span>{icon}</div><strong>{value}</strong><small>{children}</small></section>; }

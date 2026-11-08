@@ -139,8 +139,8 @@ def bind(content):
     return {'text': content, 'tool': 'list_tickets', 'arguments': {}}
 
 
-def execute(conn, user, name, args, intent):
-    if name not in allowed(user.role) or name in PROPOSALS:
+def execute(conn, user, name, args, intent, bound=True):
+    if (bound and name not in allowed(user.role)) or name in PROPOSALS:
         raise HTTPException(403, 'ROLE_NOT_PERMITTED')
     if name == 'get_user_count':
         return {'count': conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]}
@@ -170,7 +170,7 @@ def execute(conn, user, name, args, intent):
             s.failure_reason,t.created_at FROM transfers t LEFT JOIN interbank_settlements s ON s.transfer_id=t.id
             WHERE t.status='FAILED' OR s.status='FAILED' ORDER BY t.created_at DESC LIMIT ?''', (args['limit'],))]}
     if name == 'read_ticket':
-        if args['ticket_id'].casefold() not in intent['text'].casefold():
+        if bound and args['ticket_id'].casefold() not in intent['text'].casefold():
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
         row = conn.execute('''SELECT t.id,t.owner_id,t.subject,t.description,t.status,t.created_at,a.assigned_to,COALESCE(a.category,'GENERAL') AS category
             FROM support_tickets t LEFT JOIN ticket_assignments a ON a.ticket_id=t.id WHERE t.id=?''', (args['ticket_id'],)).fetchone()

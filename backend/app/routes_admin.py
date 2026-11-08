@@ -149,3 +149,40 @@ def audit_events(user=Depends(reader), db=Depends(get_db), offset: int = Query(0
     with db.connect() as conn:
         return {'items': [dict(r) for r in conn.execute('SELECT * FROM banking_audit ORDER BY created_at DESC,rowid DESC LIMIT ? OFFSET ?', (limit, offset))],
                 'total': conn.execute('SELECT COUNT(*) FROM banking_audit').fetchone()[0], 'offset': offset, 'limit': limit}
+
+
+class GatewaySwitch(IdentityInput):
+    enabled: bool
+
+
+@router.get('/agent-gateway')
+def agent_gateway_status(user=Depends(reader), db=Depends(get_db)):
+    from . import agent_gateway
+    with db.connect() as conn:
+        return {'gateway': agent_gateway.state(conn), 'lab': agent_gateway.lab(), 'metrics': agent_gateway.metrics(conn),
+                'log_file': str(agent_gateway.log_path() or '')}
+
+
+@router.put('/agent-gateway')
+def switch_agent_gateway(payload: GatewaySwitch, user=Depends(writer), db=Depends(get_db)):
+    from . import agent_gateway
+    with transaction(db) as conn:
+        return {'gateway': agent_gateway.set_state(conn, user, payload.enabled)}
+
+
+@router.get('/agent-gateway/log')
+def agent_gateway_log(user=Depends(reader), db=Depends(get_db), gateway: Literal['on', 'off'] | None = None,
+                      decision: Literal['ALLOW', 'DENY', 'ERROR'] | None = None,
+                      offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
+    from . import agent_gateway
+    with db.connect() as conn:
+        return agent_gateway.entries(conn, gateway, decision, limit, offset)
+
+
+@router.get('/agent-gateway/log.csv')
+def agent_gateway_log_csv(user=Depends(reader), db=Depends(get_db), gateway: Literal['on', 'off'] | None = None):
+    from fastapi.responses import Response
+    from . import agent_gateway
+    with db.connect() as conn:
+        return Response(agent_gateway.csv_text(conn, gateway), media_type='text/csv',
+                        headers={'Content-Disposition': 'attachment; filename="agent-gateway-log.csv"'})

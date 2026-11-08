@@ -6,6 +6,7 @@ import { Dashboard, type AdminView } from './Dashboard';
 import '../../styles/admin-dashboard.css';
 import { Knowledge } from '../explore/Knowledge';
 import { Research } from './Research';
+import { Gateway } from './Gateway';
 import { Feedback, Field, Loading, send, useOperation, useResource } from '../explore/shared';
 
 interface Person { id: string; name: string; email: string; role: string; status: string; kyc_status: string }
@@ -13,8 +14,8 @@ interface Account { id: string; owner_id: string; balance_vnd: number; status: s
 interface Settings { transfer_fee_vnd: number; transfer_limit_vnd: number; daily_limit_vnd: number; agent_enabled: boolean }
 export function AdminConsole({ user }: { user: DemoUser }) {
   const [view, setView] = useState<AdminView>('Overview');
-  return <div className="page admin-page"><header className="admin-page-heading"><div><p className="admin-eyebrow">NOVABANK / STAFF WORKSPACE</p><h1>Operations</h1><p>Keep the bank moving. Know where to focus.</p></div><span className="admin-role">{user.role === 'admin' ? 'Administrator' : user.role}</span></header><div className="admin-tabs" aria-label="Operations sections">{(['Overview', 'Transactions', 'Customers', 'Settings', 'Knowledge', 'Research', 'Audit'] as AdminView[]).map(t => <button className="secondary-button" key={t} aria-pressed={view === t} onClick={() => setView(t)}>{t}</button>)}</div>
-    {view === 'Transactions' ? <Operations user={user} /> : view === 'Customers' ? <Customers user={user} /> : view === 'Settings' ? <BankSettings user={user} /> : view === 'Knowledge' ? <Knowledge user={user} manage /> : view === 'Research' ? <Research user={user} /> : view === 'Audit' ? <Audit user={user} /> : <Dashboard user={user} open={setView} />}
+  return <div className="page admin-page"><header className="admin-page-heading"><div><p className="admin-eyebrow">NOVABANK / STAFF WORKSPACE</p><h1>Operations</h1><p>Keep the bank moving. Know where to focus.</p></div><span className="admin-role">{user.role === 'admin' ? 'Administrator' : user.role}</span></header><div className="admin-tabs" aria-label="Operations sections">{(['Overview', 'Transactions', 'Customers', 'Settings', 'Knowledge', 'Research', 'Gateway', 'Audit'] as AdminView[]).map(t => <button className="secondary-button" key={t} aria-pressed={view === t} onClick={() => setView(t)}>{t}</button>)}</div>
+    {view === 'Transactions' ? <Operations user={user} /> : view === 'Customers' ? <Customers user={user} /> : view === 'Settings' ? <BankSettings user={user} /> : view === 'Knowledge' ? <Knowledge user={user} manage /> : view === 'Research' ? <Research user={user} /> : view === 'Gateway' ? <Gateway user={user} /> : view === 'Audit' ? <Audit user={user} /> : <Dashboard user={user} open={setView} />}
   </div>;
 }
 function Customers({ user }: { user: DemoUser }) {

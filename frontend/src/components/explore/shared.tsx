@@ -1,6 +1,6 @@
 import { KeyRound } from 'lucide-react';
 import { cloneElement, useCallback, useEffect, useId, useRef, useState, type ReactElement } from 'react';
-import { request, responseFor } from '../../api';
+import { newKey, request, responseFor } from '../../api';
 import type { DemoUser } from '../../types';
 import { vnd } from '../../format';
 import { PinForm } from '../profile/TransactionPin';
@@ -50,7 +50,7 @@ export function ConfirmAction({ user, draft, close, done }: { user: DemoUser; dr
   return <Sheet open={!!draft} title="Review and confirm" onClose={close}>{draft && <ConfirmForm key={draft.challenge_id} user={user} draft={draft} done={done} />}</Sheet>;
 }
 function ConfirmForm({ user, draft, done }: { user: DemoUser; draft: ActionDraft; done: (result: ActionResult) => void }) {
-  const [code, setCode] = useState(''); const [key] = useState(() => crypto.randomUUID()); const op = useOperation();
+  const [code, setCode] = useState(''); const [key] = useState(newKey); const op = useOperation();
   // Email and phone changes prove the new address with a code sent there; everything else uses the PIN.
   const [method, setMethod] = useState(draft.method ?? 'email');
   const contact = draft.kind === 'PROFILE_EMAIL' || draft.kind === 'PROFILE_PHONE';

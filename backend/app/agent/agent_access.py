@@ -18,7 +18,7 @@ from ..guard import Pseudonymizer, inspect_prompt, mask
 from ..identity import lookup_principal, transaction, quota
 from ..identity_schemas import IdentityInput
 from ..schemas import TransferArgs, TicketArgs
-from .. import staff_tools
+from .. import agent_gateway, staff_tools
 from ..ledger import reconcile
 from ..request_context import request_id
 
@@ -199,7 +199,9 @@ def create_run(db, user, conversation_id, content, profile):
     if profile not in ('baseline', 'defended'):
         raise HTTPException(422, 'Naive mode exists only in the isolated research harness.')
     verdict = inspect_prompt(content)
-    if verdict.reason:
+    with closing(db.connect()) as conn:
+        input_guard = agent_gateway.state(conn) == 'on'
+    if verdict.reason and input_guard:
         raise HTTPException(400, verdict.reply)
     vault = Pseudonymizer()
     vault._swap('NAME', user.name)
@@ -211,6 +213,7 @@ def create_run(db, user, conversation_id, content, profile):
         if not conn.execute('SELECT 1 FROM conversations WHERE id=? AND owner_id=?', (conversation_id, user.id)).fetchone():
             raise HTTPException(404, 'Conversation not found.')
         allowed = quota(conn, 'agent-run', user.id, 30, 900, seconds)
+        gateway = agent_gateway.state(conn)
         for account in conn.execute('SELECT id,holder_name FROM accounts WHERE owner_id=?', (user.id,)):
             vault._swap('ACCOUNT', account['id'])
             vault._swap('NAME', account['holder_name'])
@@ -225,9 +228,9 @@ def create_run(db, user, conversation_id, content, profile):
         intent = staff_tools.bind(content)
     with transaction(db) as conn:
         conn.execute('''INSERT INTO agent_runs
-            (id,owner_id,conversation_id,session_id,auth_version,status,profile,model,bound_request_json,created_at,expires_at,vault_json)
-            VALUES (?,?,?,?,?,'READY',?,?,?,?,?,?)''', (run_id, user.id, conversation_id, user.session_id, user.auth_version,
-            profile, model, encrypt_secret(db, json.dumps(intent)), now(), seconds + 180, encrypt_secret(db, json.dumps(vault.real))))
+            (id,owner_id,conversation_id,session_id,auth_version,status,profile,model,bound_request_json,created_at,expires_at,vault_json,gateway)
+            VALUES (?,?,?,?,?,'READY',?,?,?,?,?,?,?)''', (run_id, user.id, conversation_id, user.session_id, user.auth_version,
+            profile, model, encrypt_secret(db, json.dumps(intent)), now(), seconds + 180, encrypt_secret(db, json.dumps(vault.real)), gateway))
         conn.execute('UPDATE agent_runs SET request_id=? WHERE id=?', (request_id.get(), run_id))
     token = jwt.encode({'iss': auth.ISSUER, 'aud': AUDIENCE, 'sub': user.id, 'sid': user.session_id,
                         'ver': user.auth_version, 'run': run_id, 'scope': ['ai:read', 'ai:prepare'],
@@ -263,12 +266,13 @@ def context(db, user, run):
         history.append({'role': 'user', 'content': intent['text']})
     hint = {'tool': intent['tool'], 'arguments': private_text(vault, intent['arguments'])}
     messages = [{'role': m['role'], 'content': vault.pseudonymize(m['content'][:4000])} for m in history]
-    schemas = private_text(vault, [s for s in tool_schemas() if s['function']['name'] in permitted_tools(intent, user.role)])
+    offered = set(MODELS) if run.get('gateway') == 'off' else permitted_tools(intent, user.role)
+    schemas = private_text(vault, [s for s in tool_schemas() if s['function']['name'] in offered])
     with transaction(db) as conn:
         active_run(conn, run)
         conn.execute("UPDATE agent_runs SET status='RUNNING',vault_json=? WHERE id=?", (encrypt_secret(db, json.dumps(vault.real)), run['id']))
     from ..config import provider
-    return {'run_id': run['id'], 'profile': run['profile'], 'model': run['model'], 'messages': messages,
+    return {'run_id': run['id'], 'profile': run['profile'], 'gateway': run.get('gateway', 'on'), 'model': run['model'], 'messages': messages,
             'provider': provider(), 'bound_hint': hint,
             'tools': schemas,
             # Staff tasks chain read -> investigate -> propose -> answer, so they get two extra rounds.
@@ -279,7 +283,9 @@ def bound_proposal(conn, db, user, run, name, args):
     active_run(conn, run)
     intent = json.loads(decrypt_secret(db, run['bound_request_json']))
     text = intent['text']; lower = text.lower()
-    if name == 'prepare_transfer':
+    if run.get('gateway') == 'off':
+        pass  # lab switch: the model's own arguments are stored as a proposal; approval and verification still apply
+    elif name == 'prepare_transfer':
         if intent['tool'] != 'create_transfer':
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
         canonical = TransferArgs(**intent['arguments']).model_dump(exclude_none=True)
@@ -324,6 +330,7 @@ def bound_proposal(conn, db, user, run, name, args):
 
 async def execute_tool(db, user, run, name, arguments):
     start = time.perf_counter(); call_id = uuid.uuid4().hex
+    off = run.get('gateway') == 'off'
     vault = vault_for(db, run)
     safe_arguments = trace_safe(private_text(vault, arguments), vault)
     with transaction(db) as conn:
@@ -333,26 +340,27 @@ async def execute_tool(db, user, run, name, arguments):
         count = conn.execute('SELECT COUNT(*) FROM agent_calls WHERE run_id=?', (run['id'],)).fetchone()[0]
         if count >= 8:
             raise HTTPException(429, 'Tool call budget exhausted.')
-        if run['profile'] == 'defended' and blocking_denials(conn, run) >= 2:
+        if run['profile'] == 'defended' and not off and blocking_denials(conn, run) >= 2:
             raise HTTPException(429, 'Anomalous tool sequence stopped.')
         conn.execute('INSERT INTO agent_calls (id,run_id,ordinal,name,arguments_json,decision,reason,latency_ms,result_json,created_at) VALUES (?,?,?,?,?,?,?,0,?,?)',
                      (call_id, run['id'], count + 1, name[:80], json.dumps(safe_arguments)[:8000], 'PENDING', 'RUNNING', '{}', now()))
-        conn.execute('UPDATE agent_calls SET request_id=? WHERE id=?', (run.get('request_id', ''), call_id))
+        conn.execute('UPDATE agent_calls SET request_id=?,tool_request_id=? WHERE id=?', (run.get('request_id', ''), request_id.get(), call_id))
     decision, reason, result = 'ALLOW', 'AUTHORIZED', None
     try:
         if name not in MODELS:
             raise HTTPException(403, 'TOOL_NOT_ALLOWED')
-        if (name in staff_tools.PERMISSIONS and name not in staff_tools.allowed(user.role)) or (user.role != 'customer' and name not in staff_tools.allowed(user.role) | {'search_knowledge'}):
+        if not off and ((name in staff_tools.PERMISSIONS and name not in staff_tools.allowed(user.role)) or (user.role != 'customer' and name not in staff_tools.allowed(user.role) | {'search_knowledge'})):
             raise HTTPException(403, 'ROLE_NOT_PERMITTED')
         intent = json.loads(decrypt_secret(db, run['bound_request_json']))
-        if name not in permitted_tools(intent, user.role):
+        if not off and name not in permitted_tools(intent, user.role):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
-        args = MODELS[name].model_validate(vault.restore(arguments)).model_dump(exclude_none=True)
+        # Small models send optional fields as null ("limit": null); treat that as omitted so defaults apply.
+        args = MODELS[name].model_validate(vault.restore({k: v for k, v in arguments.items() if v is not None})).model_dump(exclude_none=True)
         if name in staff_tools.PERMISSIONS:
             args = staff_tools.repair_ticket_id(args, intent['text'])
         if name in staff_tools.READS:
             with closing(db.connect()) as conn:
-                result = staff_tools.execute(conn, user, name, args, intent)
+                result = staff_tools.execute(conn, user, name, args, intent, bound=not off)
         elif name in staff_tools.PROPOSALS or name in ('prepare_transfer', 'prepare_bill_payment', 'prepare_support_ticket', 'request_card_freeze'):
             with transaction(db) as conn:
                 result = bound_proposal(conn, db, user, run, name, args)
@@ -387,8 +395,14 @@ async def execute_tool(db, user, run, name, arguments):
             if isinstance(exc, HTTPException) and (exc.headers or {}).get('x-offending'):
                 # Naming the exact words lets a small model fix the draft instead of resending it unchanged.
                 result['message'] += ' Remove exactly this: ' + exc.headers['x-offending']
+    except Exception as exc:
+        # Gateway off lets calls through that the code behind them never expected (staff calling customer tools).
+        # Record them as ERROR, neither ALLOW nor DENY, so they do not skew the off/on comparison.
+        if not off:
+            raise
+        decision, reason, result = 'ERROR', 'EXECUTION_ERROR:' + type(exc).__name__, {'error': 'EXECUTION_ERROR'}
     safe_result = private_text(vault, result)
-    if run['profile'] == 'defended' and decision == 'ALLOW' and name in ('search_knowledge', 'get_recent_transactions', 'get_beneficiaries', 'get_support_tickets', 'list_tickets', 'read_ticket', 'list_audit_events', 'get_bills'):
+    if run['profile'] == 'defended' and not off and decision == 'ALLOW' and name in ('search_knowledge', 'get_recent_transactions', 'get_beneficiaries', 'get_support_tickets', 'list_tickets', 'read_ticket', 'list_audit_events', 'get_bills'):
         from ..agent_guard import classify
         verdict = await classify(json.dumps(safe_result, ensure_ascii=False))
         if verdict['injection']:
@@ -402,8 +416,14 @@ async def execute_tool(db, user, run, name, arguments):
         conn.execute('UPDATE agent_calls SET decision=?,reason=?,latency_ms=?,result_json=? WHERE id=?',
                      (decision, str(reason), int((time.perf_counter() - start) * 1000), json.dumps(trace_safe(safe_result, vault)), call_id))
         conn.execute('UPDATE agent_runs SET vault_json=? WHERE id=?', (encrypt_secret(db, json.dumps(vault.real)), run['id']))
-        halt = run['profile'] == 'defended' and blocking_denials(conn, run) >= 2
-    db.add_event(run['conversation_id'], name, safe_arguments, decision, str(reason), decision == 'ALLOW', run.get('request_id'))
+        halt = run['profile'] == 'defended' and not off and blocking_denials(conn, run) >= 2
+        ordinal = conn.execute('SELECT ordinal FROM agent_calls WHERE id=?', (call_id,)).fetchone()[0]
+    agent_gateway.record({'created_at': now(), 'gateway': 'off' if off else 'on', 'profile': run['profile'], 'owner_id': user.id,
+                          'role': user.role, 'run_id': run['id'], 'chat_request_id': run.get('request_id'), 'tool_request_id': request_id.get(),
+                          'ordinal': ordinal, 'tool': name, 'decision': decision, 'reason': str(reason),
+                          'latency_ms': int((time.perf_counter() - start) * 1000)})
+    # The UI trace table only knows ALLOW/DENY; ERROR stays exact in agent_calls and the gateway log.
+    db.add_event(run['conversation_id'], name, safe_arguments, 'DENY' if decision == 'ERROR' else decision, str(reason), decision == 'ALLOW', run.get('request_id'))
     return {'decision': decision, 'reason': reason, 'result': safe_result, 'halt': halt}
 
 

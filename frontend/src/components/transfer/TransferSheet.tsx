@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CheckCircle2, KeyRound } from 'lucide-react';
 import { PinForm } from '../profile/TransactionPin';
 
-import { api, request } from '../../api';
+import { api, newKey, request } from '../../api';
 import type { Bank, DemoUser, Transfer, TransferStart } from '../../types';
 import { vnd } from '../../format';
 import { BankPicker } from '../qr/BankPicker';
@@ -125,7 +125,7 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
   function confirm(event: FormEvent) {
     event.preventDefault();
     // A lost HTTP response must retry the same confirmation, including after an OTP correction.
-    const key = confirmationKey.current ??= crypto.randomUUID();
+    const key = confirmationKey.current ??= newKey();
     void run(() => api.confirmTransfer(user, transfer!.id, otp, key));
   }
 
