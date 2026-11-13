@@ -32,7 +32,7 @@ try {
   await caption('Alice nhập người nhận Bob và 2.000.000 VND. Backend xác minh tài khoản, hạn mức và số dư. Chưa có tiền được ghi sổ.');
   const response = page.waitForResponse(r => r.url().endsWith('/api/transfers') && r.request().method()==='POST'); await page.getByRole('button',{name:'Continue',exact:true}).click(); const draft=await (await response).json();
   await caption('Màn hình xác nhận hiển thị người nhận, phí và tổng tiền trừ. OTP thuộc luồng ngân hàng, không gửi cho AI.');
-  await page.getByLabel('Enter OTP').fill(draft.demo_otp); await page.getByRole('button',{name:'Confirm transfer',exact:true}).click(); await expect(page.getByText('Transfer successful',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Continue to verification'}).click(); await page.getByLabel('Enter OTP').fill(localCode('alice', 'TRANSFER_OTP')); await page.getByRole('button',{name:'Confirm transfer',exact:true}).click(); await expect(page.getByText('Transfer successful',{exact:true})).toBeVisible();
   await caption('Giao dịch hoàn tất. Số dư, lịch sử, ledger và thông báo được ghi trong cùng giao dịch database. Gửi lại cùng khóa idempotency không trừ lần hai.');
   const download=page.waitForEvent('download'); await page.getByRole('button',{name:'Download PDF receipt'}).click(); await (await download).saveAs(resolve(out,'receipt.pdf')); await page.getByRole('button',{name:'Done',exact:true}).click();
   await nav('Explore').click(); await page.getByRole('button',{name:'Spending & budgets',exact:false}).click();

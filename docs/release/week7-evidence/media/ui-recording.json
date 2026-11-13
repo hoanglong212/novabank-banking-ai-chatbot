@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "provider": "ollama",
+  "model_invoked": false,
+  "payment_confirmed": false,
+  "frames": [
+    {
+      "label": "Login requests MFA",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "label": "Demo mailbox contains login code",
+      "url": "http://127.0.0.1:8081/outbox"
+    },
+    {
+      "label": "MFA login accepted",
+      "url": "http://127.0.0.1:8081/"
+    },
+    {
+      "label": "Transfer review; response has no demo_otp",
+      "url": "http://127.0.0.1:8081/transfer/TRF-2ABEC2E7C2CC427090C16774AA1707C2/review"
+    },
+    {
+      "label": "Separate OTP page; no payment confirmed",
+      "url": "http://127.0.0.1:8081/transfer/TRF-2ABEC2E7C2CC427090C16774AA1707C2/otp"
+    },
+    {
+      "label": "Transfer code appears only in demo mailbox",
+      "url": "http://127.0.0.1:8081/outbox"
+    },
+    {
+      "label": "Signed NovaBank QR generated",
+      "url": "http://127.0.0.1:8081/qr"
+    },
+    {
+      "label": "Foreign URL rejected with HTTP 422",
+      "url": "http://127.0.0.1:8081/qr"
+    }
+  ],
+  "page_errors": []
+}

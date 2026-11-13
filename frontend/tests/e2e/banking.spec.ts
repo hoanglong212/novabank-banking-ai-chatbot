@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { DEMO_PIN, enterTransactionPin, transactionCode } from './auth-helpers';
+import { test, expect, type Page } from './fixtures';
 import { readFileSync } from 'node:fs';
 import { demoLogin } from './auth-helpers';
 
@@ -28,7 +29,8 @@ test('Alice–Bob: nine-step banking acceptance with real backend', async ({ pag
   // Preparing a transfer does not move funds.
   expect((await (await page.request.get('/api/me', { headers })).json()).accounts[0].balance_vnd).toBe(10_000_000);
   await expect(page.getByRole('dialog')).toContainText('BOB TRAN');
-  await page.getByLabel('Enter OTP').fill(draft.demo_otp);
+  await page.getByRole('button', { name: 'Continue to verification' }).click();
+  await enterTransactionPin(page, 'alice');
   const completion = page.waitForResponse(r => r.url().endsWith('/confirm') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
   const response = await completion;
@@ -89,7 +91,7 @@ test('Alice–Bob: nine-step banking acceptance with real backend', async ({ pag
 
   // Retry the successful confirmation with the exact same request key.
   const replay = await page.request.post(`/api/transfers/${draft.id}/confirm`, {
-    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: draft.demo_otp },
+    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: DEMO_PIN },
   });
   expect(replay.status()).toBe(200);
   expect((await replay.json()).transaction_id).toBe(receipt.transaction_id);
@@ -115,8 +117,23 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
   test(`history and alerts usable at ${viewport.width}px`, async ({ page }, info) => {
     await page.setViewportSize(viewport);
     await login(page, 'alice');
+    // Arrange this test's own completed transfer instead of relying on another test.
+    const headers = await credentials(page);
+    const draftResponse = await page.request.post('/api/transfers', { headers,
+      data: { to_account: 'ACC-BOB-001', amount_vnd: 2000, content: 'Responsive receipt' } });
+    expect(draftResponse.ok()).toBeTruthy();
+    const draft = await draftResponse.json();
+    const confirmed = await page.request.post(`/api/transfers/${draft.id}/confirm`, {
+      headers: { ...headers, 'Idempotency-Key': `responsive-${viewport.width}` },
+      data: { otp: transactionCode(draft, 'alice@novabank.test', 'TRANSFER_OTP') },
+    });
+    expect(confirmed.ok()).toBeTruthy();
+    const receipt = await confirmed.json();
     await page.getByRole('button', { name: 'Activity', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Search transactions', exact: true })).toBeEnabled();
+    await page.getByRole('searchbox', { name: 'Search', exact: true }).fill(receipt.transaction_id);
+    await page.getByRole('button', { name: 'Search transactions', exact: true }).click();
+    await expect(page.locator('.tx-list .tx')).toHaveCount(1);
     const dimensions = await page.evaluate(() => ({ width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
     expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width);
     await page.screenshot({ path: info.outputPath('activity.png'), fullPage: true });
@@ -124,7 +141,9 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
     await expect(page.getByRole('button', { name: 'Download PDF receipt' })).toBeVisible();
     await page.screenshot({ path: info.outputPath('receipt.png') });
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'Alerts', exact: true }).click();
+    // Phones reach Alerts through the bell on Home; wider screens through the sidebar.
+    await page.getByRole('button', { name: 'Home', exact: true }).click();
+    await page.getByRole('button', { name: /^Notifications/ }).click();
     await expect(page.getByRole('heading', { name: 'Alerts', exact: true })).toBeVisible();
     await page.screenshot({ path: info.outputPath('alerts.png'), fullPage: true });
   });

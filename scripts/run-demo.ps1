@@ -3,7 +3,10 @@ param(
     [ValidateRange(1024, 65535)][int]$Port = 8080,
     [switch]$Setup,
     [switch]$SkipBuild,
-    [switch]$CheckOnly
+    [switch]$CheckOnly,
+    # Lab only: listen on all interfaces so a VM (Caido/Burp) can reach the app and the agent API.
+    [switch]$Lan,
+    [string]$Proxy = ''
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
@@ -45,7 +48,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Demo preflight failed. Resolve the message above, or use -Mode mock for offline mode.' }
         if (-not $CheckOnly) {
             Write-Host "NovaBank: http://127.0.0.1:$Port (Ctrl+C to stop)"
-            & $pythonExe (Join-Path $projectRoot 'scripts/serve.py') --port $Port
+            $serveArgs = @('--port', $Port)
+            if ($Lan) { $serveArgs += @('--host', '0.0.0.0') }
+            if ($Proxy) { $serveArgs += @('--proxy', $Proxy) }
+            & $pythonExe (Join-Path $projectRoot 'scripts/serve.py') @serveArgs
             if ($LASTEXITCODE -ne 0) { throw "Server exited with an error. If port $Port is occupied, choose -Port 8081." }
         }
     } finally { Pop-Location }

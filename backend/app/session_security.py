@@ -69,6 +69,7 @@ def revoke_user(conn, user_id, stamp, reason, except_session=None):
                         (user_id, except_session, except_session)).fetchall()
     for row in rows:
         revoke(conn, row[0], stamp, reason)
+    conn.execute('DELETE FROM trusted_devices WHERE user_id=?', (user_id,))
     for row in conn.execute('SELECT id FROM mfa_challenges WHERE user_id=? AND consumed_at IS NULL', (user_id,)).fetchall():
         consume_challenge(conn, row[0], stamp)
 

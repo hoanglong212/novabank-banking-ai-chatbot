@@ -1,0 +1,47 @@
+# Local one-command demo: bank + isolated agent, demo inbox on, Ollama from the host.
+#   First time / after code changes:  docker compose -f compose.local.yaml up -d --build
+#   Then just open Docker Desktop; "restart: unless-stopped" brings both containers back.
+# For a public HTTPS deployment use compose.yaml instead.
+name: novabank-local
+services:
+  bank:
+    build: .
+    image: novabank-bank:local
+    ports: ["127.0.0.1:${NOVABANK_PORT:-8080}:8000"]
+    environment:
+      ENV: demo                      # enables the simulated inbox at /outbox
+      DB_PATH: /data/novabank.sqlite3
+      JWT_SECRET: ${JWT_SECRET:-}    # empty = random per start; set one in .env to keep sign-ins across restarts
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      OLLAMA_URL: http://host.docker.internal:11434
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text:latest}
+      AGENT_SERVICE_URL: http://agent:8093
+      BANK_REQUIRE_AGENT: "true"
+    volumes: [bank-data:/data]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    # /api/health, not /api/ready: the app stays usable (banking screens) even when Ollama is off.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+    depends_on:
+      agent: {condition: service_healthy}
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  agent:
+    build: {context: ., dockerfile: Dockerfile.agent}
+    image: novabank-agent:local
+    environment:
+      BANKING_API_URL: http://bank:8000
+      OLLAMA_URL: http://host.docker.internal:11434
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+volumes:
+  bank-data:

@@ -100,6 +100,7 @@ def register(db, data):
         conn.execute('INSERT INTO users VALUES (?,?,?,?,?,?,0,?)',
                      (data.username, data.name, data.email, hashed, 'customer', 'PENDING',
                       datetime.fromtimestamp(stamp, timezone.utc).isoformat(timespec='seconds')))
+        conn.execute('INSERT OR IGNORE INTO totp_required VALUES (?)', (data.username,))
         if eligible:
             deliver(conn, {'id': data.username, 'email': data.email}, 'VERIFY_EMAIL', stamp)
         audit(conn, data.username, 'REGISTERED', stamp)

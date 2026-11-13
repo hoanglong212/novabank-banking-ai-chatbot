@@ -12,7 +12,7 @@ output = ROOT / '.local' / 'e2e'
 output.mkdir(parents=True, exist_ok=True)
 run = Path(tempfile.mkdtemp(prefix='run-', dir=output))
 db_path = run / 'acceptance.sqlite3'
-os.environ.update(DB_PATH=str(db_path), FRONTEND_DIST=str(ROOT / 'frontend' / 'dist'),
+os.environ.update(ENV='demo', DB_PATH=str(db_path), FRONTEND_DIST=str(ROOT / 'frontend' / 'dist'),
                   LLM_PROVIDER='mock', GATEWAY_MODE='local', JWT_SECRET=secrets.token_urlsafe(48), LEGACY_AGENT_TEST_MODE='true')
 # Use the plan's 10m fixture BEFORE migrations derive the opening ledger.
 # This override exists only in this test launcher, never in application routes.

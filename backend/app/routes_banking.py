@@ -1,7 +1,8 @@
 """Customer history/receipts/alerts and permission-checked financial operations views."""
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from .auth import DemoPrincipal
-from .banking_queries import TransactionQuery, notifications, transaction, transactions
+from typing import Literal
+from .banking_queries import CATEGORY_SQL, TransactionQuery, announcements, notifications, transaction, transactions
 from .database import now
 from .dependencies import customer_user, get_db, require_permission
 from .receipts import receipt_pdf
@@ -35,8 +36,15 @@ def download_receipt(transaction_id: str, user: DemoPrincipal = Depends(customer
 
 @router.get('/notifications')
 def list_notifications(user: DemoPrincipal = Depends(notifications_user),
-                       limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0)):
-    return notifications(get_db(), user.id, limit, offset)
+                       limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0),
+                       category: Literal['transactions', 'account'] | None = None,
+                       q: str = Query(default='', max_length=100), unread: bool = False):
+    return notifications(get_db(), user.id, limit, offset, category, q, unread)
+
+
+@router.get('/announcements')
+def list_announcements(user: DemoPrincipal = Depends(notifications_user)):
+    return announcements(get_db(), now())
 
 
 @router.patch('/notifications/{notification_id}/read')
@@ -51,11 +59,13 @@ def mark_notification_read(notification_id: str, user: DemoPrincipal = Depends(n
 
 
 @router.post('/notifications/read-all')
-def mark_all_notifications_read(user: DemoPrincipal = Depends(notifications_user)):
+def mark_all_notifications_read(user: DemoPrincipal = Depends(notifications_user),
+                                category: Literal['transactions', 'account'] | None = None):
     with get_db().connect() as conn:
         count = 0
         for table in ('notifications', 'service_notifications'):
-            count += conn.execute(f'UPDATE {table} SET read_at=? WHERE owner_id=? AND read_at IS NULL', (now(), user.id)).rowcount
+            count += conn.execute(f'UPDATE {table} SET read_at=? WHERE owner_id=? AND read_at IS NULL AND (? IS NULL OR {CATEGORY_SQL}=?)',
+                                  (now(), user.id, category, category)).rowcount
         return {'updated': count}
 
 

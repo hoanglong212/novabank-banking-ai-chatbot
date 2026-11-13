@@ -1,0 +1,41 @@
+[
+  {
+    "user": "alice",
+    "origin": "http://127.0.0.1:8081",
+    "prompt": "What is my balance?",
+    "tool": "get_account_balance",
+    "login": "passed",
+    "assistant": "passed",
+    "provider": "ollama",
+    "model": "qwen2.5:7b",
+    "input_tokens": 1761,
+    "output_tokens": 36,
+    "page_errors": []
+  },
+  {
+    "user": "admin",
+    "origin": "http://127.0.0.1:8081",
+    "prompt": "How many users are registered?",
+    "tool": "get_user_count",
+    "login": "passed",
+    "assistant": "passed",
+    "provider": "ollama",
+    "model": "qwen2.5:7b",
+    "input_tokens": 1228,
+    "output_tokens": 25,
+    "page_errors": []
+  },
+  {
+    "user": "alice",
+    "origin": "http://127.0.0.1:8081",
+    "prompt": "Show my savings and interest rates.",
+    "tool": "get_savings",
+    "login": "passed",
+    "assistant": "passed",
+    "provider": "ollama",
+    "model": "qwen2.5:7b",
+    "input_tokens": 2079,
+    "output_tokens": 165,
+    "page_errors": []
+  }
+]

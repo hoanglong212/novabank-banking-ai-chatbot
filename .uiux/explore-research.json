@@ -1,0 +1,111 @@
+﻿{
+  "result": {
+    "domain": "ux",
+    "query": "forms progressive disclosure accessible financial services",
+    "file": "ux-guidelines.csv",
+    "count": 3,
+    "results": [
+      {
+        "Category": "Accessibility",
+        "Issue": "ARIA Labels",
+        "Platform": "All",
+        "Description": "Interactive elements need accessible names",
+        "Do": "Add aria-label for icon-only buttons",
+        "Don't": "Icon buttons without labels",
+        "Code Example Good": "aria-label='Close menu'",
+        "Code Example Bad": "<button><Icon/></button>",
+        "Severity": "High"
+      },
+      {
+        "Category": "Typography",
+        "Issue": "Heading Line Balance",
+        "Platform": "Web",
+        "Description": "Short multi-line headings may use balanced wrapping as a progressive visual heuristic",
+        "Do": "Bound the measure and test natural-wrap fallback across widths fonts and locales",
+        "Don't": "Promise an exact final line or insert blanket nonbreaking spaces or hardcoded br tags",
+        "Code Example Good": ".hero-title { max-inline-size: 20ch; text-wrap: balance; }",
+        "Code Example Bad": "Heading copy rewritten with forced last-line breaks",
+        "Severity": "Medium"
+      },
+      {
+        "Category": "Accessibility",
+        "Issue": "Compact Control Semantics",
+        "Platform": "Web",
+        "Description": "Interactive chips need a native role accessible name state keyboard operation and visible focus",
+        "Do": "Prefer a button and expose pressed or selected state that matches the visible label",
+        "Don't": "Use a clickable div or reveal the only action on hover",
+        "Code Example Good": "<button aria-pressed='true'>Open now</button>",
+        "Code Example Bad": "<div class='selected' onclick='toggle()'>Open now</div>",
+        "Severity": "Critical"
+      }
+    ]
+  },
+  "source": {
+    "skill_path": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.claude\\skills\\ui-ux-pro-max",
+    "script": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.claude\\skills\\ui-ux-pro-max\\scripts\\search.py",
+    "script_digest": "8373e2dd2d560d9853ec116140de0e0d5bee45a6abe5e041173c84e1c36a7f87",
+    "skill_digest": "40a576d468bd72126b10063709baaa11e5d06840b68129000c3e19fdfda7d227",
+    "query": "forms progressive disclosure accessible financial services",
+    "mode": "domain"
+  },
+  "relevance": "requires_agent_review",
+  "persisted": false,
+  "next_action": "review_result_identity_and_product_fit",
+  "attempts": [
+    {
+      "result": {
+        "domain": "ux",
+        "query": "forms progressive disclosure accessible financial services",
+        "file": "ux-guidelines.csv",
+        "count": 3,
+        "results": [
+          {
+            "Category": "Accessibility",
+            "Issue": "ARIA Labels",
+            "Platform": "All",
+            "Description": "Interactive elements need accessible names",
+            "Do": "Add aria-label for icon-only buttons",
+            "Don't": "Icon buttons without labels",
+            "Code Example Good": "aria-label='Close menu'",
+            "Code Example Bad": "<button><Icon/></button>",
+            "Severity": "High"
+          },
+          {
+            "Category": "Typography",
+            "Issue": "Heading Line Balance",
+            "Platform": "Web",
+            "Description": "Short multi-line headings may use balanced wrapping as a progressive visual heuristic",
+            "Do": "Bound the measure and test natural-wrap fallback across widths fonts and locales",
+            "Don't": "Promise an exact final line or insert blanket nonbreaking spaces or hardcoded br tags",
+            "Code Example Good": ".hero-title { max-inline-size: 20ch; text-wrap: balance; }",
+            "Code Example Bad": "Heading copy rewritten with forced last-line breaks",
+            "Severity": "Medium"
+          },
+          {
+            "Category": "Accessibility",
+            "Issue": "Compact Control Semantics",
+            "Platform": "Web",
+            "Description": "Interactive chips need a native role accessible name state keyboard operation and visible focus",
+            "Do": "Prefer a button and expose pressed or selected state that matches the visible label",
+            "Don't": "Use a clickable div or reveal the only action on hover",
+            "Code Example Good": "<button aria-pressed='true'>Open now</button>",
+            "Code Example Bad": "<div class='selected' onclick='toggle()'>Open now</div>",
+            "Severity": "Critical"
+          }
+        ]
+      },
+      "source": {
+        "skill_path": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.claude\\skills\\ui-ux-pro-max",
+        "script": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.claude\\skills\\ui-ux-pro-max\\scripts\\search.py",
+        "script_digest": "8373e2dd2d560d9853ec116140de0e0d5bee45a6abe5e041173c84e1c36a7f87",
+        "skill_digest": "40a576d468bd72126b10063709baaa11e5d06840b68129000c3e19fdfda7d227",
+        "query": "forms progressive disclosure accessible financial services",
+        "mode": "domain"
+      },
+      "relevance": "requires_agent_review",
+      "persisted": false,
+      "next_action": "review_result_identity_and_product_fit"
+    }
+  ],
+  "retry_count": 0
+}

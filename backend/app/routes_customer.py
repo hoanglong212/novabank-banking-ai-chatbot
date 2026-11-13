@@ -51,8 +51,8 @@ class RecipientLookup(IdentityInput):
 
 
 @router.post('/customer/beneficiaries/lookup')
-def lookup_recipient(payload: RecipientLookup, user=Depends(customer_user), db=Depends(get_db)):
-    return customer_services.lookup_recipient(db, user, **payload.model_dump())
+async def lookup_recipient(payload: RecipientLookup, user=Depends(customer_user), db=Depends(get_db)):
+    return await customer_services.lookup_recipient(db, user, **payload.model_dump())
 
 
 class ActionConfirm(IdentityInput):
@@ -100,8 +100,8 @@ def edit_beneficiary(beneficiary_id: str, payload: Nickname, user=Depends(custom
 
 
 @router.post('/customer/beneficiaries', status_code=201)
-def beneficiary(payload: Beneficiary, user=Depends(customer_user), db=Depends(get_db)):
-    return customer_services.save_beneficiary(db, user, **payload.model_dump())
+async def beneficiary(payload: Beneficiary, user=Depends(customer_user), db=Depends(get_db)):
+    return await customer_services.save_beneficiary(db, user, **payload.model_dump())
 
 
 @router.delete('/customer/beneficiaries/{beneficiary_id}')

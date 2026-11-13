@@ -3,6 +3,8 @@ import json
 import logging
 import time
 import uuid
+import re
+from .request_context import request_id as correlation
 
 log = logging.getLogger('novabank.http')
 if not log.handlers:
@@ -30,7 +32,8 @@ class HttpSecurity:
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':
             return await self.app(scope, receive, send)
-        started = time.perf_counter(); request_id = uuid.uuid4().hex; status = 500
+        supplied = dict(scope.get('headers', [])).get(b'x-request-id', b'').decode('ascii', errors='replace')
+        started = time.perf_counter(); request_id = supplied if re.fullmatch(r'[A-Za-z0-9._:-]{1,80}', supplied) else uuid.uuid4().hex; status = 500
         max_bytes = 4 * 1024 * 1024
         if scope['method'] in ('POST', 'PUT', 'PATCH'):
             parts, total = [], 0
@@ -61,8 +64,9 @@ class HttpSecurity:
                 status = message['status']; headers = list(message.get('headers', [])); names = {key.lower() for key, _ in headers}
                 values = {
                     b'x-content-type-options': b'nosniff', b'x-frame-options': b'DENY', b'referrer-policy': b'no-referrer',
-                    b'permissions-policy': b'camera=(), microphone=(), geolocation=()', b'x-request-id': request_id.encode(),
-                    b'content-security-policy': b"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'",
+                    # QR Pay requests camera access only after an explicit user action.
+                    b'permissions-policy': b'camera=(self), microphone=(), geolocation=()', b'x-request-id': request_id.encode(),
+                    b'content-security-policy': b"default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn.vietqr.io https://api.vietqr.io; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'",
                 }
                 if scope.get('path') in ('/docs', '/docs/oauth2-redirect', '/redoc'):
                     # FastAPI's documentation shell uses its versioned CDN assets and inline initializer.
@@ -79,8 +83,10 @@ class HttpSecurity:
             from .recipient_security import peer_address
             # ASGI peer only: arbitrary X-Forwarded-For values are not trusted.
             peer_token = peer_address.set((scope.get('client') or ('unknown',))[0])
+            correlation_token = correlation.set(request_id)
             await self.app(scope, receive, secured)
         finally:
+            correlation.reset(correlation_token)
             peer_address.reset(peer_token)
             # Paths can include identifiers; never log query strings, request bodies or credentials.
             log.info(json.dumps({'event': 'http_request', 'request_id': request_id, 'method': scope['method'],

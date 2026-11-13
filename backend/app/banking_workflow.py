@@ -62,6 +62,25 @@ def amount_in(text: str) -> int | None:
 CONTENT = re.compile(r'\b(?:noi dung|content|note|message|ghi chu|memo)\s*:?\s*(.+)$')
 
 
+def affirmative_action(text: str, verbs: str) -> bool:
+    """Only a conservative affirmative command grants a write proposal.
+
+    Quoted examples, questions and negations do not grant authority. Memo text
+    remains data. Ambiguous requests can use the explicit banking screens.
+    """
+    head = CONTENT.split(fold(text))[0]
+    if re.search(r'\b(?:do not|don.t|dont|never|khong|dung|chua|translate|translation|explain|example|'
+                 r'how to|how do|how can|if|unless|suppose|hypothetical|imagine|summarize|quote|quoted|'
+                 r'huong dan|lam sao|cach|vi du|dich|neu|gia su)\b', head):
+        return False
+    if re.search(r'["`\u201c\u201d]|(?<!\w)\x27', head):
+        return False
+    prefix = r'(?:(?:please(?: help)?|yes|can you|could you|would you|hay|vui long|giup toi)[\s,:]+)*'
+    # Permit an affirmative command after an introductory clause/sentence, e.g.
+    # "For my own account: prepare ..."; the whole head still passes the exclusions above.
+    return bool(re.search(r'(?:^|[.!?:,]\s*|\bthen\s+)' + prefix + r'(?:' + verbs + r')\b', head))
+
+
 def content_in(text: str) -> str | None:
     info = CONTENT.search(text)
     return info.group(1).strip(' ."\'') if info else None
@@ -74,9 +93,11 @@ TRANSFER_HELP = ('To transfer, tell me the amount and the recipient, for example
 
 def transfer_request(question: str, text: str) -> BankingRequest:
     """Recipient, amount and payer come only from the customer's own words; the gateway checks the payer."""
-    source = re.search(r'\b(?:from|tu)\s+(' + NOVA_ID + ')', question, re.I)
-    internal = [x.upper() for x in re.findall(NOVA_ID, question, re.I) if not source or x.upper() != source.group(1).upper()]
     head = CONTENT.split(text)[0]  # an amount inside the transfer content is not the amount
+    source = re.search(r'\b(?:from|tu)\s+(' + NOVA_ID + ')', head, re.I)
+    internal = [x.upper() for x in re.findall(NOVA_ID, head, re.I) if not source or x.upper() != source.group(1).upper()]
+    if len(set(internal)) > 1:
+        return BankingRequest(reply=TRANSFER_HELP)
     if internal:
         args = {'to_bank': 'NovaBank', 'to_account': internal[0]}
         rest = re.sub(NOVA_ID, ' ', head, flags=re.I)
@@ -154,7 +175,13 @@ def bind_request(messages: list[dict]) -> BankingRequest:
         return qr
 
     # Before the balance branch: "transfer 200k to ACC-BOB-001" names an account but is not a balance check.
-    if re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:chuyen|transfer|send)\b', text):
+    if affirmative_action(text, r'chuyen|transfer|send|prepare|make|create|initiate') and (re.search(r'^(?:(?:hay|vui long|giup toi)\s+)?(?:chuyen|transfer|send)\b', text) or (
+            # Imperative phrasings after a polite prefix ("Please help: prepare a transfer of 10000 VND to ...").
+            # Week 7 capture: these were never bound, so prepare_transfer was never offered (utility 0/100).
+            re.search(r'\b(?:prepare|make|create|initiate|send)\s+(?:a |an |the |one )?(?:new )?(?:transfer|payment)\s+of\b'
+                      # Not a bare "transfer 3 million": affordability questions use that wording.
+                      r'|\b(?:please|(?:can|could|would) you)\s+(?:please\s+)?(?:send|transfer)\s+\d', text)
+            and not re.search(r'\b(?:do not|don.t|dont|never|khong|dung)\b.{0,30}\b(?:transfer|send|chuyen|prepare|make)\b', text))):
         return transfer_request(question, text)
 
     ids = re.findall(r'\bTX-[A-Z0-9-]+\b', question, re.I)

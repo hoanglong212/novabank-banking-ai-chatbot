@@ -1,0 +1,28 @@
+.outbox-page { max-width: 960px; margin: auto; padding-inline: 16px; }
+.outbox-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between; }
+.outbox-toolbar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin: 16px 0; }
+.outbox-toolbar select { margin-left: 6px; min-height: 36px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0 8px; background: var(--card); color: var(--ink); }
+.outbox-live { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+.outbox-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.outbox-reader { display: grid; gap: 14px; padding: 20px; position: sticky; top: 16px; }
+.outbox-meta { margin: 0; color: var(--muted); font-size: 14px; }
+.outbox-empty { display: grid; justify-items: center; gap: 8px; margin: 24px 0; color: var(--muted); text-align: center; }
+.outbox-code {
+  justify-self: start; padding: 10px 18px; border: 1px dashed var(--line-strong); border-radius: var(--radius);
+  background: var(--brand-50); color: var(--brand-900); cursor: copy; user-select: all;
+  font: 600 clamp(32px, 9vw, 48px)/1.1 ui-monospace, 'Cascadia Mono', monospace; letter-spacing: .18em;
+}
+.outbox-code:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.outbox-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.outbox-actions .primary-button { display: inline-flex; gap: 6px; align-items: center; }
+.outbox-expiry { color: var(--muted); font-variant-numeric: tabular-nums; }
+.outbox-expiry.is-soon { color: var(--danger); font-weight: 600; }
+.outbox-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.outbox-list button {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; width: 100%; padding: 10px 12px; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); color: var(--ink); cursor: pointer;
+}
+.outbox-list button small { grid-column: 1 / -1; color: var(--muted); overflow-wrap: anywhere; }
+.outbox-list button[aria-pressed='true'] { border-color: var(--brand-500); box-shadow: 0 0 0 1px var(--brand-500); }
+.outbox-new { align-self: center; padding: 1px 8px; border-radius: 999px; background: var(--ok-bg); color: var(--ok); font-size: 12px; }
+@media (max-width: 720px) { .outbox-layout { grid-template-columns: 1fr; } .outbox-reader { position: static; } }

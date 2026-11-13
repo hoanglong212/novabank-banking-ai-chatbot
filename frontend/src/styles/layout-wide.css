@@ -1,0 +1,81 @@
+/* ── Wide screens: a side rail of small real-data cards, two-column profile, roomier sign-in. ── */
+.side-rail { display: none; }
+.rail-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+@media (min-width: 1200px) {
+  .page.with-rail { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 24px; max-width: 1240px; }
+  .side-rail { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 14px; }
+  .profile-page.narrow { max-width: 1080px; }
+  .profile-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .profile-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+}
+@media (max-width: 1199px) { .profile-columns, .profile-col { display: contents; } }
+
+.rail-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 20px; }
+.rail-head { display: flex; justify-content: space-between; align-items: center; }
+.rail-head h2, .rail-card h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.rail-head .link-button { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; }
+.rail-flow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rail-flow > div { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 8px; padding: 10px; border-radius: 14px; background: var(--subtle); }
+.rail-flow small { font-size: 12px; color: var(--muted); }
+.rail-flow strong { grid-column: 1 / -1; margin-top: 4px; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rail-dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; }
+.rail-dot.in { background: var(--ok-bg); color: var(--ok); }
+.rail-dot.out { background: var(--brand-50); color: var(--brand-700); }
+.rail-note { margin: 0; font-size: 12.5px; color: var(--muted); }
+.rail-bars { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rail-bars li { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 13px; }
+.rail-bars span { text-transform: capitalize; color: var(--muted); }
+.rail-bars strong { font-variant-numeric: tabular-nums; }
+.rail-bars i { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--subtle); overflow: hidden; }
+.rail-bars b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand-500), var(--brand-700)); transform-origin: left; animation: rail-grow .8s .3s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rail-grow { from { transform: scaleX(0); } }
+.rail-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rail-list li { display: flex; align-items: center; gap: 10px; }
+.rail-date { display: grid; place-items: center; width: 40px; height: 42px; flex-shrink: 0; border-radius: 12px; background: var(--brand-50); color: var(--brand-800); font-size: 10px; font-weight: 700; text-transform: uppercase; line-height: 1.05; }
+.rail-date b { font-size: 16px; }
+.rail-main { min-width: 0; }
+.rail-list .rail-main { display: flex; flex: 1; flex-direction: column; }
+.rail-list strong { font-size: 13.5px; }
+.rail-list small { font-size: 12px; color: var(--muted); }
+.rail-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rail-empty { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: var(--muted); }
+.rail-empty svg { color: var(--ok); }
+.rail-promo { position: relative; overflow: hidden; border: 0; background: var(--hero); color: #fff; }
+.rail-promo::after { content: ""; position: absolute; right: -40px; bottom: -50px; width: 150px; height: 150px; border: 26px solid rgb(255 255 255 / .07); border-radius: 50%; pointer-events: none; }
+.rail-promo-tag { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: #facc15; color: #422006; font-size: 11.5px; font-weight: 800; letter-spacing: .02em; }
+.rail-promo h2 { color: #fff; font-size: 16px; line-height: 1.3; }
+.rail-promo p { margin: 0; font-size: 13px; line-height: 1.5; color: rgb(255 255 255 / .8); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rail-promo-cta { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: #fff; color: var(--brand-800); font-size: 13px; font-weight: 700; cursor: pointer; }
+.rail-tip { flex-direction: row; align-items: flex-start; background: linear-gradient(160deg, #f1fbf5, var(--card) 70%); }
+.rail-tip p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.rail-tip-icon { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: var(--ok-bg); color: var(--ok); }
+.rail-link { flex-direction: row; align-items: center; width: 100%; border: 1px solid var(--line); color: var(--ink); text-align: left; cursor: pointer; transition: border-color .2s, transform .2s; }
+.rail-link:hover { border-color: var(--brand-500); transform: translateY(-2px); }
+.rail-link .rail-tip-icon { background: var(--brand-50); color: var(--brand-700); }
+.rail-link > span:nth-child(2) { display: flex; flex: 1; flex-direction: column; }
+.rail-link strong { font-size: 14px; }
+.rail-link small { font-size: 12.5px; color: var(--muted); }
+.rail-link > svg { color: var(--line-strong); }
+.side-rail > * { animation: rise .5s var(--ease) both; }
+.side-rail > :nth-child(2) { animation-delay: .08s; }
+.side-rail > :nth-child(3) { animation-delay: .16s; }
+.side-rail > :nth-child(4) { animation-delay: .24s; }
+
+/* Sign-in: a larger card with readable type (auth-experience.css loads later, so out-rank it). */
+.auth-experience .auth-surface { width: 460px; padding: 40px; }
+.auth-experience .auth-heading h1 { font-size: 38px; }
+.auth-experience .auth-description { font-size: 15px; }
+.auth-experience .auth-field > label, .auth-experience .auth-field > span:not(.auth-password), .auth-experience .auth-field-heading label { font-size: 14px; font-weight: 500; }
+.auth-experience .auth-field input { min-height: 50px; font-size: 16px; }
+.auth-experience .auth-field input::placeholder { font-size: 14.5px; }
+.auth-experience .auth-submit { min-height: 52px; font-size: 16px; }
+.auth-experience .auth-demo-options button { min-height: 46px; font-size: 14px; }
+.auth-experience .auth-switch, .auth-experience .auth-verify-link { font-size: 14px; }
+.auth-experience .auth-overline { font-size: 11px; }
+.auth-experience .auth-field-heading .auth-text-button { font-size: 13px; }
+.auth-experience .auth-demo-heading h2 { font-size: 14px; color: var(--auth-ink); }
+.auth-experience .auth-demo-heading > span { font-size: 10.5px; }
+.auth-experience .auth-demo > p { font-size: 13px; }
+@media (max-width: 600px) { .auth-experience .auth-surface { width: 100%; padding: 28px 22px; } .auth-experience .auth-heading h1 { font-size: 32px; } }
+@media (prefers-reduced-motion: reduce) { .side-rail > *, .rail-bars b { animation: none; } }

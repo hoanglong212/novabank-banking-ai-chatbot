@@ -1,0 +1,111 @@
+{
+  "url": "http://127.0.0.1:5173",
+  "timestamp": "2026-11-07T18:44:01.645432+00:00",
+  "config_digest": "4c29eef0a1c1eb1f13a33880e6085f1b5cceacdb0421253cf816988537923cd0",
+  "passed": false,
+  "scope": "machine browser checks only; visual review required separately",
+  "checks": {
+    "ready": {
+      "status": "pass"
+    },
+    "screenshots": {
+      "status": "pass"
+    },
+    "no_horizontal_overflow": {
+      "status": "pass"
+    },
+    "named_buttons": {
+      "status": "pass"
+    },
+    "image_alternatives": {
+      "status": "pass"
+    },
+    "runtime_errors": {
+      "status": "fail",
+      "reason": "Runtime or network errors"
+    },
+    "heading": {
+      "status": "pass"
+    },
+    "scenarios": {
+      "status": "pass"
+    }
+  },
+  "screenshots": {
+    "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.uiux\\admin-home-qa\\mobile-page.png": "5ee4ce431282b95233d793d1a03a38b03ef2c561f6d213a8d15e230af6d4530e",
+    "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.uiux\\admin-home-qa\\tablet-page.png": "28853cb6009f67031fc6ae0740893eb7c8114bff3c53a76bd1d2e1f98bbe1fba",
+    "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.uiux\\admin-home-qa\\desktop-page.png": "3c8fcbc65180de386af770a23e86d607f3a876b3842012eb7e016d04621e26ed"
+  },
+  "issues": [
+    "mobile/page: runtime_errors",
+    "tablet/page: runtime_errors",
+    "desktop/page: runtime_errors"
+  ],
+  "pages": [
+    {
+      "viewport": "mobile",
+      "scenario": "page",
+      "width": 375,
+      "height": 812,
+      "screenshot": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.uiux\\admin-home-qa\\mobile-page.png",
+      "metrics": {
+        "overflow": false,
+        "missingAlt": 0,
+        "missingH1": false,
+        "unnamedButtons": 0
+      },
+      "issues": [
+        "runtime_errors"
+      ],
+      "runtime_errors": [
+        "request: http://127.0.0.1:5173/animations/nova-intro-vector/animation.json net::ERR_ABORTED"
+      ],
+      "scenario_errors": []
+    },
+    {
+      "viewport": "tablet",
+      "scenario": "page",
+      "width": 768,
+      "height": 1024,
+      "screenshot": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.uiux\\admin-home-qa\\tablet-page.png",
+      "metrics": {
+        "overflow": false,
+        "missingAlt": 0,
+        "missingH1": false,
+        "unnamedButtons": 0
+      },
+      "issues": [
+        "runtime_errors"
+      ],
+      "runtime_errors": [
+        "request: http://127.0.0.1:5173/animations/nova-intro-vector/animation.json net::ERR_ABORTED"
+      ],
+      "scenario_errors": []
+    },
+    {
+      "viewport": "desktop",
+      "scenario": "page",
+      "width": 1440,
+      "height": 900,
+      "screenshot": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.uiux\\admin-home-qa\\desktop-page.png",
+      "metrics": {
+        "overflow": false,
+        "missingAlt": 0,
+        "missingH1": false,
+        "unnamedButtons": 0
+      },
+      "issues": [
+        "runtime_errors"
+      ],
+      "runtime_errors": [
+        "request: http://127.0.0.1:5173/animations/nova-intro-vector/animation.json net::ERR_ABORTED"
+      ],
+      "scenario_errors": []
+    }
+  ],
+  "limits": [
+    "No aesthetic judgment",
+    "Not full WCAG",
+    "Native OS picker popup capture may be unavailable"
+  ]
+}

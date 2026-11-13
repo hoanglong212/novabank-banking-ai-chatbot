@@ -8,7 +8,9 @@ npm run build
 npm run test:components
 ```
 
-`npm run test:identity` additionally requires the frontend on port 5173, backend on port 8000, and an isolated browser debugging session on port 9224. It creates and cleans up demo conversations.
+`npm run test:e2e` builds the app and runs Playwright against the real backend. Each test starts its own server on port 8092 with a fresh database under `.local/e2e`; keep that port free. The fixture uses the existing backend virtual environment or `NOVABANK_PYTHON`. Browser dependencies must already be available.
+
+Import `test` and `expect` from `tests/e2e/fixtures.ts` in browser specs. Keep one worker: the local inbox helpers read the current test database from `.local/e2e/latest.json`. Each test must arrange its own transactions and accounts; it cannot rely on another test's balances, login sessions, MFA settings, or rate-limit budget. Server logs are retained in each test's output directory.
 
 ## Where to make changes
 

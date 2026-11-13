@@ -6,8 +6,10 @@ import type { ChatMessage, Conversation, DemoUser, Health, ToolEvent } from '../
 export function useBankingChat(user: DemoUser, enabled = true) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selection, setSelection] = useState<{ id: string; ownerId: string; } | null>(null);
+  const selectionVersion = useRef(0);
   const active = selection?.ownerId === user?.id ? selection?.id ?? null : null;
   const setActive = useCallback((id: string | null) => {
+    selectionVersion.current += 1;
     setSelection(id && user ? { id, ownerId: user.id } : null);
   }, [user]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -61,6 +63,7 @@ export function useBankingChat(user: DemoUser, enabled = true) {
     if (!user || !enabled) return;
     let cancelled = false;
     setActive(null);
+    const initialSelectionVersion = selectionVersion.current;
     setMessages([]);
     setEvents([]);
     setError(null);
@@ -69,7 +72,7 @@ export function useBankingChat(user: DemoUser, enabled = true) {
     api.listConversations(user).then(list => {
       if (cancelled) return;
       setConversations(list);
-      if (list[0]) setActive(list[0].id);
+      if (list[0] && selectionVersion.current === initialSelectionVersion) setActive(list[0].id);
     }).catch(err => {
       if (!cancelled) setError(err.message);
     });
@@ -153,7 +156,7 @@ export function useBankingChat(user: DemoUser, enabled = true) {
       setMessages(previous => [...(fresh ? [] : previous), {
         id: 'pending-' + Date.now(), conversation_id: id!, role: 'user', content, created_at: new Date().toISOString(),
       }]);
-      const response = health?.agent_mode === 'service'
+      const response = health?.agent_mode === 'service' || (user.role && user.role !== 'customer')
         ? await streamMessage(user, id, content, defenseProfile, setProgress, {
           signal: request.controller.signal,
           run: runId => { request.runId = runId; },

@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import { useEffect, type RefObject } from 'react';
 
 import { ShieldAlert, X, Send, Shield } from 'lucide-react';
 
@@ -33,6 +33,14 @@ export function Composer({
   stopResponse,
   pickSuggestion,
 }: ComposerProps) {
+  const staff = !!user?.role && user.role !== 'customer';
+  // Grow with the text up to the CSS max-height, and shrink back after sending.
+  useEffect(() => {
+    const box = textareaRef.current;
+    if (!box) return;
+    box.style.height = 'auto';
+    box.style.height = box.scrollHeight + 'px';
+  }, [draft, textareaRef]);
   return (
     <div className="composer-area">
       {error && <div className="error-banner" role="alert">
@@ -44,7 +52,7 @@ export function Composer({
           <X size={17} />
         </button>
       </div>}
-      {hasMessages && <div className="quick-chips" aria-label="Quick requests">
+      {hasMessages && !staff && <div className="quick-chips" aria-label="Quick requests">
         {suggestions.map(s => <button
           key={s.chip}
           className={`chip tone-${s.tone}`}
@@ -61,7 +69,7 @@ export function Composer({
           id="message-input"
           ref={textareaRef}
           rows={1}
-          placeholder="Ask Nova anything about your money"
+          placeholder={staff ? 'Ask Nova for a report within your role' : 'Ask Nova anything about your money'}
           value={draft}
           disabled={!user || busy}
           onChange={e => setDraft(e.target.value)}
@@ -71,7 +79,9 @@ export function Composer({
               void sendMessage();
             }
           }}
+          maxLength={4000}
           aria-label="Message" />
+        {draft.length > 3500 && <span className="composer-count" aria-live="polite">{4000 - draft.length} left</span>}
         {busy ? <button className="send-button" aria-label="Stop response" onClick={stopResponse}><X size={18} /></button> : <button
           className="send-button"
           aria-label="Send message"

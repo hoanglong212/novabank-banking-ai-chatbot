@@ -1,0 +1,84 @@
+/* ── Home: light, minimal banking layout. Brand purple is an accent, not a backdrop. ── */
+.page.home { gap: 16px; max-width: 880px; }
+.home-top { display: flex; align-items: center; gap: 12px; }
+.home-profile { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; padding: 4px 8px 4px 4px; border: 0; border-radius: 16px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.home-profile:hover { background: var(--card); }
+.home-avatar { position: relative; width: 48px; height: 48px; font-size: 16px; background: var(--brand-700); color: #fff; box-shadow: 0 0 0 3px var(--card), 0 0 0 4px var(--brand-100); }
+.home-verified { position: absolute; right: -4px; bottom: -4px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ok); color: #fff; box-shadow: 0 0 0 2px var(--surface); }
+.home-hello { display: flex; flex-direction: column; min-width: 0; }
+.home-hello small { font-size: 12.5px; color: var(--muted); }
+.home-hello strong { overflow: hidden; font-size: 19px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; text-overflow: ellipsis; }
+.home-round { position: relative; display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--card); color: var(--ink); cursor: pointer; transition: border-color .2s, color .2s; }
+.home-round:hover { border-color: var(--line-strong); color: var(--brand-700); }
+.count-badge { position: absolute; top: -5px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--card); }
+
+.home-search { position: relative; z-index: 5; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--muted); transition: border-color .2s, box-shadow .2s; }
+.home-search:focus-within { border-color: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-100); }
+.home-search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--ink); font: inherit; font-size: 15px; }
+.home-search input::placeholder { color: var(--muted); }
+.search-results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; max-height: 320px; margin: 0; padding: 6px; overflow-y: auto; list-style: none; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); }
+.search-results button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font-size: 14.5px; text-align: left; cursor: pointer; }
+.search-results button:hover, .search-results button:focus-visible { background: var(--brand-50); }
+.search-results svg { flex-shrink: 0; color: var(--brand-700); }
+
+.home-grid { display: flex; flex-direction: column; gap: 16px; }
+.wallet { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; gap: 6px; padding: 22px; border: 0; border-radius: 22px; background: var(--hero); color: #fff; box-shadow: 0 24px 40px -24px rgb(59 18 134 / .75); }
+/* Decorative rings, as on the original card. */
+.wallet::before, .wallet::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; border: 1px solid rgb(255 255 255 / .12); }
+.wallet::before { top: -130px; right: -90px; width: 320px; height: 320px; box-shadow: 0 0 0 44px rgb(255 255 255 / .035), 0 0 0 96px rgb(255 255 255 / .02); }
+.wallet::after { top: -36px; right: 50px; width: 130px; height: 130px; background: rgb(245 183 46 / .1); }
+.wallet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; color: rgb(255 255 255 / .78); }
+.wallet-eye { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: rgb(255 255 255 / .16); color: #fff; cursor: pointer; }
+.wallet-eye:hover:not(:disabled) { background: rgb(255 255 255 / .26); }
+.wallet .balance { display: block; color: #fff; font-size: clamp(28px, 4vw, 34px); font-weight: 800; letter-spacing: -.02em; }
+.wallet .skeleton-balance { display: block; max-width: 100%; }
+.wallet-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; margin-top: 6px; }
+.wallet-meta .account-no { margin-right: auto; }
+.wallet-stat { display: flex; flex-direction: column; gap: 1px; padding: 0; border: 0; background: transparent; color: #fff; text-align: left; cursor: pointer; }
+.wallet-stat span { font-size: 12.5px; color: rgb(255 255 255 / .72); }
+.wallet-stat strong { font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.wallet-stat:hover strong { text-decoration: underline; }
+
+.home-quick { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / .16); }
+.wallet .home-quick button { color: #fff; font-weight: 600; }
+.wallet .home-quick button:hover { background: rgb(255 255 255 / .08); }
+.home-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.home-tiles button { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 8px 2px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 13px; font-weight: 500; text-align: center; cursor: pointer; transition: background .2s; }
+.home-tiles button:hover { background: var(--subtle); }
+.tile-icon { position: relative; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: var(--brand-50); color: var(--brand-700); }
+.tile-quick { border-radius: 16px; background: #fff; color: var(--brand-700); box-shadow: 0 8px 16px -8px rgb(0 0 0 / .35); }
+.tile-quick .count-badge { box-shadow: 0 0 0 2px #fff; }
+.home-services { border-radius: 20px; box-shadow: 0 1px 2px rgb(31 10 77 / .06), 0 12px 28px -18px rgb(31 10 77 / .3); }
+.home-services .card-title { margin-bottom: 8px; }
+
+
+@media (max-width: 767px) {
+  .home-tiles button { font-size: 12px; }
+  .tile-icon { width: 46px; height: 46px; }
+
+  /* Bottom bar: Explore and Alerts live on Home; QR is raised in the centre. */
+  .nav-desktop-only { display: none; }
+  .nav-center .nav-icon,
+  .nav-center .nav-item[aria-current='page'] .nav-icon { width: 54px; height: 54px; margin-top: -24px; padding: 0; border-radius: 50%; background: var(--brand-700); color: #fff; box-shadow: 0 0 0 4px var(--card), 0 8px 16px -8px rgb(59 18 134 / .5); }
+  .nav-center .nav-label { color: var(--brand-700); font-weight: 700; }
+}
+
+/* ── Nova bubble: floating assistant on every customer page ── */
+.nova-bubble { position: fixed; right: 24px; bottom: 24px; z-index: 30; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 60px; height: 60px; padding: 0 17px; border: 0; border-radius: 999px; background: var(--brand-700); color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 10px 24px -10px rgb(59 18 134 / .55); transition: transform .2s var(--ease); }
+.nova-bubble:hover { transform: translateY(-2px); }
+.nova-bubble.is-dragging { transform: scale(1.06); outline: 3px dashed var(--accent); outline-offset: 3px; }
+/* The chat fills the drawer so its composer stays pinned at the bottom. */
+.sheet-body:has(.nova-drawer) { width: min(440px, 100vw); }
+.sheet-content:has(.nova-drawer) { display: flex; padding: 0; overflow: hidden; }
+.nova-drawer { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.nova-drop-hint { display: flex; align-items: center; gap: 8px; margin: 0 16px 8px; padding: 8px 12px; border: 1px dashed var(--line-strong); border-radius: 10px; font-size: 12.5px; color: var(--muted); }
+.nova-drawer.is-dragging .nova-drop-hint { border-color: var(--brand-500); background: var(--brand-50); color: var(--brand-700); }
+.nova-drawer .form-error { margin: 0 16px 8px; }
+/* Icon-only toolbar, as on phones, so the conversation title keeps its room. */
+.nova-drawer .tool-button { width: 38px; padding: 0; justify-content: center; }
+.nova-drawer .tool-button span { display: none; }
+
+@media (max-width: 767px) {
+  .nova-bubble { right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); min-width: 54px; height: 54px; padding: 0 14px; }
+  .sheet-body:has(.nova-drawer) { width: 100%; height: 88dvh; }
+}

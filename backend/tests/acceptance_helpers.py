@@ -39,7 +39,7 @@ def pay(client, who, amount=2000):
     response = client.post('/api/transfers', headers=who, json={'to_account':'ACC-BOB-001','amount_vnd':amount,'content':'acceptance probe'})
     assert response.status_code == 201
     draft = response.json()
-    response = client.post('/api/transfers/'+draft['id']+'/confirm', headers=who, json={'otp':draft['demo_otp']})
+    response = client.post('/api/transfers/'+draft['id']+'/confirm', headers=who, json={'otp':transfer_code(draft)})
     assert response.status_code == 200
     return response.json()
 
@@ -48,3 +48,5 @@ def beneficiary(client, who, account='ACC-BOB-001', nickname='Family'):
     assert response.status_code==201
     return response.json()
 
+
+from tests.conftest import transfer_code

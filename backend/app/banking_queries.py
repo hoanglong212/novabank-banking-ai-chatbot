@@ -76,13 +76,67 @@ def transaction(db, transaction_id: str, owner_id: str) -> dict:
         return dict(row)
 
 
-def notifications(db, owner_id: str, limit: int, offset: int) -> dict:
+# Personal alerts split into two tabs; everything that is not money movement is about the account.
+CATEGORY_SQL = "CASE WHEN kind IN ('MONEY_IN','MONEY_OUT','TRANSFER','REFUND','BILL') THEN 'transactions' ELSE 'account' END"
+NOTIFICATION_SOURCE = f"""(SELECT *, {CATEGORY_SQL} AS category FROM
+    (SELECT id,owner_id,transaction_id,NULL AS resource_id,kind,title,body,created_at,read_at FROM notifications
+     UNION ALL SELECT id,owner_id,transaction_id,resource_id,kind,title,body,created_at,read_at FROM service_notifications))"""
+
+
+def notifications(db, owner_id: str, limit: int, offset: int, category: str | None = None,
+                  q: str = '', unread: bool = False) -> dict:
+    clauses, params = ['owner_id=?'], [owner_id]
+    if category:
+        clauses.append('category=?'); params.append(category)
+    if q.strip():
+        # Same escaping as transaction search: % and _ in the query are literal.
+        escaped = '%' + q.strip().replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+        clauses.append("(title LIKE ? ESCAPE '\\' OR body LIKE ? ESCAPE '\\')"); params += [escaped, escaped]
+    if unread:
+        clauses.append('read_at IS NULL')
+    where, params = ' AND '.join(clauses), tuple(params)
     with db.connect() as conn:
         conn.execute('BEGIN')
-        source = '''(SELECT id,owner_id,transaction_id,kind,title,body,created_at,read_at FROM notifications
-                     UNION ALL SELECT id,owner_id,transaction_id,kind,title,body,created_at,read_at FROM service_notifications)'''
-        total, unread = conn.execute('SELECT COUNT(*),COALESCE(SUM(read_at IS NULL),0) FROM ' + source + ' WHERE owner_id=?',
-                                     (owner_id,)).fetchone()
-        rows = conn.execute('SELECT * FROM ' + source + ' WHERE owner_id=? ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
-                            (owner_id, limit, offset)).fetchall()
-        return {'items': [dict(row) for row in rows], 'total': total, 'unread_count': unread, 'limit': limit, 'offset': offset}
+        total, unread = conn.execute(f'SELECT COUNT(*),COALESCE(SUM(read_at IS NULL),0) FROM {NOTIFICATION_SOURCE} WHERE {where}',
+                                     params).fetchone()
+        rows = conn.execute(f'SELECT * FROM {NOTIFICATION_SOURCE} WHERE {where} ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+                            (*params, limit, offset)).fetchall()
+        by_category = dict(conn.execute(f'SELECT category,SUM(read_at IS NULL) FROM {NOTIFICATION_SOURCE} WHERE owner_id=? GROUP BY category',
+                                        (owner_id,)).fetchall())
+        return {'items': [dict(row) for row in rows], 'total': total, 'unread_count': unread, 'limit': limit, 'offset': offset,
+                'unread_by_category': {name: by_category.get(name, 0) for name in ('transactions', 'account')}}
+
+
+# Bank-wide news is kept apart from personal alerts so campaigns never inflate the unread badge.
+# shortcut: fixed fictional seed with no staff editor; add an operations screen when staff must publish news.
+ANNOUNCEMENTS = [
+    ('ANN-2026-11-CASHBACK', 'CAMPAIGN', 'Pay bills, get 5% back', 'Cashback 5%',
+     'Pay electricity, water, internet or mobile bills with NovaBank before 30 November and get 5% back, up to 50,000 VND a month.',
+     'Pay a bill', '/explore/bills', '2026-11-01T01:00:00+00:00', '2026-11-30T16:59:59+00:00'),
+    ('ANN-2026-11-SAVINGS', 'CAMPAIGN', 'Term savings at 6.2% a year', '6.2% / year',
+     'Open a 12-month online term deposit from 1,000,000 VND. Interest is paid at maturity and you can close early at any time.',
+     'Open savings', '/explore/savings', '2026-11-03T02:00:00+00:00', '2026-12-31T16:59:59+00:00'),
+    ('ANN-2026-11-QRPAY', 'CAMPAIGN', 'Pay friends with QR Pay', 'Free',
+     'Scan a NovaBank QR to pay instantly. Transfers between NovaBank accounts are always free.',
+     'Open QR Pay', '/qr', '2026-11-05T03:00:00+00:00', None),
+    ('ANN-2026-11-MAINTENANCE', 'NOTICE', 'Scheduled maintenance on 15 November', 'Service notice',
+     'Some services may be unavailable from 23:00 on 15 November to 01:00 on 16 November, Vietnam time. Card payments keep working.',
+     None, None, '2026-11-06T04:00:00+00:00', '2026-11-15T18:00:00+00:00'),
+    ('ANN-2026-10-OTP', 'NOTICE', 'NovaBank never asks for your OTP', 'Security',
+     'We never ask for verification codes by phone, SMS or chat. If someone does, stop and contact Support.',
+     'Contact support', '/explore/support', '2026-10-20T02:00:00+00:00', None),
+]
+
+
+def initialize_announcements(conn):
+    conn.execute("""CREATE TABLE IF NOT EXISTS bank_announcements (id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL CHECK(kind IN ('CAMPAIGN','NOTICE')), title TEXT NOT NULL, tag TEXT NOT NULL, body TEXT NOT NULL,
+        action_label TEXT, action_path TEXT, published_at TEXT NOT NULL, ends_at TEXT)""")
+    conn.executemany('INSERT OR IGNORE INTO bank_announcements VALUES (?,?,?,?,?,?,?,?,?)', ANNOUNCEMENTS)
+
+
+def announcements(db, stamp: str) -> dict:
+    with db.connect() as conn:
+        rows = conn.execute('SELECT * FROM bank_announcements WHERE published_at<=? AND (ends_at IS NULL OR ends_at>?) '
+                            'ORDER BY published_at DESC', (stamp, stamp)).fetchall()
+        return {'items': [dict(row) for row in rows]}

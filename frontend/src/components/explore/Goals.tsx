@@ -1,0 +1,25 @@
+import { useState } from 'react';
+import { Plus, Target, Pencil } from 'lucide-react';
+import type { DemoUser } from '../../types';
+import { vnd } from '../../format';
+import { Feedback, Field, Loading, send, useOperation, useResource } from './shared';
+import { ConfirmRemove, EmptyState, ServiceHeading, ServiceNote, displayDate, today } from './ServiceUi';
+import { Sheet } from '../ui/Sheet';
+import { Calculators } from './Calculators';
+
+interface Goal { id: string; label: string; target_vnd: number; saved_vnd: number; target_date: string; savings_id: string | null }
+export function Goals({ user }: { user: DemoUser }) {
+  const state = useResource<{ items: Goal[] }>(user, '/savings-goals');
+  const savings = useResource<{ items: { id: string; label: string; status: string }[] }>(user, '/products/savings');
+  const op = useOperation();
+  const [editor, setEditor] = useState<Goal | 'new' | null>(null), [removing, setRemoving] = useState<Goal | null>(null);
+  const editing = editor && editor !== 'new' ? editor : null;
+  const active = savings.data?.items.filter(s => s.status === 'ACTIVE') ?? [];
+  return <div className="service-stack"><ServiceHeading eyebrow="SOMETHING TO LOOK FORWARD TO" title="Give your savings a destination" action={<button className="primary-button" onClick={() => setEditor('new')}><Plus size={17} />Create goal</button>}>Link a term deposit to see real progress toward a goal.</ServiceHeading><Loading state={state} /><Feedback state={{ error: editor || removing ? '' : op.error, message: op.message }} />
+    {!state.busy && !state.error && state.data?.items.length === 0 && <EmptyState title="What are you saving for?">A rainy day, your next trip, a fresh start. Make your first goal and give it a date.</EmptyState>}
+    <div className="service-grid">{state.data?.items.map(goal => { const saved = goal.saved_vnd || 0, percent = Math.min(100, Math.floor(saved / goal.target_vnd * 100)); return <article className="card service-section goal-card" key={goal.id}><div className="service-toolbar"><Target size={23} /><span className="service-status">{percent >= 100 ? 'Target reached' : `${percent}% complete`}</span></div><h2 className="card-title">{goal.label}</h2><p className="goal-value">{vnd(saved)} <small>/ {vnd(goal.target_vnd)}</small></p><progress className="goal-progress" max={goal.target_vnd} value={Math.min(saved, goal.target_vnd)} aria-label={goal.label} /><p className="service-hint">Target: {displayDate(goal.target_date)}<br />{savings.data?.items.find(s => s.id === goal.savings_id)?.label ?? 'No savings account linked'}</p><div className="service-actions"><button className="secondary-button" onClick={() => setEditor(goal)}><Pencil size={15} />Edit goal</button><button className="link-button" onClick={() => setRemoving(goal)}>Remove goal</button></div></article>; })}</div>
+    <ServiceNote>Progress comes from the principal in your linked active savings account. Removing a goal does not withdraw your savings.</ServiceNote><Calculators />
+    <Sheet open={!!editor} title={editing ? 'Edit savings goal' : 'Create a savings goal'} onClose={() => setEditor(null)}><div className="service-dialog"><p>Set a target and link an existing deposit. You can change these details later.</p><Feedback state={op} /><Loading state={savings} /><form key={editing?.id ?? 'new'} className="service-form" onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); void op.run(async () => { await send(user, '/savings-goals' + (editing ? '/' + editing.id : ''), { label: data.get('label'), target_vnd: Number(data.get('target')), target_date: data.get('date'), savings_id: data.get('savings') || null }, editing ? 'PUT' : 'POST'); setEditor(null); state.reload(); op.setMessage('Goal saved.'); }); }}><Field label="Goal name"><input name="label" required maxLength={80} defaultValue={editing?.label} placeholder="A trip to remember" /></Field><Field label="Target (VND)"><input name="target" type="number" min={1000} max={1000000000} required defaultValue={editing?.target_vnd} /></Field><Field label="Target date"><input name="date" type="date" required defaultValue={editing?.target_date ?? today()} /></Field><Field label="Link a savings account"><select name="savings" defaultValue={active.some(s => s.id === editing?.savings_id) ? editing!.savings_id! : ''}><option value="">Choose later</option>{active.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></Field>{!active.length && <p className="service-hint">Open a savings deposit in Savings, then return here to link it.</p>}<button className="primary-button" disabled={op.busy || savings.busy}>{editing ? 'Save goal' : 'Create goal'}</button></form></div></Sheet>
+    <ConfirmRemove title="Remove savings goal?" open={!!removing} close={() => setRemoving(null)} busy={op.busy} action={() => void op.run(async () => { await send(user, '/savings-goals/' + removing!.id, undefined, 'DELETE'); setRemoving(null); state.reload(); op.setMessage('Goal removed.'); })}>Remove {removing?.label}? The linked savings deposit stays open.<Feedback state={{ error: op.error, message: '' }} /></ConfirmRemove>
+  </div>;
+}

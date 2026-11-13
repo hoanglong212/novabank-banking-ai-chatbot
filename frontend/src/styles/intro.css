@@ -1,0 +1,11 @@
+/* True vector Lottie, reconstructed from the user-approved v11 reference. */
+.nova-intro { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; overflow: hidden; background: #f8f6fd; color: var(--ink); }
+.nova-intro-player { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100%; height: 100%; }
+.nova-intro-player > svg { display: block; width: 100%; height: 100%; }
+/* On phones, crop only the empty margins of the composition, never the artwork. */
+@media (max-width: 600px) { .nova-intro-player { width: 760px; } }
+.nova-intro-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.nova-intro-skip { position: absolute; right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 16px; color: var(--brand-800); border: 1px solid var(--line-strong); background: #ffffffd9; border-radius: 24px; font-size: 12px; }
+.nova-intro-skip:hover { background: var(--brand-100); border-color: var(--brand-500); }
+.nova-intro-replay { display: inline-flex; align-items: center; gap: 6px; padding: 2px 0; min-height: 32px; border: 0; background: none; color: inherit; font-size: 10px; white-space: nowrap; }
+.nova-intro-replay:hover { color: var(--auth-ink); text-decoration: underline; text-underline-offset: 3px; }

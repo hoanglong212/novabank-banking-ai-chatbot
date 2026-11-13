@@ -2,6 +2,15 @@
 
 
 def initialize_sessions(conn, stamp):
+    # Trusted devices skip login MFA; only token hashes are stored. Additive, so no version bump.
+    conn.execute('''CREATE TABLE IF NOT EXISTS trusted_devices (token_hash TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id), auth_version INTEGER NOT NULL,
+        created_at INTEGER NOT NULL, last_used_at INTEGER NOT NULL)''')
+    # Self-registered customers must set a transaction PIN (or authenticator) before transacting.
+    conn.execute('CREATE TABLE IF NOT EXISTS totp_required (user_id TEXT PRIMARY KEY REFERENCES users(id))')
+    # Customer-chosen transaction PIN (PBKDF2 hash only), with its own failure lockout.
+    conn.execute('''CREATE TABLE IF NOT EXISTS transaction_pins (user_id TEXT PRIMARY KEY REFERENCES users(id),
+        pin_hash TEXT NOT NULL, failures INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)''')
     if conn.execute('SELECT 1 FROM schema_migrations WHERE version=4').fetchone():
         return
     statements = [

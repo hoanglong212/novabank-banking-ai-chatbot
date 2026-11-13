@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Check, ChevronRight, ClipboardList, Copy, CreditCard, Eye, EyeOff,
-  MapPin, Percent, QrCode, ReceiptText, ShieldCheck,
+  ArrowLeftRight, Bell, Check, Copy, CreditCard, Eye, EyeOff, FileText, History, Landmark, LayoutGrid, LifeBuoy,
+  PiggyBank, QrCode, ReceiptText, Search, ShieldCheck, Sparkles, Target, TrendingUp, UserRound,
 } from 'lucide-react';
 
 import type { DemoUser, Profile } from '../../types';
 import type { Tab } from '../app/NavBar';
-import { Overview } from './Overview';
-import { greeting, vnd } from '../../format';
+import { MonthPulse, NewsTeaser, SafetyTip, UpcomingBills } from './Rail';
+import { api } from '../../api';
+import { greeting, initials, vnd } from '../../format';
+import { navigate as go } from '../../router';
+import { useResource } from '../explore/shared';
 
 interface HomeProps {
   user: DemoUser;
@@ -17,14 +20,18 @@ interface HomeProps {
   transfer: () => void;
 }
 
-// Topics in the Nova panel open the assistant with the question already asked.
-const TOPICS = [
-  { label: 'Card services', icon: CreditCard, text: 'My card is blocked, what should I do?' },
-  { label: 'Fees & limits', icon: Percent, text: 'What are the transfer fees and limits?' },
-  { label: 'Transaction status', icon: ReceiptText, text: 'Check transaction TX-1002' },
-  { label: 'Support ticket', icon: ClipboardList, text: 'Create a support ticket for my pending transaction' },
-  { label: 'Branches & hours', icon: MapPin, text: 'What are your opening hours?' },
-  { label: 'Security tips', icon: ShieldCheck, text: 'How do I protect myself from banking fraud?' },
+interface Summary { savings_principal_vnd: number; credit_debt_vnd: number; unpaid_bills: number }
+
+// Each tile opens an existing Explore section; nothing here is a placeholder.
+const SERVICES = [
+  { label: 'Accounts', icon: Landmark, section: 'accounts' },
+  { label: 'Cards', icon: CreditCard, section: 'cards' },
+  { label: 'Savings', icon: PiggyBank, section: 'savings' },
+  { label: 'Spending', icon: TrendingUp, section: 'insights' },
+  { label: 'Goals', icon: Target, section: 'goals' },
+  { label: 'Statements', icon: FileText, section: 'statements' },
+  { label: 'Support', icon: LifeBuoy, section: 'support' },
+  { label: 'All services', icon: LayoutGrid, section: '' },
 ];
 
 export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
@@ -34,20 +41,24 @@ export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
     try { return localStorage.getItem(visibilityKey) === 'true'; } catch { return false; }
   });
   const [copied, setCopied] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [query, setQuery] = useState('');
   const account = profile?.accounts[0];
+  const name = profile?.name ?? user.name;
   const totalBalance = profile?.accounts.reduce((sum, item) => sum + item.balance_vnd, 0) ?? 0;
+  const month = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).slice(0, 7);
+  // Balance in the key refetches the summary after a transfer.
+  const summary = useResource<Summary>(user, `/insights?month=${month}&revision=${account?.balance_vnd ?? 0}`).data;
+
+  useEffect(() => {
+    api.notifications(user).then(page => setUnread(page.unread_count)).catch(() => { });
+  }, [user]);
 
   function toggleBalance() {
     const next = !shown;
     setShown(next);
     try { localStorage.setItem(visibilityKey, String(next)); } catch { /* Storage may be disabled. */ }
   }
-
-  const quick = [
-    { label: 'Transfer', icon: ArrowLeftRight, run: transfer },
-    { label: 'Receive via QR', icon: QrCode, run: () => navigate('qr') },
-    { label: 'History', icon: ReceiptText, run: () => navigate('activity') },
-  ];
 
   async function copyAccount() {
     if (!account) return;
@@ -58,94 +69,111 @@ export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
     } catch { /* clipboard blocked: nothing to confirm */ }
   }
 
+  const hidden = '••••••';
+  const quick = [
+    { label: 'Transfer', icon: ArrowLeftRight, run: transfer },
+    { label: 'QR Pay', icon: QrCode, run: () => navigate('qr') },
+    { label: 'Pay bills', icon: ReceiptText, run: () => go('/explore/bills'), badge: summary?.unpaid_bills },
+    { label: 'History', icon: History, run: () => navigate('activity') },
+  ];
+  const services = SERVICES.map(s => ({ ...s, run: () => go(s.section ? '/explore/' + s.section : '/explore') }));
+  // Search matches feature names; anything else becomes a question for Nova.
+  const searchable = [...quick, ...services,
+    { label: 'Notifications', icon: Bell, run: () => navigate('notifications') },
+    { label: 'Profile & security', icon: UserRound, run: () => navigate('profile') }];
+  const q = query.trim();
+  const results = q ? searchable.filter(item => item.label.toLowerCase().includes(q.toLowerCase())) : [];
+
   return (
-    <div className="page home">
-      <header className="page-head">
-        <p className="muted">{greeting()}</p>
-        <h1 className="page-title">{profile?.name ?? user.name}</h1>
+    <div className="page home with-rail">
+      <div className="rail-main">
+      <header className="home-top">
+        <button className="home-profile" onClick={() => navigate('profile')} aria-label={`Open profile for ${name}`}>
+          <span className="avatar home-avatar" aria-hidden="true">{initials(name)}<span className="home-verified"><ShieldCheck size={12} /></span></span>
+          <span className="home-hello"><small>{greeting()}</small><strong>{name}</strong><small>@{user.id} · Verified</small></span>
+        </button>
+        <button className="home-round" aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} onClick={() => navigate('notifications')}>
+          <Bell size={20} aria-hidden="true" />
+          {unread > 0 && <span className="count-badge" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
+        </button>
       </header>
 
-      <div className="dash">
-        <section className="account-card dash-account" aria-label="Payment account">
-          <div className="account-top">
-            <span>Payment account</span>
-            {account ? (
+      <form className="home-search" role="search" onSubmit={e => { e.preventDefault(); if (results[0]) results[0].run(); else if (q) ask(q); }}>
+        <Search size={18} aria-hidden="true" />
+        <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search services or ask Nova"
+          aria-label="Search services or ask Nova" autoComplete="off" />
+        {q && (
+          <ul className="search-results">
+            {results.map(({ label, icon: Icon, run }) => (
+              <li key={label}><button type="button" onClick={run}><Icon size={18} aria-hidden="true" />{label}</button></li>
+            ))}
+            <li><button type="button" onClick={() => ask(q)}><Sparkles size={18} aria-hidden="true" />Ask Nova: “{q}”</button></li>
+          </ul>
+        )}
+      </form>
+
+      <div className="home-grid">
+        <section className="card wallet" aria-label="Payment account">
+          <div className="wallet-head">
+            <span>Total balance · {profile?.accounts.length ?? 0} payment account{profile?.accounts.length === 1 ? '' : 's'}</span>
+            <button className="wallet-eye" onClick={toggleBalance} disabled={!account}
+              aria-label={shown ? 'Hide balance' : 'Show balance'} aria-pressed={shown}>
+              {shown ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          {account
+            ? <strong className={`balance ${shown ? 'is-shown' : ''}`} key={String(shown)}>{shown ? vnd(totalBalance) : `${hidden} VND`}</strong>
+            : <span className="skeleton skeleton-balance" />}
+          <div className="wallet-meta">
+            {account && (
               <button className="account-no" onClick={copyAccount} aria-label={`Copy account number ${account.id}`}>
                 {account.id} {copied ? <Check size={14} /> : <Copy size={14} />}
                 <span className="copied" aria-live="polite">{copied ? 'Copied' : ''}</span>
               </button>
-            ) : <span className="skeleton skeleton-text" />}
-          </div>
-          <span className="balance-label">Total available balance · {profile?.accounts.length ?? 0} payment accounts</span>
-          <div className="balance-row">
-            {account ? (
-              <strong className={`balance ${shown ? 'is-shown' : ''}`} key={String(shown)}>
-                {shown ? vnd(totalBalance) : '•••••••• VND'}
-              </strong>
-            ) : <span className="skeleton skeleton-balance" />}
-            <button className="eye-button" onClick={toggleBalance} disabled={!account}
-              aria-label={shown ? 'Hide balance' : 'Show balance'} aria-pressed={shown}>
-              {shown ? <EyeOff size={20} /> : <Eye size={20} />}
+            )}
+            <button className="wallet-stat" onClick={() => go('/explore/savings')}>
+              <span>Savings</span><strong>{summary ? (shown ? vnd(summary.savings_principal_vnd) : hidden) : '—'}</strong>
+            </button>
+            <button className="wallet-stat" onClick={() => go('/explore/cards')}>
+              <span>Credit used</span><strong>{summary ? (shown ? vnd(summary.credit_debt_vnd) : hidden) : '—'}</strong>
             </button>
           </div>
-          <div className="quick-actions">
-            {quick.map(({ label, icon: Icon, run }) => (
-              <button key={label} onClick={run}>
-                <span className="quick-icon"><Icon size={20} aria-hidden="true" /></span>
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="dash-month"><Overview user={user} explore={() => navigate('explore')} revision={account?.balance_vnd ?? 0} /></div>
-
-        <section className="card nova-panel dash-nova" aria-labelledby="nova-title">
-          <button className="assistant-head" onClick={() => navigate('assistant')}>
-            <span className="assistant-avatar" aria-hidden="true">N</span>
-            <span><strong id="nova-title">Nova assistant</strong><small>Available 24/7</small></span>
-            <ChevronRight size={18} aria-hidden="true" />
-          </button>
-          <button className="fake-input" onClick={() => navigate('assistant')}>Ask about your balance, a payment or bank policy…</button>
-          <p className="muted small">Or get an instant answer about:</p>
-          <ul className="topic-list">
-            {TOPICS.map(({ label, icon: Icon, text }) => (
+          <ul className="home-tiles home-quick">
+            {quick.map(({ label, icon: Icon, run, badge }) => (
               <li key={label}>
-                <button className="topic" onClick={() => ask(text)}>
-                  <span className="row-icon"><Icon size={18} aria-hidden="true" /></span>
+                <button onClick={run} aria-label={badge ? `${label}, ${badge} unpaid` : label}>
+                  <span className="tile-icon tile-quick">
+                    <Icon size={22} aria-hidden="true" />
+                    {!!badge && <span className="count-badge" aria-hidden="true">{badge}</span>}
+                  </span>
                   <span>{label}</span>
-                  <ChevronRight size={16} aria-hidden="true" />
                 </button>
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="card dash-tx">
-          <div className="card-head">
-            <h2 className="card-title">Recent transactions</h2>
-            <button className="link-button" onClick={() => navigate('activity')}>See all <ChevronRight size={15} aria-hidden="true" /></button>
-          </div>
-          <ul className="tx-list">
-            {profile ? profile.transactions.slice(0, 5).map(t => (
-              <li key={t.id}>
-                <button className="tx" onClick={() => navigate('activity')}>
-                  <span className={`tx-icon ${t.direction}`}>{t.direction === 'in' ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}</span>
-                  <span className="tx-main"><strong>{t.description}</strong><small>{t.date}</small></span>
-                  <span className={`tx-amount ${t.direction}`}>{t.direction === 'in' ? '+' : '-'}{vnd(t.amount_vnd)}</span>
+        <section className="card home-services" aria-labelledby="services-title">
+          <h2 id="services-title" className="card-title">Services</h2>
+          <ul className="home-tiles">
+            {services.map(({ label, icon: Icon, run }) => (
+              <li key={label}>
+                <button onClick={run}>
+                  <span className="tile-icon"><Icon size={22} aria-hidden="true" /></span>
+                  <span>{label}</span>
                 </button>
               </li>
-            )) : [0, 1, 2].map(i => <li key={i} className="skeleton skeleton-row" />)}
+            ))}
           </ul>
-          {profile?.transactions.length === 0 && <p className="muted">No transactions yet.</p>}
         </section>
-
-        <button className="banner banner-security dash-safety" onClick={() => ask('Is it safe to share my OTP?')}>
-          <ShieldCheck size={26} aria-hidden="true" />
-          <strong>NovaBank never asks for your OTP</strong>
-          <span>Not by phone, SMS or chat. Learn how to spot scams.</span>
-        </button>
       </div>
+    </div>
+      <aside className="side-rail" aria-label="At a glance">
+        <MonthPulse user={user} />
+        <UpcomingBills user={user} />
+        <NewsTeaser user={user} />
+        <SafetyTip />
+      </aside>
     </div>
   );
 }

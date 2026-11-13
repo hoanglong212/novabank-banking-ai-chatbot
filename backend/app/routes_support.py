@@ -43,10 +43,14 @@ class Attachment(IdentityInput):
 
 
 @router.get('/tickets')
-def tickets(user=Depends(current_user), db=Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)):
+def tickets(user=Depends(current_user), db=Depends(get_db), offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100),
+            status: Literal['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] | None = None):
     if user.role == 'operations':
         raise HTTPException(403, 'Permission denied')
     where, params = ('', []) if 'support:read' in user.permissions else (' WHERE t.owner_id=?', [user.id])
+    if status:
+        where += (' AND ' if where else ' WHERE ') + 't.status=?'
+        params.append(status)
     with db.connect() as conn:
         total = conn.execute('SELECT COUNT(*) FROM support_tickets t' + where, params).fetchone()[0]
         rows = conn.execute('''SELECT t.*,a.assigned_to,COALESCE(a.category,'GENERAL') AS category
@@ -81,29 +85,37 @@ def detail(ticket_id: str, user=Depends(current_user), db=Depends(get_db)):
 @router.post('/tickets/{ticket_id}/messages', status_code=201)
 def reply(ticket_id: str, payload: Reply, user=Depends(current_user), db=Depends(get_db)):
     with transaction(db) as conn:
-        row = ticket(conn, user, ticket_id)
-        if row['status'] == 'CLOSED':
-            raise HTTPException(409, 'This ticket is closed. Create a new ticket for further help.')
-        if row['owner_id'] != user.id and 'support:write' not in user.permissions:
-            raise HTTPException(403, 'Permission denied.')
-        message_id = uuid.uuid4().hex
-        conn.execute('INSERT INTO ticket_messages VALUES (?,?,?,?,?)', (message_id, ticket_id, user.id, payload.body, now()))
-        if row['owner_id'] != user.id:
-            notify(conn, row['owner_id'], 'SUPPORT', 'Support replied', row['subject'], now(), ticket_id)
-        return {'id': message_id, 'message': 'Reply sent.'}
+        return post_reply(conn, user, ticket_id, payload.body)
+
+
+def post_reply(conn, user, ticket_id, body):
+    row = ticket(conn, user, ticket_id)
+    if row['status'] == 'CLOSED':
+        raise HTTPException(409, 'This ticket is closed. Create a new ticket for further help.')
+    if row['owner_id'] != user.id and 'support:write' not in user.permissions:
+        raise HTTPException(403, 'Permission denied.')
+    message_id = uuid.uuid4().hex
+    conn.execute('INSERT INTO ticket_messages VALUES (?,?,?,?,?)', (message_id, ticket_id, user.id, body, now()))
+    if row['owner_id'] != user.id:
+        notify(conn, row['owner_id'], 'SUPPORT', 'Support replied', row['subject'], now(), ticket_id)
+    return {'id': message_id, 'message': 'Reply sent.'}
 
 
 @router.patch('/tickets/{ticket_id}')
 def assign(ticket_id: str, payload: Assignment, user=Depends(require_permission('support:write')), db=Depends(get_db)):
     with transaction(db) as conn:
-        row = ticket(conn, user, ticket_id)
-        if payload.assigned_to:
-            assignee = conn.execute("SELECT 1 FROM users WHERE id=? AND role IN ('support','admin') AND status='ACTIVE'", (payload.assigned_to,)).fetchone()
-            if not assignee:
-                raise HTTPException(422, 'Choose an active support or admin user.')
-        conn.execute('UPDATE support_tickets SET status=? WHERE id=?', (payload.status, ticket_id))
-        conn.execute('INSERT INTO ticket_assignments (ticket_id,assigned_to) VALUES (?,?) ON CONFLICT(ticket_id) DO UPDATE SET assigned_to=excluded.assigned_to', (ticket_id, payload.assigned_to))
-        notify(conn, row['owner_id'], 'SUPPORT', 'Ticket updated', f'{ticket_id}: {payload.status.replace("_", " ")}', now(), ticket_id)
+        return apply_assignment(conn, user, ticket_id, payload)
+
+
+def apply_assignment(conn, user, ticket_id, payload):
+    row = ticket(conn, user, ticket_id)
+    if payload.assigned_to:
+        assignee = conn.execute("SELECT 1 FROM users WHERE id=? AND role IN ('support','admin') AND status='ACTIVE'", (payload.assigned_to,)).fetchone()
+        if not assignee:
+            raise HTTPException(422, 'Choose an active support or admin user.')
+    conn.execute('UPDATE support_tickets SET status=? WHERE id=?', (payload.status, ticket_id))
+    conn.execute('INSERT INTO ticket_assignments (ticket_id,assigned_to) VALUES (?,?) ON CONFLICT(ticket_id) DO UPDATE SET assigned_to=excluded.assigned_to', (ticket_id, payload.assigned_to))
+    notify(conn, row['owner_id'], 'SUPPORT', 'Ticket updated', f'{ticket_id}: {payload.status.replace("_", " ")}', now(), ticket_id)
     return {'message': 'Ticket updated.'}
 
 

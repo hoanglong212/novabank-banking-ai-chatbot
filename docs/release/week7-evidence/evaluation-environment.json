@@ -1,0 +1,30 @@
+{
+  "model": "qwen2.5:7b",
+  "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+  "size_bytes": 4683087332,
+  "details": {
+    "parent_model": "",
+    "format": "gguf",
+    "family": "qwen2",
+    "families": [
+      "qwen2"
+    ],
+    "parameter_size": "7.6B",
+    "quantization_level": "Q4_K_M",
+    "context_length": 32768,
+    "embedding_length": 3584,
+    "runner": "ggml"
+  },
+  "ollama_version": {
+    "version": "0.40.14"
+  },
+  "python": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "temperature": 0,
+  "service_num_ctx": 8192,
+  "legacy_num_ctx": "Ollama model default",
+  "full_run": ".local/week7-live/run-59e7c91d44",
+  "full_run_version": "Before numeric-key trace fix",
+  "postfix_run": ".local/week7-live/run-58153d5e3c",
+  "postfix_scope": "15 selected legitimate scenarios, baseline/defended, five repetitions"
+}

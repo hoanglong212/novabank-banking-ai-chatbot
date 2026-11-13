@@ -135,7 +135,7 @@ def test_role_matrix_for_financial_admin(client, username, password, allowed):
 def test_staff_cannot_use_customer_tools_or_transfer(client, username):
     headers = sign_in(client, username, username.capitalize() + '@2026')
     assert draft(client, headers).status_code == 403
-    assert client.post('/api/conversations', headers=headers, json={}).status_code == 403
+    assert client.post('/api/conversations', headers=headers, json={}).status_code == 201  # Staff now has a read-only assistant.
     assert client.get('/api/transactions', headers=headers).status_code == 403
     assert client.get('/api/me', headers=headers).json()['accounts'] == []
 

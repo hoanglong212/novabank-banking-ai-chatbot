@@ -1,0 +1,31 @@
+{
+  "date_local": "2026-11-06",
+  "timezone": "Asia/Saigon",
+  "user_authorized_install": true,
+  "ruff": {
+    "version": "0.14.3",
+    "command": "python -m ruff check backend/app agent_service research scripts tools",
+    "exit_code": 0,
+    "files": 105,
+    "errors": 0,
+    "rules": [
+      "F821",
+      "F822",
+      "F823"
+    ]
+  },
+  "eslint": {
+    "version": "9.39.1",
+    "command": "npm exec --yes --package=eslint@9.39.1 -- eslint --config eslint.config.mjs frontend/scripts",
+    "exit_code": 0,
+    "files": 7,
+    "errors": 0,
+    "warnings": 0,
+    "scope": "frontend/scripts/**/*.mjs; five correctness rules"
+  },
+  "limitations": [
+    "Not all recommended lint rules are enabled",
+    "ESLint scope excludes TypeScript; build performs TypeScript checking",
+    "Remote CI was not run"
+  ]
+}

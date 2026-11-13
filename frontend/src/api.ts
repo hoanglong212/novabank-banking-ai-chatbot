@@ -1,9 +1,13 @@
 import type { Conversation, ChatMessage, DemoUser, ToolEvent, SendResponse, Health, Decision, LoginResponse, Profile, Bank, VietQR, Transfer } from './types';
-import type { Page, Transaction, TransactionFilters, NotificationPage, BankNotification, AuditEvent } from './types';
+import type { Page, Transaction, TransactionFilters, NotificationPage, BankNotification, AuditEvent, Announcement, NotificationCategory } from './types';
 import type { MfaChallenge, UserSession, LoginAttempt, MfaStatus, TotpSetup } from './types';
 import { assertSession, currentSession, endSession, refreshSession, sessionToken } from './sessionStore';
 
 const PREFIX = '/api';
+const DEVICE_KEY = 'novabank.device';
+function deviceToken() {
+  try { return localStorage.getItem(DEVICE_KEY) || undefined; } catch { return undefined; }
+}
 export async function responseFor(path: string, user?: DemoUser, options: RequestInit = {}): Promise<Response> {
   const headers = new Headers(options.headers);
   const token = user ? await sessionToken(user) : null;
@@ -66,7 +70,7 @@ export async function streamMessage(user: DemoUser, id: string, content: string,
   } finally { await reader.cancel(); }
 }
 
-function query(filters: TransactionFilters) {
+function query(filters: TransactionFilters | Record<string, string | number | boolean | undefined>) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== '') params.set(key, String(value));
@@ -76,10 +80,14 @@ function query(filters: TransactionFilters) {
 
 export const api = {
   health: () => request<Health>('/health'),
+  // A trusted device (set after one MFA sign-in) may return a session directly instead of a challenge.
   login: (username: string, password: string) =>
-    request<MfaChallenge>('/auth/login', undefined, { method: 'POST', body: JSON.stringify({ username, password }) }),
-  verifyMfa: (challenge_id: string, code: string) =>
-    request<LoginResponse>('/auth/mfa/verify', undefined, { method: 'POST', body: JSON.stringify({ challenge_id, code }) }),
+    request<MfaChallenge | LoginResponse>('/auth/login', undefined, { method: 'POST', body: JSON.stringify({ username, password, device_token: deviceToken() }) }),
+  verifyMfa: async (challenge_id: string, code: string) => {
+    const result = await request<LoginResponse>('/auth/mfa/verify', undefined, { method: 'POST', body: JSON.stringify({ challenge_id, code }) });
+    if (result.device_token) try { localStorage.setItem(DEVICE_KEY, result.device_token); } catch { /* Storage may be disabled. */ }
+    return result;
+  },
   resendMfa: (challenge_id: string) =>
     request<{ method: 'email'; message: string }>('/auth/mfa/email', undefined, { method: 'POST', body: JSON.stringify({ challenge_id }) }),
   logout: (user: DemoUser) => request<{ message: string }>('/auth/logout', user, { method: 'POST', signal: AbortSignal.timeout(10_000) }),
@@ -87,6 +95,8 @@ export const api = {
   revokeSession: (user: DemoUser, id: string) => request<{ message: string }>(`/auth/sessions/${encodeURIComponent(id)}`, user, { method: 'DELETE' }),
   loginHistory: (user: DemoUser, offset = 0) => request<Page<LoginAttempt>>(`/auth/login-history?limit=10&offset=${offset}`, user),
   mfaStatus: (user: DemoUser) => request<MfaStatus>('/auth/mfa', user),
+  setPin: (user: DemoUser, password: string, pin: string) =>
+    request<{ message: string }>('/auth/pin', user, { method: 'POST', body: JSON.stringify({ password, pin }) }),
   setupTotp: (user: DemoUser, password: string) => request<TotpSetup>('/auth/mfa/setup', user, { method: 'POST', body: JSON.stringify({ password }) }),
   enableTotp: (user: DemoUser, code: string) => request<{ message: string }>('/auth/mfa/enable', user, { method: 'POST', body: JSON.stringify({ code }) }),
   disableTotpRequest: (user: DemoUser, password: string) => request<MfaChallenge>('/auth/mfa/disable-request', user, { method: 'POST', body: JSON.stringify({ password }) }),
@@ -107,11 +117,13 @@ export const api = {
   transaction: (user: DemoUser, id: string) => request<Transaction>('/transactions/' + encodeURIComponent(id), user),
   receipt: async (user: DemoUser, id: string) =>
     (await responseFor('/transactions/' + encodeURIComponent(id) + '/receipt.pdf', user)).blob(),
-  notifications: (user: DemoUser, offset = 0) => request<NotificationPage>(`/notifications?offset=${offset}`, user),
+  notifications: (user: DemoUser, offset = 0, category?: NotificationCategory, filters: { q?: string; unread?: boolean } = {}) =>
+    request<NotificationPage>('/notifications?' + query({ offset, category, q: filters.q, unread: filters.unread || undefined }), user),
+  announcements: (user: DemoUser) => request<{ items: Announcement[] }>('/announcements', user),
   readNotification: (user: DemoUser, id: string) =>
     request<BankNotification>(`/notifications/${encodeURIComponent(id)}/read`, user, { method: 'PATCH' }),
-  readAllNotifications: (user: DemoUser) =>
-    request<{ updated: number }>('/notifications/read-all', user, { method: 'POST' }),
+  readAllNotifications: (user: DemoUser, category?: NotificationCategory) =>
+    request<{ updated: number }>('/notifications/read-all' + (category ? `?category=${category}` : ''), user, { method: 'POST' }),
   adminTransactions: (user: DemoUser, filters: TransactionFilters = {}) =>
     request<Page<Transaction>>('/admin/transactions?' + query(filters), user),
   transferAudit: (user: DemoUser, id: string) =>
@@ -144,3 +156,8 @@ export const api = {
       method: 'POST', body: JSON.stringify({ tool_name, arguments: args }),
     }),
 };
+
+/** Random idempotency key. crypto.randomUUID needs a secure context, which plain http over the LAN (lab VM) is not. */
+export function newKey() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+}

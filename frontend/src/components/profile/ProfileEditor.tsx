@@ -14,7 +14,7 @@ export function ProfileEditor({ user, logout }: { user: DemoUser; logout: () => 
       <Field label="Update"><select value={field} onChange={e => setField(e.target.value)}><option value="name">Display name</option><option value="email">Email</option><option value="phone">Phone</option><option value="password">Password</option></select></Field>
       <Field label={field === 'password' ? 'New password (15–128 characters)' : 'New value'}><input key={field} name="value" type={field === 'password' ? 'password' : field === 'email' ? 'email' : 'text'} minLength={field === 'password' ? 15 : 1} maxLength={field === 'password' ? 128 : 254} required autoComplete={field === 'password' ? 'new-password' : 'off'} /></Field>
       <Field label="Current password for profile change"><input name="password" type="password" autoComplete="current-password" required maxLength={128} /></Field>
-      <Feedback state={op} /><button className="secondary-button" disabled={op.busy}>{op.busy ? 'Sending…' : 'Send verification code'}</button>
+      <Feedback state={op} /><button className="secondary-button" disabled={op.busy}>{op.busy ? 'Please wait…' : field === 'email' || field === 'phone' ? 'Send verification code' : 'Continue to verification'}</button>
     </form>
     <ConfirmAction user={user} draft={draft} close={() => setDraft(null)} done={result => { setDraft(null); if (result.sign_in_required) logout(); else { op.setMessage(result.message); state.reload(); } }} />
   </section>;

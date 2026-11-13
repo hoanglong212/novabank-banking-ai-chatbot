@@ -10,10 +10,11 @@ from . import agent_access
 from .auth_crypto import decrypt_secret
 from .config import setting
 from .database import now
-from .dependencies import customer_user, get_db
+from .dependencies import approval_user, assistant_user, get_db
 from .guard import inspect_prompt
 from .identity import transaction
 from .identity_schemas import IdentityInput
+from .request_context import request_id
 
 router = APIRouter(prefix='/api')
 
@@ -61,17 +62,17 @@ def preview(payload: PreviewInput, principal=Depends(delegated), db=Depends(get_
     user, run = principal
     with transaction(db) as conn:
         agent_access.active_run(conn, run)
-        answer = filtered_answer(conn, db, run, payload.answer)
+        answer = payload.answer if run.get('gateway') == 'off' else filtered_answer(conn, db, run, payload.answer)
         return {'text': agent_access.vault_for(db, run).restore(answer)}
 
 
 @router.post('/agent/runs/{run_id}/cancel')
-def cancel(run_id: str, user=Depends(customer_user), db=Depends(get_db)):
+def cancel(run_id: str, user=Depends(assistant_user), db=Depends(get_db)):
     return agent_access.cancel_run(db, user, run_id)
 
 
 @router.post('/agent/runs', status_code=201)
-def create(payload: RunInput, user=Depends(customer_user), db=Depends(get_db)):
+def create(payload: RunInput, user=Depends(assistant_user), db=Depends(get_db)):
     return agent_access.create_run(db, user, payload.conversation_id, payload.content, payload.profile)
 
 
@@ -96,7 +97,8 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
         active = conn.execute('SELECT status FROM agent_runs WHERE id=?', (run['id'],)).fetchone()
         if not active or active[0] not in ('READY', 'RUNNING'):
             raise HTTPException(409, 'Run is already finished.')
-        answer = filtered_answer(conn, db, run, payload.answer)
+        # Gateway off (lab): the model's answer is stored as written, without the output filter.
+        answer = payload.answer if run.get('gateway') == 'off' else filtered_answer(conn, db, run, payload.answer)
         restored = vault.restore(answer)
         conn.execute('''UPDATE agent_runs SET status=?,completed_at=?,latency_ms=?,input_tokens=?,output_tokens=?,
             response_source='agent_service',answer=?,termination_reason=?,bound_request_json='{}',vault_json='{}' WHERE id=?''',
@@ -110,7 +112,7 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
 
 
 @router.get('/agent/runs')
-def runs(conversation_id: str = Query(max_length=64), user=Depends(customer_user), db=Depends(get_db)):
+def runs(conversation_id: str = Query(max_length=64), user=Depends(assistant_user), db=Depends(get_db)):
     with db.connect() as conn:
         if not conn.execute('SELECT 1 FROM conversations WHERE id=? AND owner_id=?', (conversation_id, user.id)).fetchone():
             raise HTTPException(404, 'Conversation not found.')
@@ -120,7 +122,7 @@ def runs(conversation_id: str = Query(max_length=64), user=Depends(customer_user
 
 
 @router.get('/agent/runs/{run_id}')
-def run_detail(run_id: str, user=Depends(customer_user), db=Depends(get_db)):
+def run_detail(run_id: str, user=Depends(assistant_user), db=Depends(get_db)):
     with db.connect() as conn:
         row = conn.execute('''SELECT id,status,profile,model,created_at,completed_at,latency_ms,input_tokens,output_tokens,answer,termination_reason
             FROM agent_runs WHERE id=? AND owner_id=?''', (run_id, user.id)).fetchone()
@@ -134,7 +136,7 @@ def run_detail(run_id: str, user=Depends(customer_user), db=Depends(get_db)):
 
 
 @router.get('/agent/approvals')
-def approvals(conversation_id: str = Query(max_length=64), user=Depends(customer_user), db=Depends(get_db)):
+def approvals(conversation_id: str = Query(max_length=64), user=Depends(approval_user), db=Depends(get_db)):
     with db.connect() as conn:
         rows = conn.execute('''SELECT a.* FROM tool_approvals a JOIN agent_runs r ON r.id=a.run_id
             WHERE a.owner_id=? AND r.conversation_id=? ORDER BY a.created_at DESC,a.rowid DESC LIMIT 50''', (user.id, conversation_id))
@@ -142,8 +144,18 @@ def approvals(conversation_id: str = Query(max_length=64), user=Depends(customer
 
 
 @router.post('/agent/approvals/{approval_id}')
-async def approve(approval_id: str, payload: ApprovalInput, user=Depends(customer_user), db=Depends(get_db)):
+async def approve(approval_id: str, payload: ApprovalInput, user=Depends(approval_user), db=Depends(get_db)):
     return await agent_access.approve(db, user, approval_id, payload.approve)
+
+
+@router.get('/agent/approvals/{approval_id}')
+def approval_detail(approval_id: str, user=Depends(approval_user), db=Depends(get_db)):
+    with db.connect() as conn:
+        row = conn.execute('SELECT * FROM tool_approvals WHERE id=? AND owner_id=?', (approval_id, user.id)).fetchone()
+        if not row:
+            raise HTTPException(404, 'Approval not found.')
+        return {'id': row['id'], 'name': row['name'], 'status': row['status'],
+                'arguments': json.loads(row['arguments_json']), 'expires_at': row['expires_at']}
 
 
 def sse(event, data):
@@ -151,13 +163,19 @@ def sse(event, data):
 
 
 @router.post('/conversations/{conversation_id}/stream')
-async def stream(conversation_id: str, payload: StreamInput, request: Request, user=Depends(customer_user), db=Depends(get_db)):
+async def stream(conversation_id: str, payload: StreamInput, request: Request, user=Depends(assistant_user), db=Depends(get_db)):
     if not db.get_conversation(conversation_id, user.id):
         raise HTTPException(404, 'Conversation not found.')
+    from . import agent_gateway
     with db.connect() as conn:
         agent_access.enabled(conn)
+        gateway = agent_gateway.state(conn)
     verdict = inspect_prompt(payload.content)
     if verdict.reason:
+        agent_gateway.record({'created_at': now(), 'gateway': gateway, 'profile': payload.profile, 'owner_id': user.id, 'role': user.role,
+                              'chat_request_id': request_id.get(), 'tool': 'input_guard',
+                              'decision': 'DENY' if gateway == 'on' else 'ALLOW', 'reason': verdict.reason})
+    if verdict.reason and gateway == 'on':
         db.append_message(conversation_id, 'user', verdict.text)
         db.add_event(conversation_id, 'input_guard', {}, 'DENY', verdict.reason, False)
         answer = db.append_message(conversation_id, 'assistant', verdict.reply)

@@ -1,0 +1,79 @@
+[
+  {
+    "filePath": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend\\scripts\\check-components.mjs",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend\\scripts\\check-week7-local.mjs",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend\\scripts\\record-demo.mjs",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend\\scripts\\record-week7-ui.mjs",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend\\scripts\\release-browser.mjs",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend\\scripts\\render-week7-slides.mjs",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  },
+  {
+    "filePath": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\frontend\\scripts\\start-e2e-server.mjs",
+    "messages": [],
+    "suppressedMessages": [],
+    "errorCount": 0,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "usedDeprecatedRules": []
+  }
+]

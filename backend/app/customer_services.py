@@ -112,27 +112,28 @@ def edit_beneficiary(db, user, beneficiary_id, nickname):
         return dict(conn.execute('SELECT * FROM beneficiaries WHERE id=? AND owner_id=?', (beneficiary_id, user.id)).fetchone())
 
 
-def lookup_recipient(db, user, account_id, bank):
+async def lookup_recipient(db, user, account_id, bank):
     from .recipient_security import limit
     limit(db, user)
+    bank = bank.strip()
+    if bank.lower() not in ('novabank', 'nova', 'nvb'):
+        from . import vietqr
+        found = vietqr.find_bank(await vietqr.banks(), bank)
+        if not found or not re.fullmatch(r'[0-9]{6,19}', account_id):
+            raise HTTPException(422, 'Choose a supported bank and 6 to 19 account digits.')
+        return {'account_id': account_id, 'bank': found['shortName'], 'holder_name': 'SIMULATED RECIPIENT ' + account_id[-4:]}
     with closing(db.connect()) as conn:
-        bank = bank.strip()
-        if bank.lower() in ('novabank', 'nova', 'nvb'):
-            bank = 'NovaBank'
-            account_id = account_id.upper()
-            row = conn.execute("SELECT holder_name FROM accounts WHERE id=? AND status='ACTIVE'", (account_id,)).fetchone()
-            if not row:
-                raise HTTPException(404, 'Active recipient account not found.')
-            name = row[0]
-        else:
-            if bank not in ('Demo Bank A', 'Demo Bank B') or not re.fullmatch(r'[0-9]{6,20}', account_id):
-                raise HTTPException(422, 'Use a supported simulated bank and 6 to 20 account digits.')
-            name = 'SIMULATED RECIPIENT ' + account_id[-4:]
-        return {'account_id': account_id, 'bank': bank, 'holder_name': name}
+        account_id = account_id.upper()
+        row = conn.execute("SELECT holder_name FROM accounts WHERE id=? AND status='ACTIVE'", (account_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, 'Active recipient account not found.')
+        return {'account_id': account_id, 'bank': 'NovaBank', 'holder_name': row[0]}
 
 
-def save_beneficiary(db, user, account_id, bank, nickname):
-    recipient = lookup_recipient(db, user, account_id, bank)
+async def save_beneficiary(db, user, account_id, bank, nickname):
+    if not nickname.strip():
+        raise HTTPException(422, 'Enter a recipient nickname.')
+    recipient = await lookup_recipient(db, user, account_id, bank)
     account_id, bank, name = recipient['account_id'], recipient['bank'], recipient['holder_name']
     with transaction(db) as conn:
         if conn.execute('SELECT 1 FROM beneficiaries WHERE owner_id=? AND bank=? AND account_id=?', (user.id, bank, account_id)).fetchone():

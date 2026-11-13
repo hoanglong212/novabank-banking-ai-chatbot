@@ -28,8 +28,25 @@ OpenAPI sinh trực tiếp từ FastAPI tại [openapi.json](openapi.json). Khi 
 - 401 là phiên/grant không hợp lệ; 403 là thiếu quyền hoặc intent; nhiều owner lookup dùng 404 để không tiết lộ tồn tại; 409 là replay/state conflict; 422 là DTO; 429 là quota; 503 là dependency/DB/kill switch.
 - `POST /api/transfers/{id}/confirm` nên giữ một `Idempotency-Key` cho mọi retry của cùng thao tác. Không tạo key mới sau timeout không biết trạng thái.
 - SSE có events `run`, `progress`, `tool`, `complete`, `error`. Client chỉ render final answer đã kiểm duyệt, không render raw model tokens. Không dùng legacy `/messages` ở deployment: route này 409 trừ launcher regression riêng.
-- Tên `vietqr` còn giữ để tương thích API/tool cũ nhưng chỉ tạo NovaBank QR nội bộ. Không có request mạng đến VietQR/NAPAS.
+- `/api/vietqr/banks` lấy danh sách ngân hàng công khai từ VietQR, có cache và giữ ngân hàng demo khi nguồn ngoài lỗi. `/api/vietqr` vẫn tạo QR NovaBank nội bộ; không gọi dịch vụ tạo mã hoặc chuyển tiền thật.
 - API response chứa `demo_otp` ở transfer cho mô phỏng; product/email OTP đọc qua CLI outbox. Không dùng contract này cho tiền thật.
 - `/api/health` là liveness. `/api/ready` kiểm tra local model và, khi `BANK_REQUIRE_AGENT=true`, agent health. Agent `/health` báo process/transport, không đảm bảo chất lượng suy luận.
 
 Body cap 4 MiB và no-store áp dụng API. Header auth/OTP/password/refresh không được đưa vào request logs. Swagger documentation có CSP CDN riêng, banking frontend vẫn script self.
+
+### Explore service updates (2026-11-08)
+
+- `PUT /api/savings-goals/{goal_id}` accepts the same body as goal creation (`label`, `target_vnd`, `target_date`, optional `savings_id`). It requires ownership of the goal and any linked active savings account. Invalid calendar dates and blank names return 422; inactive savings links return 409.
+- `GET /api/support/tickets` accepts optional `status=OPEN|IN_PROGRESS|RESOLVED|CLOSED`. Filtering applies before the count and pagination, preserving customer ownership and staff permissions.
+- Beneficiary lookup/save accepts banks from the existing VietQR catalog. Other-bank account numbers must contain 6–19 digits; returned names explicitly say `SIMULATED RECIPIENT`. NovaBank continues to verify active internal account names locally.
+### Admin Home dashboard (2026-11-08)
+
+- `GET /api/admin/overview?days=7|30|90` defaults to 7; other values return 422. Existing overview fields remain available. `dashboard` adds period/previous-period metrics, a zero-filled daily series, current snapshots, recent transfers, bounded attention queues and recent banking events. Requires existing `admin:audit:read` permission.
+- Period boundaries and daily grouping use Vietnam calendar dates and transfer confirmation time (creation fallback); effective outcome uses settlement status where present. OTP drafts are excluded. Settled volume counts each completed transfer principal once, excludes fees, and does not double-count internal account entries. Completion rate is completed / (completed + failed), or null without terminal outcomes.
+- Snapshot counts are current, independent of selected period. Pending queue spans all dates; failed queue and recent transfers use selected period. Queues return at most 20 entries each, recent transfers 8, events 5. Counts may exceed displayed rows. Refresh is explicit; `updated_at` identifies the snapshot.
+- The dashboard reuses `POST /api/admin/reconcile` with existing `settings:write` permission. No saved report is displayed as unchecked, never as healthy. No migration or external banking connection is introduced.
+
+
+### Gateway binding hardening (2026-11-08)
+
+The existing agent APIs and payload shapes are unchanged. Customer and staff write proposals require an affirmative request; quoted examples, questions and negations do not grant write capability. Transfer memo text cannot supply a recipient. Staff account/customer states and setting values are checked against the requested action/field. Rejected attempts return the existing DENY / USER_INTENT_REQUIRED or USER_INTENT_MISMATCH decision. In defended mode, get_bills now applies the source guard before returning model-visible content. See [audit evidence](gateway-audit-2026-11-08/REPORT_VI.md); baseline retains its explicitly weaker research behavior.

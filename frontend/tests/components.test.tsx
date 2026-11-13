@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { checkPaymentImageText } from './payment-image.test';
 import { loanSchedule } from '../src/calculators';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MessageThread } from '../src/components/chat/MessageThread';
@@ -18,6 +19,8 @@ import type { ToolEvent } from '../src/types';
 import { api } from '../src/api';
 import { vnd } from '../src/format';
 import { ReceiptButton } from '../src/components/activity/ReceiptButton';
+import { pickRange } from '../src/components/activity/TransactionFilters';
+checkPaymentImageText();
 import { TransactionInfo } from '../src/components/activity/TransactionDetails';
 
 {
@@ -86,7 +89,8 @@ const profile = { id: 'alice', name: 'Alice', accounts: [{ id: 'ACC-ALICE-001', 
 const home = renderToStaticMarkup(<Home user={user} profile={profile} navigate={noop} ask={noop} />);
 assert.ok(!home.includes('12,500,000'), 'balance is hidden until the customer reveals it');
 assert.ok(home.includes('aria-label="Show balance"') && home.includes('ACC-ALICE-001'));
-assert.ok(home.includes('Salary credit') && home.includes('+15,000,000 VND'));
+// Recent transactions live on Activity now; Home is balance, actions and services.
+assert.ok(!home.includes('Salary credit') && home.includes('All services') && home.includes('Search services or ask Nova'));
 const loading = renderToStaticMarkup(<Home user={user} profile={null} navigate={noop} ask={noop} />);
 assert.ok(loading.includes('skeleton-balance'));
 const activityPage = renderToStaticMarkup(<Activity user={user} profile={profile} openTransaction={noop} />);
@@ -94,7 +98,11 @@ assert.ok(activityPage.includes('Money in') && activityPage.includes('+15,000,00
 const totals = renderToStaticMarkup(<MonthCard profile={{ ...profile, transactions: [...profile.transactions,
   { id: 'pending', amount_vnd: 9999000, direction: 'out', status: 'PENDING', description: 'Not posted', date: '2026-10-25' }] }} />);
 assert.ok(totals.includes('Completed activity') && !totals.includes('9,999,000'), 'summary must not call pending payments completed money movement or claim an unfiltered month');
-console.log('PASS: balance hidden by default, skeleton while loading, activity grouped by day');
+assert.deepEqual(pickRange('', '', '2026-11-05'), ['2026-11-05', '']);
+assert.deepEqual(pickRange('2026-11-05', '', '2026-11-09'), ['2026-11-05', '2026-11-09']);
+assert.deepEqual(pickRange('2026-11-05', '', '2026-11-01'), ['2026-11-01', '2026-11-05'], 'an earlier second tap swaps the ends');
+assert.deepEqual(pickRange('2026-11-01', '2026-11-05', '2026-11-20'), ['2026-11-20', ''], 'a tap after a full range starts a new one');
+console.log('PASS: balance hidden by default, skeleton while loading, activity grouped by day, date range picking');
 
 const events: ToolEvent[] = Array.from({ length: 8 }, (_, index) => ({
   id: String(index), tool_name: `tool-${index}`, decision: 'ALLOW',

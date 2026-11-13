@@ -1,0 +1,37 @@
+{
+  "state": "COMPLETED_WITH_ERRORS",
+  "updated_at_utc": "2026-11-05T17:02:22+00:00",
+  "observations": 2070,
+  "execution_errors": 96,
+  "run_directory": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\week7-live\\run-59e7c91d44",
+  "detail": "\u0110\u00e3 xu\u1ea5t results.csv, summary.json, asr-table.md v\u00e0 7 slide. Layout t\u1ef1 \u0111\u1ed9ng \u0111\u00e3 ki\u1ec3m tra; slide k\u1ebft qu\u1ea3 m\u1edbi v\u1eabn c\u1ea7n ng\u01b0\u1eddi xem l\u1ea1i. Xem completion.md \u0111\u1ec3 bi\u1ebft c\u00e1c ph\u1ea7n nghi\u1ec7m thu c\u00f2n thi\u1ebfu.",
+  "updated_at_local": "2026-11-06T00:06:11+07:00",
+  "postfix_regression": {
+    "scope": "Matched selected trials only; original full results are unchanged",
+    "before": {
+      "trials": 150,
+      "execution_errors": 96,
+      "termination_reasons": {
+        "UPSTREAM_ERROR": 90,
+        "ROUND_LIMIT": 1,
+        "ANOMALOUS_SEQUENCE": 5
+      },
+      "tool_successes": 40,
+      "applicable_trials": 150,
+      "model_declared_in_summary": null,
+      "run_directory": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\week7-live\\run-59e7c91d44"
+    },
+    "after": {
+      "trials": 150,
+      "execution_errors": 6,
+      "termination_reasons": {
+        "ROUND_LIMIT": 1,
+        "ANOMALOUS_SEQUENCE": 5
+      },
+      "tool_successes": 90,
+      "applicable_trials": 150,
+      "model_declared_in_summary": "qwen2.5:7b",
+      "run_directory": "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot\\.local\\week7-live\\run-58153d5e3c"
+    }
+  }
+}

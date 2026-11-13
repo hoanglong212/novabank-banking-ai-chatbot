@@ -62,16 +62,35 @@ def goals(user=Depends(customer_user), db=Depends(get_db)):
 
 @router.post('/savings-goals', status_code=201)
 def create_goal(payload: Goal, user=Depends(customer_user), db=Depends(get_db)):
+    return save_goal(payload, user, db)
+
+
+@router.put('/savings-goals/{goal_id}')
+def update_goal(goal_id: str, payload: Goal, user=Depends(customer_user), db=Depends(get_db)):
+    return save_goal(payload, user, db, goal_id)
+
+
+def save_goal(payload, user, db, goal_id=None):
     try:
         date.fromisoformat(payload.target_date)
     except ValueError:
         raise HTTPException(422, 'Choose a valid target date.')
     with transaction(db) as conn:
+        if not payload.label.strip():
+            raise HTTPException(422, 'Enter a goal name.')
+        if goal_id:
+            owned(conn, 'savings_goals', goal_id, user.id)
         if payload.savings_id:
-            owned(conn, 'savings', payload.savings_id, user.id)
-        goal_id = uuid.uuid4().hex
-        conn.execute('INSERT INTO savings_goals VALUES (?,?,?,?,?,?)', (goal_id, user.id, payload.label, payload.target_vnd, payload.target_date, payload.savings_id))
-    return {'id': goal_id, 'message': 'Goal created.'}
+            saving = owned(conn, 'savings', payload.savings_id, user.id)
+            if saving['status'] != 'ACTIVE':
+                raise HTTPException(409, 'Link an active savings account.')
+        if goal_id:
+            conn.execute('UPDATE savings_goals SET label=?,target_vnd=?,target_date=?,savings_id=? WHERE id=? AND owner_id=?',
+                         (payload.label.strip(), payload.target_vnd, payload.target_date, payload.savings_id, goal_id, user.id))
+        else:
+            goal_id = uuid.uuid4().hex
+            conn.execute('INSERT INTO savings_goals VALUES (?,?,?,?,?,?)', (goal_id, user.id, payload.label.strip(), payload.target_vnd, payload.target_date, payload.savings_id))
+    return {'id': goal_id, 'message': 'Goal saved.'}
 
 
 @router.delete('/savings-goals/{goal_id}')

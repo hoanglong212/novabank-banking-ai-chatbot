@@ -14,7 +14,7 @@ def test_pending_external_and_reversal_with_fee(client, alice):
     before = balance(client, alice)
     t = draft(client, alice, to_bank='Demo Bank A', to_account='1234560000').json()
     assert t['fee_vnd'] == 1000
-    r = client.post(f'/api/transfers/{t["id"]}/confirm', headers={**alice, 'Idempotency-Key': 'external-fail'}, json={'otp': t['demo_otp']})
+    r = client.post(f'/api/transfers/{t["id"]}/confirm', headers={**alice, 'Idempotency-Key': 'external-fail'}, json={'otp': transfer_code(t)})
     assert r.status_code == 200 and r.json()['status'] == 'PENDING', r.text
     assert balance(client, alice) == before - 201000
     assert client.get('/api/transactions/' + r.json()['transaction_id'], headers=alice).json()['status'] == 'PENDING'
@@ -30,8 +30,10 @@ def test_pending_external_and_reversal_with_fee(client, alice):
 def test_successful_external_is_completed_by_worker(client, alice):
     from app.settlement import process_due
     t = draft(client, alice, to_bank='Demo Bank B', to_account='1234567890').json()
-    r = client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': t['demo_otp']})
+    r = client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': transfer_code(t)})
     assert r.json()['status'] == 'PENDING'
     assert process_due(get_db(), force=True)['completed'] == 1
     assert client.get('/api/transactions/' + r.json()['transaction_id'], headers=alice).json()['status'] == 'COMPLETED'
     assert reconcile(get_db())['balanced']
+
+from tests.conftest import transfer_code

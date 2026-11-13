@@ -8,6 +8,16 @@ from .auth import DUMMY_HASH, verify_password
 from .auth_crypto import otp_digest, decrypt_secret, match_totp
 from .identity import transaction, digest, lookup_principal, quota, audit
 
+TRUSTED_DEVICE_SECONDS = 30 * 86400  # Unused this long, the device must pass MFA again.
+
+
+def trusted_device(conn, user, raw, stamp):
+    """Customers only; staff always pass MFA. Password/MFA changes bump or delete the trust."""
+    if not raw or user.role != 'customer':
+        return False
+    return conn.execute('UPDATE trusted_devices SET last_used_at=? WHERE token_hash=? AND user_id=? AND auth_version=? AND last_used_at+?>?',
+                        (stamp, digest(raw), user.id, user.auth_version, TRUSTED_DEVICE_SECONDS, stamp)).rowcount == 1
+
 
 def invalid():
     return HTTPException(400, 'The code is invalid, expired or already used. Request a new code or sign in again.')
@@ -55,7 +65,7 @@ def create_challenge(conn, user, purpose, ip, ua, stamp, method='email', session
             'message': 'Enter your authenticator code.' if method == 'totp' else 'A verification code is available in the local demo inbox.'}
 
 
-def begin_login(db, username, password, ip, ua):
+def begin_login(db, username, password, ip, ua, device_token=None):
     key = username.strip().lower()
     candidate = lookup_principal(db, key)
     correct = verify_password(password, candidate.password_hash if candidate else DUMMY_HASH)
@@ -72,6 +82,9 @@ def begin_login(db, username, password, ip, ua):
             security.failure(conn, key, stamp)
             security.history(conn, current['id'] if current else None, 'PASSWORD_FAILED', 'password', ip, ua, stamp)
             rejection = HTTPException(401, 'Invalid username or password')
+        elif trusted_device(conn, candidate, device_token, stamp):
+            security.clear_failures(conn, key)
+            result = sessions.create(conn, candidate, ip, ua, 'trusted_device', stamp)
         else:
             configured = conn.execute('SELECT secret_encrypted FROM mfa_settings WHERE user_id=?', (key,)).fetchone()
             result = create_challenge(conn, candidate, 'LOGIN', ip, ua, stamp, 'totp' if configured and configured[0] else 'email')
@@ -125,6 +138,11 @@ def complete(db, raw, code, purpose='LOGIN', user=None):
             if purpose == 'LOGIN':
                 principal = lookup_principal(db, row['user_id'])
                 result = sessions.create(conn, principal, row['ip'], row['user_agent'], row['method'], stamp)
+                if principal.role == 'customer':
+                    device = secrets.token_urlsafe(32)
+                    conn.execute('INSERT INTO trusted_devices VALUES (?,?,?,?,?)',
+                                 (digest(device), principal.id, principal.auth_version, stamp, stamp))
+                    result['device_token'] = device
             else:
                 conn.execute('DELETE FROM mfa_settings WHERE user_id=?', (user.id,))
                 security.revoke_user(conn, user.id, stamp, 'MFA_CHANGED', except_session=user.session_id)

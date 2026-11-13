@@ -1,38 +1,9 @@
-import { useState } from 'react';
-import { CreditCard, LockKeyhole, PiggyBank, ReceiptText } from 'lucide-react';
 import type { DemoUser } from '../../types';
-import { vnd } from '../../format';
-import { ConfirmAction, Feedback, Field, Loading, send, useOperation, useResource, type ActionDraft } from './shared';
-
-interface Card { id: string; kind: string; last_four: string; status: string; credit_limit_vnd: number; outstanding_vnd: number; transactions: { id: string; kind: string; merchant: string; amount_vnd: number; created_at: string }[] }
-interface Bill { id: string; provider: string; category: string; amount_vnd: number; due_date: string; status: string; saved: number; customer_code: string }
-interface Saving { id: string; label: string; principal_vnd: number; term_months: number; rate_bps: number; projected_interest_vnd: number; maturity_date: string; status: string; interest_paid_vnd: number }
+import { Cards } from './Cards';
+import { Bills } from './Bills';
+import { Savings } from './Savings';
 export function Products({ user, section }: { user: DemoUser; section: 'cards' | 'bills' | 'savings' }) {
-  const state = useResource<{ items: (Card | Bill | Saving)[] }>(user, '/products/' + section);
-  const accounts = useResource<{ items: { id: string; nickname: string }[] }>(user, '/customer/accounts');
-  const [draft, setDraft] = useState<ActionDraft | null>(null); const op = useOperation();
-  const prepare = (body: Record<string, unknown>) => void op.run(async () => setDraft(await send<ActionDraft>(user, '/products/actions', body)));
-  const accountOptions = accounts.data?.items.map(a => <option value={a.id} key={a.id}>{a.nickname} · {a.id}</option>);
-  return <div className="service-stack"><Loading state={state} /><Feedback state={op} />
-    {section === 'cards' && <><p className="muted">Simulated cards for this demo. Card changes and purchases require a verification code.</p><div className="service-grid">{(state.data?.items as Card[] | undefined)?.map(card => <article className="card service-section" key={card.id}>
-      <div className="page-heading"><CreditCard aria-hidden="true" /><span className="badge">{card.status.toLowerCase()}</span></div><h2 className="card-title">Nova {card.kind.toLowerCase()}</h2><p className="card-number">•••• •••• •••• {card.last_four}</p>
-      {card.kind === 'CREDIT' && <dl className="detail-list"><div><dt>Outstanding</dt><dd>{vnd(card.outstanding_vnd)}</dd></div><div><dt>Available credit</dt><dd>{vnd(card.credit_limit_vnd - card.outstanding_vnd)}</dd></div></dl>}
-      <button className="secondary-button" disabled={op.busy} onClick={() => prepare({ kind: card.status === 'ACTIVE' ? 'FREEZE_CARD' : 'UNFREEZE_CARD', resource_id: card.id })}><LockKeyhole size={16} />{card.status === 'ACTIVE' ? 'Freeze card' : 'Unfreeze card'}</button>
-      <form className="service-form" onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); prepare({ kind: data.get('kind'), resource_id: card.id, amount_vnd: Number(data.get('amount')), label: data.get('label') }); }}>
-        <Field label="Demo action"><select name="kind"><option value="CARD_PURCHASE">Simulate purchase</option>{card.kind === 'CREDIT' && <option value="REPAY_CARD">Repay credit balance</option>}</select></Field>
-        <Field label="Amount (VND)"><input name="amount" type="number" min={1000} max={100000000} step={1000} required /></Field><Field label="Merchant or description"><input name="label" maxLength={120} required placeholder="Demo coffee shop" /></Field><button className="primary-button" disabled={op.busy}>Review action</button>
-      </form>
-      <details><summary>Card history ({card.transactions.length})</summary>{!card.transactions.length && <p className="muted">No purchases yet.</p>}<ul className="service-list">{card.transactions.map(t => <li key={t.id}><div><strong>{t.merchant}</strong><small>{new Date(t.created_at).toLocaleDateString('en-GB')} · {t.kind === 'REPAY_CARD' ? 'Repayment' : 'Purchase'}</small></div><span>{vnd(t.amount_vnd)}</span></li>)}</ul></details>
-    </article>)}</div></>}
-    {section === 'bills' && <><p className="muted">Electricity, water, internet and mobile bills use fictional providers. Save a bill to receive due-date reminders.</p><div className="service-grid">{(state.data?.items as Bill[] | undefined)?.map(bill => <article className="card service-section" key={bill.id}>
-      <div className="page-heading"><ReceiptText aria-hidden="true" /><span className="badge">{bill.status.toLowerCase()}</span></div><h2 className="card-title">{bill.provider}</h2><strong className="service-amount">{vnd(bill.amount_vnd)}</strong><p className="muted">{bill.customer_code} · Due {bill.due_date}</p>
-      <label className="check-field"><input type="checkbox" checked={!!bill.saved} disabled={op.busy} onChange={e => { const checked = e.target.checked; void op.run(async () => { await send(user, `/bills/${bill.id}/saved?saved=${checked}`, undefined, 'PATCH'); state.reload(); }); }} />Save bill and remind me</label>
-      {bill.status === 'UNPAID' && <form className="service-form" onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); prepare({ kind: 'PAY_BILL', resource_id: bill.id, account_id: data.get('account_id') }); }}><Field label="Pay from"><select name="account_id" required>{accountOptions}</select></Field><button className="primary-button" disabled={op.busy || accounts.busy}>Review payment</button></form>}
-    </article>)}</div></>}
-    {section === 'savings' && <><section className="card service-section"><PiggyBank aria-hidden="true" /><h2 className="card-title">Make room for your next goal</h2><p className="muted">Fixed annual rates. Interest is paid at maturity; withdrawing early returns the principal with no interest.</p>
-      <form className="service-form two-column" onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); prepare({ kind: 'OPEN_SAVINGS', account_id: data.get('account_id'), amount_vnd: Number(data.get('amount')), term_months: Number(data.get('term')), label: data.get('label') }); }}>
-        <Field label="Savings name"><input name="label" maxLength={80} required placeholder="Emergency fund" /></Field><Field label="Fund from"><select name="account_id" required>{accountOptions}</select></Field><Field label="Deposit (VND)"><input type="number" name="amount" required min={100000} max={100000000} step={1000} /></Field><Field label="Term and annual rate"><select name="term"><option value={3}>3 months · 4.5%</option><option value={6}>6 months · 5.0%</option><option value={12}>12 months · 6.0%</option></select></Field><button className="primary-button" disabled={op.busy || accounts.busy}>Review savings deposit</button>
-      </form></section><div className="service-grid">{(state.data?.items as Saving[] | undefined)?.map(s => <article className="card service-section" key={s.id}><span className="badge">{s.status.toLowerCase()}</span><h3>{s.label}</h3><strong className="service-amount">{vnd(s.principal_vnd)}</strong><dl className="detail-list"><div><dt>Annual rate</dt><dd>{s.rate_bps / 100}%</dd></div><div><dt>Maturity</dt><dd>{s.maturity_date}</dd></div><div><dt>{s.status === 'ACTIVE' ? 'Projected interest' : 'Interest paid'}</dt><dd>{vnd(s.status === 'ACTIVE' ? s.projected_interest_vnd : s.interest_paid_vnd)}</dd></div></dl>{s.status === 'ACTIVE' && <button className="secondary-button" disabled={op.busy} onClick={() => prepare({ kind: 'WITHDRAW_SAVINGS', resource_id: s.id })}>Review withdrawal</button>}</article>)}</div></>}
-    <ConfirmAction user={user} draft={draft} close={() => setDraft(null)} done={result => { setDraft(null); op.setMessage(result.message); state.reload(); accounts.reload(); }} />
-  </div>;
+  if (section === 'cards') return <Cards user={user} />;
+  if (section === 'bills') return <Bills user={user} />;
+  return <Savings user={user} />;
 }

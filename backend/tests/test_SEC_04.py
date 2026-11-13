@@ -25,7 +25,7 @@ SAMPLES = {
     'Assignment': {'status':'OPEN'}, 'Reply': {'body':'Valid reply'},
     'Attachment': {'name':'hello.txt','content_base64':'aGVsbG8='},
     'UserState': {'status':'ACTIVE'}, 'AccountState': {'status':'ACTIVE'},
-    'Settings': {'transfer_fee_vnd':0}, 'ScanInput': {'payload':'NBQR1.test'},
+    'Settings': {'transfer_fee_vnd':0}, 'GatewaySwitch': {'enabled': True}, 'ScanInput': {'payload':'NBQR1.test'},
     'Document': {'title':'Valid policy','content':'Valid policy content','source':'Internal'},
     'PreviewInput': {'answer':'Balance overview'},
     'RunInput': {'conversation_id':'fixture','content':'What is my balance?'},
@@ -45,6 +45,7 @@ SAMPLES = {
     'VerifyInput': {'challenge_id':'a'*43,'code':'123456'},
     'ChallengeInput': {'challenge_id':'a'*43}, 'RefreshInput': {'refresh_token':'a'*43},
     'PasswordCheck': {'password':'Alice@2026'}, 'CodeInput': {'code':'123456'},
+    'PinInput': {'password':'Alice@2026','pin':'482916'},
 }
 # Explicit inventory: additions without a reviewed test fail rather than silently skip.
 BODYLESS = {
@@ -109,7 +110,7 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
             path = path.replace('{conversation_id}',cid)
         if model.__name__=='TransferConfirm':
             draft = client.post('/api/transfers',headers=who,json=SAMPLES['TransferArgs']).json()
-            path=path.replace('{transfer_id}',draft['id']);sample['otp']=draft['demo_otp']
+            path=path.replace('{transfer_id}',draft['id']);sample['otp']=transfer_code(draft)
         response = client.request(method,path,headers=who,json={**sample,**extra})
         assert response.status_code in (200,201,202), (path,response.status_code)
         after=protected()
@@ -172,3 +173,5 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
 def test_SEC_04_write_inventory_includes_hidden_routes():
     expected={(m,p) for m,p in route_inventory(app) if m in ('POST','PUT','PATCH','DELETE')}
     assert {(m,p) for m,p,_ in writes()}==expected
+
+from tests.conftest import transfer_code

@@ -23,6 +23,11 @@ class PasswordCheck(IdentityInput):
     password: str = Field(min_length=1, max_length=128)
 
 
+class PinInput(IdentityInput):
+    password: str = Field(min_length=1, max_length=128)
+    pin: str = Field(min_length=6, max_length=6, pattern=r'^[0-9]{6}$')
+
+
 class RefreshInput(IdentityInput):
     refresh_token: str = Field(min_length=43, max_length=43, pattern=r'^[A-Za-z0-9_-]+$')
 
@@ -40,7 +45,7 @@ router = APIRouter(prefix='/api/auth', dependencies=[Depends(no_cache)])
 
 @router.post('/login', status_code=202, dependencies=[Depends(limited)])
 def login(payload: LoginRequest, request: Request, db=Depends(get_db)):
-    return mfa.begin_login(db, payload.username, payload.password, *security.metadata(request))
+    return mfa.begin_login(db, payload.username, payload.password, *security.metadata(request), payload.device_token)
 
 
 @router.post('/mfa/verify', dependencies=[Depends(limited)])
@@ -86,6 +91,12 @@ def history(limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0, l
 @router.get('/mfa')
 def mfa_status(user=Depends(current_user), db=Depends(get_db)):
     return mfa_settings.status(db, user)
+
+
+@router.post('/pin')
+def transaction_pin(payload: PinInput, user=Depends(current_user), db=Depends(get_db)):
+    # Password check inside counts failures toward the account lockout.
+    return mfa_settings.set_pin(db, user, payload.password, payload.pin)
 
 
 @router.post('/mfa/setup', dependencies=[Depends(limited)])

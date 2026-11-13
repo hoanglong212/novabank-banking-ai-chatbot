@@ -19,7 +19,7 @@ def test_PFM_02_all_spending_posting_paths_notify_without_insights_read(client, 
     assert client.put('/api/insights/budgets', headers=who, json={'month':month,'category':category,'amount_vnd':1000}).status_code == 200
     if kind == 'INTERBANK':
         draft = client.post('/api/transfers', headers=who, json={'to_bank':'Demo Bank A','to_account':'123456789','to_name':'Test','amount_vnd':2000}).json()
-        assert client.post('/api/transfers/'+draft['id']+'/confirm', headers=who, json={'otp':draft['demo_otp']}).status_code == 200
+        assert client.post('/api/transfers/'+draft['id']+'/confirm', headers=who, json={'otp':transfer_code(draft)}).status_code == 200
         assert not any(r['kind']=='BUDGET' for r in client.get('/api/notifications',headers=who).json()['items'])
         from app.settlement import process_due
         process_due(get_db(), force=True)
@@ -43,3 +43,5 @@ def test_PFM_02_budget_alert_created_by_crossing_threshold(client):
     assert not any(r['kind']=='BUDGET' for r in client.get('/api/notifications',headers=login(client,'bob')).json()['items'])
 
 
+
+from tests.conftest import transfer_code
