@@ -58,5 +58,5 @@ def decrypt_secret(db, value):
 
 
 def otp_digest(challenge_hash, code):
-    from .auth import SECRET
-    return hmac.new(SECRET.encode(), (challenge_hash + ':' + code).encode(), hashlib.sha256).hexdigest()
+    from .auth import OTP_KEY
+    return hmac.new(OTP_KEY.encode(), (challenge_hash + ':' + code).encode(), hashlib.sha256).hexdigest()

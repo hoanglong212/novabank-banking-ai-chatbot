@@ -30,7 +30,9 @@ MAX_OTP_ATTEMPTS = 3
 
 
 def _otp_hash(transfer_id: str, otp: str) -> str:
-    return hashlib.sha256(f'{transfer_id}:{otp}'.encode()).hexdigest()
+    # Keyed (R7): a leaked database alone no longer lets anyone brute-force the 10^6 codes offline.
+    from .auth import OTP_KEY
+    return hmac.new(OTP_KEY.encode(), f'transfer:{transfer_id}:{otp}'.encode(), hashlib.sha256).hexdigest()
 
 
 def _expires_at(transfer: dict) -> str:

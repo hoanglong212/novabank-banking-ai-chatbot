@@ -180,7 +180,7 @@ def main():
            'GUARD_MODEL': args.model, 'OLLAMA_URL': url['app-ollama'], 'BANK_WORKER_ENABLED': 'false', 'LEGACY_AGENT_TEST_MODE': 'false',
            'BANK_REQUIRE_AGENT': 'true', 'FRONTEND_DIST': '', 'JWT_SECRET': secrets.token_urlsafe(48), 'GATEWAY_MODE': 'local',
            'PYTHONIOENCODING': 'utf-8', 'BANKING_API_URL': f'http://127.0.0.1:{bank}', 'AGENT_SERVICE_URL': url['bank-agent']}
-    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
+    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'QR_SIGNING_KEY', 'OTP_HASH_KEY', 'TRANSFER_TOKEN_KEY', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
     agent_env['BANKING_API_URL'] = url['agent-bank']
     children = []
     try:

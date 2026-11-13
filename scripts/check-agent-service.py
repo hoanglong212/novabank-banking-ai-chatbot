@@ -36,7 +36,7 @@ def main():
         for name, module, cwd, number in [('bank', 'app.main:app', ROOT / 'backend', bank_port), ('agent', 'agent_service.main:app', ROOT, agent_port)]:
             local_env = env.copy()
             if name == 'agent':
-                for key in ('DB_PATH', 'JWT_SECRET', 'MFA_ENCRYPTION_KEY'):
+                for key in ('DB_PATH', 'JWT_SECRET', 'QR_SIGNING_KEY', 'OTP_HASH_KEY', 'TRANSFER_TOKEN_KEY', 'MFA_ENCRYPTION_KEY'):
                     local_env.pop(key, None)
             log = (output / (name + '.log')).open('w', encoding='utf-8'); logs.append(log)
             children.append(subprocess.Popen([sys.executable, '-m', 'uvicorn', module, '--host', '127.0.0.1', '--port', str(number)],

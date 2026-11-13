@@ -70,7 +70,7 @@ def servers(directory, provider, model, *, legacy_test_mode=True):
                BANK_WORKER_ENABLED='false', LEGACY_AGENT_TEST_MODE=str(legacy_test_mode).lower(), FRONTEND_DIST='',
                JWT_SECRET=secrets.token_urlsafe(48), GATEWAY_MODE='local', PYTHONIOENCODING='utf-8',
                BANKING_API_URL=f'http://127.0.0.1:{bank_port}', AGENT_SERVICE_URL=f'http://127.0.0.1:{agent_port}')
-    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
+    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'QR_SIGNING_KEY', 'OTP_HASH_KEY', 'TRANSFER_TOKEN_KEY', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
     children = []
     with (directory / 'servers.log').open('w', encoding='utf-8') as log:
         try:

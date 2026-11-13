@@ -41,7 +41,7 @@ def main():
     if args.proxy:
         # httpx honours these; an empty NO_PROXY makes loopback calls go through the proxy too.
         env.update(HTTP_PROXY=args.proxy, HTTPS_PROXY=args.proxy, NO_PROXY='', no_proxy='')
-    agent_env = {k: v for k, v in env.items() if k not in ('JWT_SECRET', 'DB_PATH', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
+    agent_env = {k: v for k, v in env.items() if k not in ('JWT_SECRET', 'QR_SIGNING_KEY', 'OTP_HASH_KEY', 'TRANSFER_TOKEN_KEY', 'MFA_ENCRYPTION_KEY', 'DB_PATH', 'FRONTEND_DIST')}
     children = []
     def stop(*_):
         raise KeyboardInterrupt

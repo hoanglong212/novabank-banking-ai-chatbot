@@ -11,7 +11,7 @@ from .mfa_settings import PIN_MARK, TOTP_MARK, setup_required, transaction_facto
 
 
 def otp_hash(challenge, code):
-    return hmac.new(auth.SECRET.encode(), f'action:{challenge}:{code}'.encode(), hashlib.sha256).hexdigest()
+    return hmac.new(auth.OTP_KEY.encode(), f'action:{challenge}:{code}'.encode(), hashlib.sha256).hexdigest()
 
 
 def notify(conn, owner, kind, title, body, stamp, resource=None, tx=None, dedupe=None):

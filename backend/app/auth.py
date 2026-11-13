@@ -12,8 +12,19 @@ from fastapi import HTTPException, status
 from .config import setting
 
 ISSUER = 'novabank-demo'
-# Without JWT_SECRET, restart invalidates access JWTs and pending email codes; refresh sessions persist.
-SECRET = setting('JWT_SECRET') or secrets.token_urlsafe(48)
+
+
+def _key(name):
+    # One key per purpose, each from its own env var, so a leak of one cannot forge the others (R8).
+    # Unset means a random per-process key: restart invalidates what it signed (access JWTs, pending codes, QR).
+    return setting(name) or secrets.token_urlsafe(48)
+
+
+SECRET = _key('JWT_SECRET')                    # sign-in and delegated agent JWTs
+QR_KEY = _key('QR_SIGNING_KEY')                # NBQR1 payload signatures
+OTP_KEY = _key('OTP_HASH_KEY')                 # sign-in, action and transfer OTP digests
+TRANSFER_TOKEN_KEY = _key('TRANSFER_TOKEN_KEY')  # per-transfer confirmation tokens (aud=transfer-confirm)
+SECRET_ENV = ('JWT_SECRET', 'QR_SIGNING_KEY', 'OTP_HASH_KEY', 'TRANSFER_TOKEN_KEY', 'MFA_ENCRYPTION_KEY')
 TTL_SECONDS = 300
 
 
