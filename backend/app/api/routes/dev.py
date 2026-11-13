@@ -5,11 +5,11 @@ challenge_id the login form holds. Verification and reset links have no session 
 to, so they are never served over HTTP: read them with scripts/dev-outbox.py on the server machine.
 """
 import time
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import Field
 from ...config import setting
 from ...dependencies import get_db, current_user
-from ...identity import digest
+from ...identity import digest, quota, timestamp, transaction
 from ...identity_schemas import IdentityInput
 
 router = APIRouter(prefix='/api/dev', dependencies=[])
@@ -48,9 +48,21 @@ def inbox(user=Depends(current_user), db=Depends(get_db)):
         return {'items': [{**dict(r), 'recipient': masked(r['recipient'])} for r in rows]}
 
 
-# POST keeps the challenge out of URLs and access logs. No rate limit: the challenge is 256 random bits,
-# lives five minutes, and the inbox page polls it.
-@router.post('/outbox/challenge', dependencies=[Depends(demo_only)])
+# One inbox tab polls every 3 s for at most the challenge's 5 minutes (100 requests); this leaves room for
+# several sign-ins from one address (all requests share 127.0.0.1 behind the Vite proxy) while capping floods.
+CHALLENGE_POLLS = 600
+
+
+def challenge_limit(request: Request, db=Depends(get_db)):
+    peer = request.client.host if request.client else 'unknown'
+    with transaction(db) as conn:
+        allowed = quota(conn, 'outbox-challenge', peer, CHALLENGE_POLLS, 900, timestamp())
+    if not allowed:
+        raise HTTPException(429, 'Too many inbox requests. Please try again in 15 minutes.', headers={'Retry-After': '900'})
+
+
+# POST keeps the challenge out of URLs and access logs. demo_only runs first, so outside ENV=demo nothing is counted.
+@router.post('/outbox/challenge', dependencies=[Depends(demo_only), Depends(challenge_limit)])
 def challenge_mail(payload: ChallengeInput, db=Depends(get_db)):
     with db.connect() as conn:
         row = conn.execute("SELECT * FROM dev_outbox WHERE challenge_id=? AND kind='LOGIN_OTP' ORDER BY rowid DESC LIMIT 1",

@@ -14,6 +14,7 @@ const label = (kind: string) => LABELS[kind] ?? kind.charAt(0) + kind.slice(1).r
 const FILTER_KEY = 'outbox-kind'; // recipients are masked by the server, so filter by code type
 
 const SESSION_KEY = 'novabank-session';
+const CHALLENGE_POLL_MS = 300_000; // a sign-in challenge lives five minutes; polling longer only burns the server's rate limit
 const SIGN_IN = 'Open the demo inbox from NovaBank: from the sign-in code screen, or from a signed-in tab.';
 
 /** Opens the inbox in a new tab. Before sign-in, the challenge is the only key to that one sign-in code. */
@@ -28,13 +29,22 @@ function takeChallenge() {
   return value;
 }
 
+type OpenerLike = { location: { origin: string }; sessionStorage: { getItem(key: string): string | null } };
+
+/** The opener tab's access token, only when the opener is this same origin. Exported for tests. */
+export function openerToken(self: { location: { origin: string }; opener: OpenerLike | null }): string | null {
+  try {
+    const opener = self.opener;
+    // Explicit origin check: never read credentials from, or trust, a page on another origin that opened this tab.
+    if (!opener || opener.location.origin !== self.location.origin) return null;
+    const value: unknown = JSON.parse(opener.sessionStorage.getItem(SESSION_KEY) || 'null')?.token;
+    return typeof value === 'string' && value ? value : null;
+  } catch { return null; } // A cross-origin opener throws on location/storage access; a closed one may too.
+}
+
 function token() {
   // Opened from NovaBank: borrow that tab's current token. This tab never refreshes it, so it cannot rotate the session away.
-  try {
-    const saved = window.opener?.sessionStorage.getItem(SESSION_KEY);
-    if (saved) return JSON.parse(saved).token as string;
-  } catch { /* Closed or foreign opener. */ }
-  return currentSession()?.accessToken ?? null;
+  return openerToken(window as unknown as Parameters<typeof openerToken>[0]) ?? currentSession()?.accessToken ?? null;
 }
 
 async function inboxFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -66,7 +76,7 @@ export function Outbox() {
 
   useEffect(() => {
     // The copied session belongs to the opener; a full load of NovaBank in this tab would reuse its refresh token.
-    if (window.opener) try { window.sessionStorage.removeItem(SESSION_KEY); } catch { /* storage blocked */ }
+    if (openerToken(window as unknown as Parameters<typeof openerToken>[0])) try { window.sessionStorage.removeItem(SESSION_KEY); } catch { /* storage blocked */ }
   }, []);
 
   useEffect(() => {
@@ -87,8 +97,9 @@ export function Outbox() {
     }
     void load();
     const poll = window.setInterval(() => void load(), 3000);
+    const stop = challenge ? window.setTimeout(() => clearInterval(poll), CHALLENGE_POLL_MS) : undefined;
     const tick = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => { alive = false; controller.abort(); clearInterval(poll); clearInterval(tick); };
+    return () => { alive = false; controller.abort(); clearInterval(poll); clearTimeout(stop); clearInterval(tick); };
   }, [challenge]);
 
   const kinds = useMemo(() => [...new Set(items.map(i => i.kind))], [items]);

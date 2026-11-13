@@ -9,6 +9,7 @@ import { ToolActivity } from '../src/components/insights/ToolActivity';
 import { Composer } from '../src/components/chat/Composer';
 import { Login } from '../src/components/auth/Login';
 import { checkSessionCoordination } from './session.test';
+import { checkOutboxOpener } from './outbox.test';
 import { acceptSession, clearSession, currentSession } from '../src/sessionStore';
 import { AuthFlow } from '../src/components/auth/AuthFlow';
 import { parseAuthLink } from '../src/components/auth/authLink';
@@ -21,6 +22,7 @@ import { vnd } from '../src/format';
 import { ReceiptButton } from '../src/components/activity/ReceiptButton';
 import { pickRange } from '../src/components/activity/TransactionFilters';
 checkPaymentImageText();
+checkOutboxOpener();
 import { TransactionInfo } from '../src/components/activity/TransactionDetails';
 
 {

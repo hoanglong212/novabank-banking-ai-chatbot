@@ -83,3 +83,14 @@ def test_outbox_is_absent_outside_demo(client, monkeypatch, environment):
     monkeypatch.setenv('ENV', environment)
     assert client.post('/api/dev/outbox/challenge', json={'challenge_id': login_challenge(client)}).status_code == 404
     assert client.get('/api/dev/outbox').status_code == 404
+
+
+def test_challenge_lookups_are_rate_limited_per_address(client, monkeypatch):
+    from app.api.routes import dev
+    monkeypatch.setenv('ENV', 'demo')
+    monkeypatch.setattr(dev, 'CHALLENGE_POLLS', 3)
+    challenge = login_challenge(client)
+    statuses = [client.post('/api/dev/outbox/challenge', json={'challenge_id': challenge}).status_code for _ in range(4)]
+    assert statuses == [200, 200, 200, 429]
+    # Guessing other challenges spends the same budget.
+    assert client.post('/api/dev/outbox/challenge', json={'challenge_id': 'x' * 43}).status_code == 429
