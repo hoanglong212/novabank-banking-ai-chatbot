@@ -342,8 +342,12 @@ def bind_proposal(conn, name, args, text):
                 raise HTTPException(422, 'REPLY_UNGROUNDED_FACT', headers={'x-offending': 'the numbers ' + ', '.join(map(str, invented)) if invented else 'the $ / USD amounts'})
             if language_of(args['body']) != language_of(customer_text):
                 raise HTTPException(422, 'REPLY_WRONG_LANGUAGE')
-        if args.get('assigned_to') and not mentioned(args['assigned_to'], text):
-            raise HTTPException(403, 'USER_INTENT_REQUIRED')
+        if args.get('assigned_to'):
+            target = re.escape(args['assigned_to'])
+            if not re.search(
+                    r'\b(?:assign|reassign)\b[^.!?]{0,80}?\bto\s+' + target + r'\b',
+                    text, re.I):
+                raise HTTPException(403, 'USER_INTENT_REQUIRED')
         if name == 'propose_ticket_status':
             require_choice(text, args['status'], {'RESOLVED': r'\b(?:resolve|resolved|giai quyet)\b',
                 'CLOSED': r'\b(?:close|closed)\b|\bdong (?:ticket|yeu cau|lai)\b',
@@ -382,7 +386,7 @@ def bind_proposal(conn, name, args, text):
                 require_choice(text, value, {True: r'\b(?:enable|enabled|activate|bat)\b|\bturn\b.{0,35}\bon\b',
                     False: r'\b(?:disable|disabled|deactivate|tat)\b|\bturn\b.{0,35}\boff\b'})
             else:
-                match = re.search(r'\b(?:' + labels[key] + r')\b\s*(?:to|is|=|:|la|thanh)?\s*(\d[\d,._]*)\b', fold(text))
+                match = re.search(r'\b(?:set|change|update|raise|lower|reduce|adjust)\s+(?:the\s+)?(?:' + labels[key] + r')\s+(?:to|thanh|la)\s*(\d[\d,._]*)\b', fold(text))
                 if not match or int(re.sub(r'[.,_]', '', match.group(1))) != value:
                     raise HTTPException(403, 'USER_INTENT_MISMATCH')
     elif name == 'propose_reconciliation':
