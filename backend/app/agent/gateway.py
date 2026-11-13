@@ -12,6 +12,7 @@ from ..schemas import ToolDecision
 
 VALID_TOOLS = {'search_banking_faq', 'get_account_balance', 'get_transaction_status', 'get_recent_transactions',
                'create_support_ticket', 'create_vietqr', 'create_transfer'}
+
 # Every argument naming an account the tool reads or debits, whatever the tool. A new tool is covered
 # as long as it uses one of these names; omitted means the caller's own account.
 OWNED_ACCOUNT_ARGS = ('account_id', 'from_account')

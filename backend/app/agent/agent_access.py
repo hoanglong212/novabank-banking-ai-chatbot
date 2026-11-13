@@ -108,7 +108,16 @@ DESCRIPTIONS = {
     'prepare_support_ticket': 'Propose a support ticket only when the latest user message explicitly requests one. Requires customer approval.',
     'request_card_freeze': 'Propose freezing an owned card explicitly named by the customer. Requires customer approval and OTP.',
 }
-
+SCREENED_TOOLS = (
+    'search_knowledge', 'get_recent_transactions', 'get_beneficiaries',
+    'get_support_tickets', 'list_tickets', 'read_ticket',
+    'list_audit_events', 'get_bills',
+    # User-controlled text surfaces:
+    'get_accounts',            # account_labels.nickname
+    'get_cards',               # card_transactions.merchant (via CARD_PURCHASE label)
+    'get_savings',             # savings.label
+    'get_spending_summary',    # transaction descriptions in category/daily rows
+)
 
 # Fixable model mistakes get a concrete hint so the model can retry once instead of giving up.
 REPAIR_HINTS = {
@@ -300,7 +309,15 @@ def bound_proposal(conn, db, user, run, name, args):
         # Description stays anchored to the user's request, never hidden source text.
         args['description'] = intent['arguments']['description']
     elif name == 'prepare_bill_payment':
-        if not affirmative_action(text, r'pay|thanh toan') or not re.search(r'(?<![\w-])' + re.escape(args['bill_id'].lower()) + r'(?![\w-])', lower):
+        if not affirmative_action(text, r'pay|thanh toan'):
+            raise HTTPException(403, 'USER_INTENT_REQUIRED')
+        # The bill ID must appear as the object of "pay" (or adjacent), not merely
+        # somewhere in the message. Catches "Pay X. Also check Y." → paying Y is denied.
+        target = re.escape(args['bill_id'].lower())
+        window = r'[^.!?]{0,80}?'
+        paid = (re.search(r'\b(?:pay|thanh\s+toan)\b' + window + target + r'\b', lower)
+                or re.search(target + r'\b' + window + r'\b(?:pay|thanh\s+toan)\b', lower))
+        if not paid:
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
         products.owned(conn, 'bills', args['bill_id'], user.id)
         products.owned(conn, 'accounts', args['account_id'], user.id)
@@ -406,7 +423,7 @@ async def execute_tool(db, user, run, name, arguments):
         # This bank-generated routing identifier is not PII. Random UUID digits can
         # resemble a phone/national ID; changing them makes the proposal unapprovable.
         safe_result['approval_id'] = result['approval_id']
-    if run['profile'] == 'defended' and not off and decision == 'ALLOW' and name in ('search_knowledge', 'get_recent_transactions', 'get_beneficiaries', 'get_support_tickets', 'list_tickets', 'read_ticket', 'list_audit_events', 'get_bills'):
+    if run['profile'] == 'defended' and not off and decision == 'ALLOW' and name in SCREENED_TOOLS:
         from ..agent_guard import classify
         verdict = await classify(json.dumps(safe_result, ensure_ascii=False))
         if verdict['injection']:
