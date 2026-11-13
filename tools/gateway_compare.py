@@ -105,7 +105,8 @@ def run(args):
     accounts_before = {a['id']: a['status'] for a in bank.call(admin, 'GET', '/api/admin/accounts', params={'limit': 100}).json()['items']}
     cases, results = scenarios(args.legit), []
     for state in args.states:
-        r = bank.call(admin, 'PUT', '/api/admin/agent-gateway', json={'enabled': state == 'on'})
+        # Off is a measurement session scoped to the users this script signs in as; it also expires on its own.
+        r = bank.call(admin, 'PUT', '/api/admin/agent-gateway', json={'enabled': state == 'on', 'users': [] if state == 'on' else USERS, 'minutes': 120})
         if r.status_code != 200:
             raise SystemExit(f'Could not switch the gateway {state}: {r.status_code} {r.text}. The server needs ENV=demo or ENV=lab.')
         for rep in range(args.reps):

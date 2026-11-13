@@ -153,13 +153,16 @@ def audit_events(user=Depends(reader), db=Depends(get_db), offset: int = Query(0
 
 class GatewaySwitch(IdentityInput):
     enabled: bool
+    # Switching off opens a measurement session for these users only.
+    users: list[str] = Field(default_factory=list, max_length=10)
+    minutes: int = Field(default=30, ge=1, le=120)
 
 
 @router.get('/agent-gateway')
 def agent_gateway_status(user=Depends(reader), db=Depends(get_db)):
     from . import agent_gateway
     with db.connect() as conn:
-        return {'gateway': agent_gateway.state(conn), 'lab': agent_gateway.lab(), 'metrics': agent_gateway.metrics(conn),
+        return {'gateway': agent_gateway.state(conn), 'session': agent_gateway.session(conn), 'lab': agent_gateway.lab(), 'metrics': agent_gateway.metrics(conn),
                 'log_file': str(agent_gateway.log_path() or '')}
 
 
@@ -167,7 +170,7 @@ def agent_gateway_status(user=Depends(reader), db=Depends(get_db)):
 def switch_agent_gateway(payload: GatewaySwitch, user=Depends(writer), db=Depends(get_db)):
     from . import agent_gateway
     with transaction(db) as conn:
-        return {'gateway': agent_gateway.set_state(conn, user, payload.enabled)}
+        return {'gateway': agent_gateway.set_state(conn, user, payload.enabled, payload.users, payload.minutes)}
 
 
 @router.get('/agent-gateway/log')

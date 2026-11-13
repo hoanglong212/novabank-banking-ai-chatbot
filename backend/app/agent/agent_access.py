@@ -206,7 +206,7 @@ def create_run(db, user, conversation_id, content, profile):
     profile = effective_profile(user, profile)
     verdict = inspect_prompt(content)
     with closing(db.connect()) as conn:
-        input_guard = agent_gateway.state(conn) == 'on'
+        input_guard = agent_gateway.state(conn, user.id) == 'on'
     if verdict.reason and input_guard:
         raise HTTPException(400, verdict.reply)
     vault = Pseudonymizer()
@@ -219,7 +219,7 @@ def create_run(db, user, conversation_id, content, profile):
         if not conn.execute('SELECT 1 FROM conversations WHERE id=? AND owner_id=?', (conversation_id, user.id)).fetchone():
             raise HTTPException(404, 'Conversation not found.')
         allowed = quota(conn, 'agent-run', user.id, 30, 900, seconds)
-        gateway = agent_gateway.state(conn)
+        gateway = agent_gateway.state(conn, user.id)
         for account in conn.execute('SELECT id,holder_name FROM accounts WHERE owner_id=?', (user.id,)):
             vault._swap('ACCOUNT', account['id'])
             vault._swap('NAME', account['holder_name'])

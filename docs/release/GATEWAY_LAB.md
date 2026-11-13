@@ -48,12 +48,12 @@ Khi đó bank→agent, agent→bank (`/api/agent/context`, `/api/agent/tools`, `
 Bật/tắt tại **Operations → Gateway** (chỉ admin), hoặc qua API:
 
 ```http
-PUT /api/admin/agent-gateway      {"enabled": false}   # tắt
-PUT /api/admin/agent-gateway      {"enabled": true}    # bật
-GET /api/admin/agent-gateway      # trạng thái + số liệu off/on
+PUT /api/admin/agent-gateway      {"enabled": false, "users": ["alice", "bob"], "minutes": 30}   # mở phiên đo
+PUT /api/admin/agent-gateway      {"enabled": true}    # đóng phiên đo, bật lại cho mọi người
+GET /api/admin/agent-gateway      # trạng thái, phiên đang mở + số liệu off/on
 ```
 
-Server chỉ cho tắt khi `ENV=demo` hoặc `ENV=lab`. Ở môi trường khác, gateway luôn bật kể cả khi database ghi là off. Mỗi lần đổi được ghi vào banking audit. Mỗi run giữ trạng thái gateway lúc nó bắt đầu (cột `agent_runs.gateway`).
+Từ 13/11 (R3), tắt gateway **không còn là công tắc toàn cục**. Mỗi lần tắt là một phiên đo, chỉ áp dụng cho các user được liệt kê (tối đa 10 user, phải tồn tại), và tự hết hạn sau `minutes` (1–120, mặc định 30). User khác vẫn được bảo vệ trong lúc đo. Giá trị `"off"` toàn cục kiểu cũ trong database bị bỏ qua. Server chỉ cho mở phiên đo khi `ENV=demo` hoặc `ENV=lab`. Ở môi trường khác, gateway luôn bật kể cả khi database có phiên đo. Mỗi lần đổi được ghi vào banking audit. Mỗi run giữ trạng thái gateway lúc nó bắt đầu (cột `agent_runs.gateway`).
 
 | | Gateway ON | Gateway OFF |
 |---|---|---|

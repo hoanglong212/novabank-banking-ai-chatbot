@@ -169,7 +169,7 @@ async def stream(conversation_id: str, payload: StreamInput, request: Request, u
     from . import agent_gateway
     with db.connect() as conn:
         agent_access.enabled(conn)
-        gateway = agent_gateway.state(conn)
+        gateway = agent_gateway.state(conn, user.id)
     verdict = inspect_prompt(payload.content)
     if verdict.reason:
         agent_gateway.record({'created_at': now(), 'gateway': gateway, 'profile': agent_access.effective_profile(user, payload.profile), 'owner_id': user.id, 'role': user.role,

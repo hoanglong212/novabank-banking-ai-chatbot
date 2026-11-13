@@ -4,7 +4,7 @@ import type { DemoUser } from '../../types';
 import { download, Feedback, Loading, send, useOperation, useResource } from '../explore/shared';
 
 interface Bucket { runs: number; calls: number; allow: number; deny: number; error: number; deny_reasons: Record<string, number> }
-interface Status { gateway: 'on' | 'off'; lab: boolean; log_file: string; metrics: Record<'on' | 'off', Bucket> }
+interface Status { gateway: 'on' | 'off'; session: { users: string[]; expires_at: number } | null; lab: boolean; log_file: string; metrics: Record<'on' | 'off', Bucket> }
 interface Entry { created_at: string; gateway: string; profile: string; owner_id: string; role: string; run_id: string; chat_request_id: string | null; tool_request_id: string | null; ordinal: number; tool: string; decision: 'ALLOW' | 'DENY' | 'ERROR'; reason: string; latency_ms: number }
 const rate = (part: number, whole: number) => whole ? `${((part / whole) * 100).toFixed(1)}%` : '—';
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -12,29 +12,31 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZo
 // Lab switch for the agent tool gateway plus the per-call log used to compare off against on.
 export function Gateway({ user }: { user: DemoUser }) {
   const status = useResource<Status>(user, '/admin/agent-gateway'); const op = useOperation();
-  const [gateway, setGateway] = useState(''); const [decision, setDecision] = useState(''); const [offset, setOffset] = useState(0);
+  const [gateway, setGateway] = useState(''); const [targets, setTargets] = useState('alice, bob'); const [decision, setDecision] = useState(''); const [offset, setOffset] = useState(0);
   const query = new URLSearchParams({ limit: '50', offset: String(offset), ...(gateway && { gateway }), ...(decision && { decision }) });
   const log = useResource<{ items: Entry[]; total: number }>(user, '/admin/agent-gateway/log?' + query);
   useEffect(() => { const timer = window.setInterval(() => { if (document.visibilityState === 'visible') { status.reload(); log.reload(); } }, 5000); return () => window.clearInterval(timer); }, [status.reload, log.reload]);
   const writable = user.permissions?.includes('settings:write'); const s = status.data; const on = s?.gateway !== 'off';
   const flip = () => void op.run(async () => {
-    await send(user, '/admin/agent-gateway', { enabled: !on }, 'PUT');
-    status.reload(); op.setMessage(on ? 'Gateway is OFF. New assistant runs are measured without the tool boundary.' : 'Gateway is ON. New assistant runs are enforced again.');
+    const users = targets.split(',').map(t => t.trim()).filter(Boolean);
+    await send(user, '/admin/agent-gateway', on ? { enabled: false, users, minutes: 30 } : { enabled: true }, 'PUT');
+    status.reload(); op.setMessage(on ? `Gateway is OFF for ${users.join(', ')} for 30 minutes. Everyone else stays protected.` : 'Gateway is ON for everyone again.');
   });
   return <div className="service-stack">
     <section className={'card service-section gateway-switch ' + (on ? 'is-on' : 'is-off')}>
       <div className="gateway-switch-head">
         {on ? <ShieldCheck size={28} aria-hidden="true" /> : <ShieldOff size={28} aria-hidden="true" />}
-        <div><h2 className="card-title">Agent gateway is {on ? 'ON' : 'OFF'}</h2>
+        <div><h2 className="card-title">Agent gateway is {on ? 'ON' : `OFF for ${s?.session?.users.join(', ')}`}</h2>
           <p className="muted">{on ? 'Every tool call goes through role, intent and proposal checks, source screening and the two-denial stop.'
             : 'Lab mode: tool calls run with the model\'s own arguments. Sign-in, schemas, the call budget, owner-scoped data and human approval still apply.'}</p></div>
       </div>
       <Loading state={status} /><Feedback state={op} />
       {s && <div className="inline-actions">
+        {writable && on && s.lab && <label className="field">Measure for users<input value={targets} onChange={e => setTargets(e.target.value)} placeholder="alice, bob" /></label>}
         {writable && <button className={on ? 'secondary-button' : 'primary-button'} disabled={op.busy || (on && !s.lab)} onClick={flip}>{on ? 'Switch gateway OFF' : 'Switch gateway ON'}</button>}
         {!s.lab && <span className="muted small">Switching off needs ENV=demo or ENV=lab on the server.</span>}
       </div>}
-      <p className="muted small">The switch applies to runs started after it changes. Each run keeps the setting it started with.{s?.log_file && <> Live log file: <code>{s.log_file}</code></>}</p>
+      <p className="muted small">OFF is a measurement session: it covers only the users listed{s?.session && <>, until {new Date(s.session.expires_at * 1000).toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</>}. It applies to runs started after it changes, and each run keeps the setting it started with.{s?.log_file && <> Live log file: <code>{s.log_file}</code></>}</p>
     </section>
 
     {s && <section className="card service-section"><h3>Gateway off vs on</h3>
