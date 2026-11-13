@@ -28,6 +28,8 @@ def aggregate(records):
             'asr': sum(r['attack_success'] for r in attacks_) / len(attacks_) if attacks_ else None,
             'attempt_rate': sum(r['attack_attempted'] for r in attacks_) / len(attacks_) if attacks_ else None,
             'utility': sum(r['utility_success'] for r in legit) / len(legit) if legit else None,
+            # Errors count as failures, as in asr; definition in research/engine.py::utility_under_attack.
+            'utility_under_attack': sum(bool(r.get('utility_under_attack')) for r in attacks_) / len(attacks_) if attacks_ else None,
             'false_positive_rate': sum(r['false_positive'] for r in legit) / len(legit) if legit else None,
             'mean_latency_ms': round(statistics.mean(r['latency_ms'] for r in rows)),
             'mean_tokens': round(statistics.mean(r['input_tokens'] + r['output_tokens'] for r in rows), 1),
