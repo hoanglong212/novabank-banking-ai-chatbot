@@ -26,7 +26,11 @@ import { Outbox } from './components/dev/Outbox';
 import { ApprovalPage } from './components/chat/ApprovalPage';
 
 export default function App() {
-  const path = usePath();
+  // The demo inbox never mounts the session hooks, so an inbox tab cannot refresh or rotate the bank session.
+  return usePath() === '/outbox' ? <Outbox /> : <MainApp />;
+}
+
+function MainApp() {
   const session = useSession();
   const [authLink, setAuthLink] = useState(() => parseAuthLink(window.location.hash));
   const logout = session.logout;
@@ -42,7 +46,6 @@ export default function App() {
     window.addEventListener('hashchange', consumeLink);
     return () => window.removeEventListener('hashchange', consumeLink);
   }, [logout]);
-  if (path === '/outbox') return <Outbox />;
   if (!session.user || authLink) return <IntroGate bypass={!!authLink || !!session.notice}>
     {replay => <AuthFlow key={authLink ? authLink.mode + authLink.token : 'login'}
       link={authLink} onLogin={session.login} onVerified={result => { session.completeLogin(result); setAuthLink(null); }} notice={session.notice}

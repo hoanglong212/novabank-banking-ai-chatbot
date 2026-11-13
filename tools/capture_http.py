@@ -118,8 +118,7 @@ def session(client, profile='defended'):
 
     def login(user):
         challenge = step('login ' + user, client.post('/api/auth/login', json={'username': user, 'password': user.capitalize() + '@2026'})).json()['challenge_id']
-        newest = step('outbox list', client.get('/api/dev/outbox')).json()['items'][0]['id']
-        code = step('outbox message', client.get('/api/dev/outbox/' + newest)).json()['code']
+        code = step('outbox challenge', client.post('/api/dev/outbox/challenge', json={'challenge_id': challenge})).json()['code']
         token = step('mfa verify ' + user, client.post('/api/auth/mfa/verify', json={'challenge_id': challenge, 'code': code})).json()['access_token']
         return {'Authorization': 'Bearer ' + token}
 
@@ -143,8 +142,8 @@ def session(client, profile='defended'):
         tid = approved.get('draft_id')
         if tid:
             step('request transfer OTP', client.post(f'/api/transfers/{tid}/otp', headers=alice))
-            newest = step('outbox list', client.get('/api/dev/outbox')).json()['items'][0]['id']
-            code = step('outbox message', client.get('/api/dev/outbox/' + newest)).json()['code']
+            newest = step('outbox list', client.get('/api/dev/outbox', headers=alice)).json()['items'][0]['id']
+            code = step('outbox message', client.get('/api/dev/outbox/' + newest, headers=alice)).json()['code']
             step('confirm transfer', client.post(f'/api/transfers/{tid}/confirm', headers=alice, json={'otp': code}))
     from app.local_qr import png
     step('upload URL QR', client.post('/api/qr/decode', headers=alice, json={'image_base64': base64.b64encode(png('https://lab.invalid/pay')).decode()}))

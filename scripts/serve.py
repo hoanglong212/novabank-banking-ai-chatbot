@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--port', type=int, default=8080)
     parser.add_argument('--agent-port', type=int, default=8093)
     parser.add_argument('--db', type=Path)
-    # 0.0.0.0 exposes the demo (and its /outbox codes) to the network: lab use only, e.g. Caido/Burp in a VM.
+    # 0.0.0.0 exposes the demo (and its per-user /outbox) to the network: lab use only, e.g. Caido/Burp in a VM.
     parser.add_argument('--host', default=os.environ.get('NOVABANK_HOST', '127.0.0.1'))
     parser.add_argument('--proxy', default=os.environ.get('NOVABANK_UPSTREAM_PROXY', ''),
                         help='Send bank->agent, agent->bank and model traffic through this HTTP proxy (Caido/Burp listener).')

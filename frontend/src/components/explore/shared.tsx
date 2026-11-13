@@ -5,6 +5,7 @@ import type { DemoUser } from '../../types';
 import { vnd } from '../../format';
 import { PinForm } from '../profile/TransactionPin';
 import { Sheet } from '../ui/Sheet';
+import { openInbox } from '../dev/Outbox';
 
 export function send<T>(user: DemoUser, path: string, body?: unknown, method = 'POST') {
   return request<T>(path, user, { method, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
@@ -66,7 +67,7 @@ function ConfirmForm({ user, draft, done }: { user: DemoUser; draft: ActionDraft
       : <form className="qr-form" onSubmit={e => { e.preventDefault(); void op.run(async () => {
         const result = await request<ActionResult>('/actions/confirm', user, { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify({ challenge_id: draft.challenge_id, code }) }); done(result);
       }); }}>{method === 'email'
-        ? <p className="muted">Enter the six-digit code sent to the new address. It expires in two minutes.</p>
+        ? <p className="muted">Enter the six-digit code sent to the new address. It expires in two minutes. <button type="button" className="link-button" onClick={() => openInbox()}>Open demo inbox</button></p>
         : <p className="otp-hint"><KeyRound size={18} aria-hidden="true" /><span>{method === 'totp' ? <>Open your <strong>authenticator app</strong> and enter the current six-digit NovaBank code.</> : <>Enter your <strong>6-digit transaction PIN</strong>.</>} Nothing changes until you confirm.</span></p>}
       <Feedback state={op} />
       <Field label={method === 'totp' ? 'Authenticator code' : method === 'pin' ? 'Transaction PIN' : 'Verification code'}><input autoFocus type={method === 'pin' ? 'password' : 'text'} inputMode="numeric" autoComplete={method === 'pin' ? 'off' : 'one-time-code'} pattern="[0-9]{6}" required maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} /></Field>

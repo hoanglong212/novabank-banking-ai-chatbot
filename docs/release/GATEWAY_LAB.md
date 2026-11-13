@@ -27,7 +27,7 @@ New-NetFirewallRule -DisplayName 'NovaBank lab 8080/8093' -Direction Inbound -Pr
 
 Gỡ sau khi xong: `Remove-NetFirewallRule -DisplayName 'NovaBank lab 8080/8093'`. Có thể bật lại rule python bằng `Enable-NetFirewallRule`.
 
-Cảnh báo: chế độ LAN mở cả `/outbox`, nơi hiển thị mã OTP demo, cho mọi máy cùng mạng. Chỉ dùng trong mạng lab.
+Cảnh báo: chế độ LAN mở cả `/outbox` cho mọi máy cùng mạng. Từ 13/11, outbox chỉ trả mail của user đang đăng nhập, hoặc mã đăng nhập gắn với `challenge_id` của chính lượt đăng nhập đó; link xác minh/đặt lại chỉ đọc bằng `scripts/dev-outbox.py` (xem `week7-evidence/OUTBOX_TAKEOVER.md`). Vẫn chỉ dùng trong mạng lab.
 
 ## 2. Bắt traffic bằng Caido hoặc Burp trong máy ảo
 

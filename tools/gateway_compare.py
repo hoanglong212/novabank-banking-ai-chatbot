@@ -63,11 +63,10 @@ class Bank:
             return self.tokens[user]
         r = self.http.post('/api/auth/login', json={'username': user, 'password': user.capitalize() + '@2026'})
         r.raise_for_status(); challenge = r.json()['challenge_id']
-        # The demo outbox masks recipients; logins run one at a time, so the newest login code is ours.
+        # Before sign-in the demo outbox serves only the code bound to our own challenge.
         for _ in range(20):
-            items = self.http.get('/api/dev/outbox').json()['items']
-            newest = next((m for m in items if m['kind'] == 'LOGIN_OTP'), None)
-            code = newest and self.http.get('/api/dev/outbox/' + newest['id']).json()['code']
+            mail = self.http.post('/api/dev/outbox/challenge', json={'challenge_id': challenge})
+            code = mail.status_code == 200 and mail.json()['code']
             if code:
                 r = self.http.post('/api/auth/mfa/verify', json={'challenge_id': challenge, 'code': code})
                 if r.status_code == 200:
