@@ -49,3 +49,33 @@ Xem commit tiếp theo trên nhánh `week7/fix-outbox-profile-gateway`:
 - Outbox chỉ trả email của user đang đăng nhập.
 - Mã đăng nhập trước khi có phiên chỉ đọc được bằng `challenge_id` mà người đăng nhập đang giữ.
 - Link xác minh email và link đặt lại mật khẩu không còn phục vụ qua HTTP. Chỉ đọc được bằng `scripts/dev-outbox.py` trên máy chạy server.
+
+## Sau khi sửa (14/11/2026)
+
+Sửa ở commit `b2b9e1b` (outbox theo user/challenge), `504c735` (rate limit cho challenge, kiểm tra origin của tab opener). Chạy lại 6 bước trên SQLite tạm, `ENV=demo`, bằng `TestClient` (script replay, không gửi request ra ngoài):
+
+| # | Request | Trước sửa | Sau sửa |
+|---|---|---|---|
+| 1 | `POST /api/auth/forgot-password` (Alice) | `202` | `202`. Không đổi, có chủ đích: response giống hệt cho email có hoặc không tồn tại |
+| 2 | `GET /api/dev/outbox` không token | `200`, liệt kê mail mọi user | **`401 Please sign in`**. Chuỗi tấn công dừng ở đây |
+| 2b | `GET /api/dev/outbox/{id của mail reset}` không token, kể cả khi biết id | `200`, có `action_url` kèm token | **`401`** |
+| 3 | `POST /api/auth/reset-password` (không có token thật) | `200` | **`400`** link không hợp lệ |
+| 4 | Đăng nhập Alice bằng mật khẩu của kẻ tấn công | `202` | **`401`**, mật khẩu không bị đổi |
+| 5 | Đặt PIN bằng phiên chiếm được | `200` | Không thực hiện được (không có phiên) |
+| 6 | Chuyển 5.000.000 VND cho Charlie | `COMPLETED` | Không thực hiện được |
+
+Test tái hiện `tests/test_outbox_takeover.py::test_anonymous_outbox_takeover_chain` giờ là `xfail(strict=True)`: nó dừng ở bước 2 và phải luôn thất bại.
+
+### Ba biến thể
+
+| Biến thể | Kết quả | Test |
+|---|---|---|
+| (1) Đăng nhập bằng Charlie rồi đọc outbox, trong khi Alice và Bob đang có mã đăng nhập còn hạn | Danh sách chỉ có mail của Charlie. Mọi mail của người khác, đọc theo id, trả `404` | `tests/test_outbox_variants.py::test_charlie_sees_only_charlies_mail` |
+| (2) `challenge_id` sai, của người khác, hết hạn; gọi liên tục | Sai: `404`. Challenge của Bob chỉ trả mail của Bob. Mã đã hết hạn: `code=null`. Vượt hạn mức theo IP: `429` (giá trị thật 600 lần / 15 phút; test hạ xuống để kiểm tra) | `test_wrong_foreign_or_expired_challenges_are_refused_then_rate_limited`, `tests/test_outbox_takeover.py::test_challenge_lookups_are_rate_limited_per_address` |
+| (3) Link reset của Alice có lộ qua endpoint HTTP nào không | Gọi **mọi** route GET của app (tham số đường dẫn thay bằng id mail reset) với 4 vai trò: ẩn danh, bob, charlie, admin; mỗi route × vai trò một request. Route đọc duy nhất bằng POST (`/api/dev/outbox/challenge`) chỉ truy vấn `kind='LOGIN_OTP'` theo challenge, và mail reset không có `challenge_id`. Token không xuất hiện trong bất kỳ response nào. Link chỉ đọc được bằng `scripts/dev-outbox.py` trên máy chạy server | `test_alices_reset_link_is_not_served_by_any_http_endpoint` |
+
+Lệnh: `cd backend && .venv/Scripts/python.exe -m pytest -q tests/test_outbox_takeover.py tests/test_outbox_variants.py`. Kết quả ngày 14/11: 3 passed ở `test_outbox_variants.py`.
+
+### Giới hạn còn lại
+
+Ai giữ `challenge_id` thì đọc được mã đăng nhập đó. `challenge_id` chỉ được trả cho người vừa nhập đúng mật khẩu, nên **trong demo, lộ mật khẩu nghĩa là MFA email không chặn được**: kẻ có mật khẩu đăng nhập, nhận challenge, rồi tự đọc mã. Đây là giới hạn của hộp thư giả lập, không phải của email thật. Xem `KNOWN_FAILURES.md`.
