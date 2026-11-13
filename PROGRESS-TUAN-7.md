@@ -24,7 +24,7 @@ Tổng kết dùng cho slide: `docs/release/week7-evidence/WEEK7_SUMMARY.md`.
 | 1f. KNOWN_FAILURES, BAO-CAO R1–R3, runbook demo | ✅ | `5e03ce4` | `docs/release/DEMO_RUNBOOK_WEEK7.md` |
 | 2. B5: token có chữ ký, tách khoá, HMAC OTP | ✅ | `adbca6e`, `e13b970` | 19 test token, 4 test khoá; e2e 41/41 sau thay đổi |
 | 3. RBAC_MATRIX và test leo quyền qua `propose_*` | ✅ | `d2c6b58` | 30 test |
-| 4. Vector hoá đơn PDF → RAG | ❌ **chưa làm** | — | Xem "Cần bạn quyết định" |
+| 4. Vector hoá đơn PDF → RAG | ➖ **nhóm tự phụ trách, dự kiến Tuần 8** | — | Claude không làm phần này. Đã có số liệu cho cùng payload ở dạng văn bản (xem "Chưa xong") |
 | 5a. Utility under attack và chạy lại off/on | ✅ | `c1dc06b`, `aa26697` | 1.350 lượt Qwen, 0 lỗi |
 | 5b. Ánh xạ 6 case direct công khai | ⚠️ một phần | `edeedd1` | Repo không có danh sách 6 case; đã kiểm kê mọi kịch bản `direct` |
 | 5c. Chú thích `asr-table.md` | ✅ | `e2f59a1` | |
@@ -72,13 +72,15 @@ Ollama chạy riêng trên `127.0.0.1:11435`, model có sẵn trong `D:\Ollama\m
 
 ## Chưa xong và vì sao
 
-1. **Mục 4 – vector hoá đơn PDF → RAG: chưa làm.** Mình dừng ở bước sinh file PDF có cài chỉ dẫn tấn công, và **không** làm tiếp phần đó. Chưa có code nào của mục này trong repo; một bộ đọc PDF dở dang đã bị xoá. Repo vẫn có sẵn payload kiểu "hoá đơn" dưới dạng văn bản trong corpus khó (`hard_attacks()`), đã được đo ở cả app lẫn lab.
+1. **Mục 4 – vector hoá đơn PDF → RAG: nhóm tự phụ trách, dự kiến Tuần 8.** Claude không làm phần này. Chưa có code nào của mục này trong repo. Cùng payload kiểu hoá đơn **ở dạng văn bản** (payload đầu tiên của `hard_attacks()`) đã được đo:
+   - App thật, 14/11 (`hard-direct-01`): không lọt cả khi gateway tắt lẫn bật. Nguồn: `docs/release/week7-evidence/DIRECT_CASE_MAPPING.md`.
+   - Lab, 14/11, 7 vector `hard-*-01`, mỗi profile 35 lượt: naive 8/35, baseline 0/35, defended 0/35 (judge cách ly 30/35). Nguồn: `docs/release/week7-evidence/offon-research-2026-11-14/observations.csv`.
 2. **Mục 5b – ánh xạ 6 case công khai: một phần.** Không tìm thấy danh sách 6 case trong repo, nên cột "Case công khai" trong `DIRECT_CASE_MAPPING.md` để trống, không đoán.
 3. **Caido/Burp:** chưa có capture thật (cần VM).
 
 ## Cần bạn quyết định hoặc tự làm
 
-- **Mục 4:** chọn cách tiếp cận cho vector PDF. Ví dụ: nhóm tự soạn file PDF thử nghiệm (mình có thể làm phần luồng nạp PDF vào RAG phía admin và runner đo, dùng file của nhóm), hoặc dùng lại payload dạng văn bản có sẵn trong corpus khó.
+- **Mục 4 (Tuần 8, nhóm tự làm):** vector hoá đơn PDF → RAG. Kết quả nên đặt cạnh số liệu dạng văn bản ở trên để so sánh.
 - **Mục 5b:** gửi danh sách 6 case direct injection công khai để điền ánh xạ.
 - **Caido:** làm theo `docs/release/week7-evidence/capture/CAIDO_RUNBOOK.md`, lưu file vào `capture/caido/`, điền bảng "Kết quả thật".
 - **Review rồi push nhánh** (mình không push). Lưu ý cho người review:

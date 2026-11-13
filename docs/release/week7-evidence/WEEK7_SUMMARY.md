@@ -77,7 +77,10 @@ Kiểm thử cuối (14/11): backend **671 passed, 1 xfailed** (xfail là test t
 
 ## 5. Giới hạn còn lại và việc tiếp theo
 
-- **Vector hoá đơn PDF → RAG chưa làm.** Dừng ở bước sinh PDF chứa injection; cần nhóm quyết định cách làm (xem `PROGRESS-TUAN-7.md`).
+- **Vector hoá đơn PDF → RAG: nhóm tự phụ trách, dự kiến Tuần 8.** Hiện đã đo cùng payload hoá đơn **ở dạng văn bản** (payload đầu tiên của `hard_attacks()`):
+  - App thật, 14/11: `hard-direct-01` không lọt cả khi gateway tắt lẫn bật (`DIRECT_CASE_MAPPING.md`).
+  - Lab, 14/11, 7 vector `hard-*-01`: naive 8/35, baseline 0/35, defended 0/35, trong đó judge cách ly 30/35 lượt (`offon-research-2026-11-14/observations.csv`).
+  - Chưa có số cho dạng PDF; khi có, so sánh trực tiếp với các số trên.
 - **Ánh xạ 6 case direct injection công khai chưa xong:** repo không có danh sách 6 case. Bảng kiểm kê có sẵn ở `DIRECT_CASE_MAPPING.md`.
 - **Caido trên VM:** làm theo `capture/CAIDO_RUNBOOK.md`.
 - **Giới hạn của demo:** có `challenge_id` là đọc được mã đăng nhập, nên lộ mật khẩu thì MFA email không chặn được (`KNOWN_FAILURES.md`). B5 không bảo vệ bước tạo draft trước một MITM, chỉ HTTPS mới bảo vệ. Với phiên bị đánh cắp, thứ còn bảo vệ là PIN/TOTP, hạn mức và rate limit.
