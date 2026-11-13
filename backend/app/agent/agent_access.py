@@ -402,6 +402,10 @@ async def execute_tool(db, user, run, name, arguments):
             raise
         decision, reason, result = 'ERROR', 'EXECUTION_ERROR:' + type(exc).__name__, {'error': 'EXECUTION_ERROR'}
     safe_result = private_text(vault, result)
+    if decision == 'ALLOW' and (name in staff_tools.PROPOSALS or name in ('prepare_transfer', 'prepare_bill_payment', 'prepare_support_ticket', 'request_card_freeze')):
+        # This bank-generated routing identifier is not PII. Random UUID digits can
+        # resemble a phone/national ID; changing them makes the proposal unapprovable.
+        safe_result['approval_id'] = result['approval_id']
     if run['profile'] == 'defended' and not off and decision == 'ALLOW' and name in ('search_knowledge', 'get_recent_transactions', 'get_beneficiaries', 'get_support_tickets', 'list_tickets', 'read_ticket', 'list_audit_events', 'get_bills'):
         from ..agent_guard import classify
         verdict = await classify(json.dumps(safe_result, ensure_ascii=False))

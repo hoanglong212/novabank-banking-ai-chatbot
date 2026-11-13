@@ -21,6 +21,8 @@ test('DSH-01 balance visibility survives reload and total includes all accounts'
   await page.getByRole('button', { name: 'Hide balance', exact: true }).click();
   await page.reload();
   await expect(page.getByRole('button', { name: 'Show balance', exact: true })).toBeVisible();
+  // Finish any real /me response still being transformed before context teardown.
+  await page.unrouteAll({ behavior: 'wait' });
 });
 
 test('BEN-01 edit and search saved recipients through the UI', async ({ page }) => {
@@ -36,6 +38,8 @@ test('BEN-01 edit and search saved recipients through the UI', async ({ page }) 
   const editor = page.getByRole('dialog', { name: 'Edit recipient', exact: true });
   await editor.getByLabel('Recipient nickname').fill('Rent test');
   await editor.getByRole('button', { name: 'Save nickname' }).click();
+  await expect(editor).not.toBeVisible();
+  await expect(page.getByText('Rent test', { exact: true })).toBeVisible();
   await page.getByLabel('Search saved recipients').fill('no match');
   await expect(page.getByText('Rent test', { exact: true })).toHaveCount(0);
   await page.getByLabel('Search saved recipients').fill('Rent');

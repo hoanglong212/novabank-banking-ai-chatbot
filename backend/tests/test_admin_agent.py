@@ -157,6 +157,25 @@ def test_staff_agent_resolves_ticket_end_to_end_after_approval(client, role):
     assert any(n.get('reference_id') == ticket['id'] or ticket['id'] in str(n) for n in notes.get('items', notes))
 
 
+def test_generated_approval_id_with_id_like_digits_remains_usable(client, monkeypatch):
+    from types import SimpleNamespace
+    from uuid import UUID
+    from app.agent import agent_access
+
+    ticket = new_ticket(client)
+    staff = login(client, 'support')
+    _, _, token = grant_for(client, staff, f'Resolve ticket {ticket["id"]}')
+    # A valid random UUID may contain 12 consecutive digits resembling a national ID.
+    fixed = UUID('aaaaaaaaaa123456789012bbbbbbbbbb')
+    monkeypatch.setattr(agent_access, 'uuid', SimpleNamespace(uuid4=lambda: fixed))
+    proposal = call(client, token, 'propose_ticket_status', {'ticket_id': ticket['id'], 'status': 'RESOLVED'})
+    assert proposal['decision'] == 'ALLOW'
+    response = client.post('/api/agent/approvals/' + proposal['result']['approval_id'],
+                           headers=staff, json={'approve': True})
+    assert response.status_code == 200, response.text
+    assert ticket_row(ticket['id'])[0] == 'RESOLVED'
+
+
 @pytest.mark.parametrize('role', ['alice', 'operations', 'auditor'])
 def test_roles_without_support_write_cannot_answer_tickets(client, role):
     ticket = new_ticket(client)
