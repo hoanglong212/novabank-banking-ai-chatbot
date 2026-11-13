@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './fixtures';
 import { completeEmailMfa, demoLogin, enterTransactionPin, localMessage } from './auth-helpers';
 
 const password = 'A long browser passphrase 2026!';

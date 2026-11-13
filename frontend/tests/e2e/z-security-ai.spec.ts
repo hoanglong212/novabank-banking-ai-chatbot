@@ -1,7 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
-import { clearAuthRequestBudget, demoLogin, localMessage, transactionCode } from './auth-helpers';
-
-test.beforeEach(clearAuthRequestBudget);
+import { test, expect, type Page } from './fixtures';
+import { demoLogin, localMessage, transactionCode } from './auth-helpers';
 
 test('SEC-06 stored XSS stays text in customer, Operations and support screens', async ({ page, browser }) => {
   const errors: string[] = [], dialogs: string[] = [];

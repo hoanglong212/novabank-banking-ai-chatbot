@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 async function openVerify(page: import('@playwright/test').Page) {
   await page.addInitScript(() => sessionStorage.setItem('novabank-intro-seen', '1'));

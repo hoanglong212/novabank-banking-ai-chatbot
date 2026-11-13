@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './fixtures';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
@@ -35,7 +35,8 @@ test('admin empty overview, period filter, queues, and read-only auditor', async
   await demoLogin(page, 'admin');
   await expect(page.getByRole('heading', { name: 'Operations', exact: true })).toBeVisible();
   await expect(page.getByText('No settled transfers in this period', { exact: true })).toBeVisible();
-  await expect(page.getByText('Not checked yet', { exact: true })).toBeVisible();
+  // The real maintenance worker reconciles the seeded ledger at startup.
+  await expect(page.getByText('Ledger balanced', { exact: true })).toBeVisible();
   const response = page.waitForResponse(r => r.url().includes('/admin/overview?days=30'));
   await page.getByRole('button', { name: '30 days', exact: true }).click();
   expect((await (await response).json()).dashboard.daily).toHaveLength(30);

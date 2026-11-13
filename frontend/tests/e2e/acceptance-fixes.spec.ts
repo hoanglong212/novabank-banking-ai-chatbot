@@ -1,11 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { clearAuthRequestBudget, demoLogin } from './auth-helpers';
-
-test.afterEach(() => {
-  // This suite shares one disposable server. Do not consume the next test's IP login budget.
-  // Rate limits themselves are exercised without resets in backend/tests/test_TRF_14.py and identity tests.
-  clearAuthRequestBudget();
-});
+import { test, expect } from './fixtures';
+import { demoLogin } from './auth-helpers';
 
 test('DSH-01 balance visibility survives reload and total includes all accounts', async ({ page }) => {
   await page.route('**/api/me', async route => {
@@ -33,18 +27,22 @@ test('BEN-01 edit and search saved recipients through the UI', async ({ page }) 
   await demoLogin(page, 'charlie');
   await page.getByRole('button', { name: 'Explore', exact: true }).click();
   await page.getByRole('button', { name: /Accounts & recipients/ }).click();
+  await page.getByRole('button', { name: 'Add a recipient', exact: true }).click();
   await page.getByLabel('Account ID or number').fill('ACC-BOB-001');
   await page.getByLabel('Nickname', { exact: true }).fill('Family test');
   await page.getByRole('button', { name: 'Verify and save recipient' }).click();
   const row = page.getByRole('listitem').filter({ hasText: 'Family test' });
   await row.getByRole('button', { name: 'Edit nickname' }).click();
-  await row.getByLabel('Recipient nickname').fill('Rent test');
-  await row.getByRole('button', { name: 'Save nickname' }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit recipient', exact: true });
+  await editor.getByLabel('Recipient nickname').fill('Rent test');
+  await editor.getByRole('button', { name: 'Save nickname' }).click();
   await page.getByLabel('Search saved recipients').fill('no match');
   await expect(page.getByText('Rent test', { exact: true })).toHaveCount(0);
   await page.getByLabel('Search saved recipients').fill('Rent');
   await expect(page.getByText('Rent test', { exact: true })).toBeVisible();
   await page.getByRole('listitem').filter({ hasText: 'Rent test' }).getByRole('button', { name: 'Remove' }).click();
+  await page.getByRole('dialog', { name: 'Remove recipient?', exact: true }).getByRole('button', { name: 'Remove', exact: true }).click();
+  await expect(page.getByText('Rent test', { exact: true })).toHaveCount(0);
 });
 
 test('AI-12 displays live text and Stop cancels the real bank run', async ({ page }) => {

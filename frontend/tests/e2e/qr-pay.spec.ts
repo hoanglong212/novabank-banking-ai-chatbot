@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { demoLogin } from './auth-helpers';
 
 test('QR Pay starts with scanning and keeps the three requested actions in order', async ({ page }) => {

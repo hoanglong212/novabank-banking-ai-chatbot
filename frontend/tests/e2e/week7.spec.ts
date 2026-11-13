@@ -1,7 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { clearAuthRequestBudget, demoLogin, enterTransactionPin } from './auth-helpers';
-
-test.beforeEach(clearAuthRequestBudget);
+import { test, expect } from './fixtures';
+import { demoLogin, enterTransactionPin } from './auth-helpers';
 test.use({ video: 'on' });
 
 test('Week 7 transfer URLs survive reload and confirm with the transaction PIN', async ({ page }) => {

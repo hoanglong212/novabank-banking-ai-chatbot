@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './fixtures';
 import { demoLogin, enterTransactionPin, localMessage } from './auth-helpers';
 
 async function service(page: Page, name: string) {

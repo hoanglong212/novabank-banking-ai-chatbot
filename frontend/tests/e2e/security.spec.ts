@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { beginDemoLogin, completeEmailMfa, demoLogin, localMessage } from './auth-helpers';
 import { createHmac } from 'node:crypto';
 

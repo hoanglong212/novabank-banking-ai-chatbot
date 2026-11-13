@@ -89,10 +89,11 @@ def confirm(db, user, raw, code, key):
             raise security.locked(remaining)
         # Email-change codes prove the new address, so they never accept the PIN or authenticator.
         check = None if row['otp_hash'] not in (TOTP_MARK, PIN_MARK) and row['kind'] in ('PROFILE_EMAIL', 'PROFILE_PHONE') else verify_factor(conn, db, user.id, code, stamp)
-        if check == 'locked':
-            raise HTTPException(423, 'Too many wrong PINs. Try again in 15 minutes.')
         valid = check == 'ok' if check else (row['otp_hash'] not in (TOTP_MARK, PIN_MARK) and hmac.compare_digest(row['otp_hash'], otp_hash(challenge, code)))
-        if not valid:
+        if check == 'locked':
+            # Commit verify_factor's lockout before returning the rejection.
+            rejection = HTTPException(423, 'Too many wrong PINs. Try again in 15 minutes.')
+        elif not valid:
             conn.execute('UPDATE action_challenges SET attempts=attempts+1 WHERE id=?', (challenge,))
             security.failure(conn, user.id, stamp)
             rejection = HTTPException(400, 'Incorrect verification code.')

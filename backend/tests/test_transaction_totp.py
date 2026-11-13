@@ -86,3 +86,33 @@ def test_pin_set_mid_payment_confirms_an_emailed_draft_but_never_an_email_change
     assert client.post(f"/api/transfers/{draft['id']}/confirm", headers=who, json={'otp': '482916'}).json()['status'] == 'COMPLETED'
     assert client.post('/api/actions/confirm', headers={**who, 'Idempotency-Key': 'pin-email'},
                        json={'challenge_id': email['challenge_id'], 'code': '482916'}).status_code == 400
+
+
+def test_action_pin_lockout_survives_rejection_and_blocks_new_challenges(client, monkeypatch):
+    who = login(client)
+    clock = security.timestamp()
+    monkeypatch.setattr(security, 'timestamp', lambda: clock)
+    assert client.post('/api/auth/pin', headers=who,
+                       json={'password': 'Alice@2026', 'pin': '482916'}).status_code == 200
+
+    def challenge():
+        response = client.post('/api/customer/profile/change', headers=who,
+                               json={'field': 'name', 'value': 'Alice Updated', 'password': 'Alice@2026'})
+        assert response.status_code == 202
+        return response.json()['challenge_id']
+
+    def confirm(raw, code):
+        return client.post('/api/actions/confirm', headers={**who, 'Idempotency-Key': 'pin-lock-' + raw},
+                           json={'challenge_id': raw, 'code': code})
+
+    raw = challenge()
+    for _ in range(4):
+        assert confirm(raw, '000000').status_code == 400
+    assert confirm(raw, '000000').status_code == 423
+    # A fresh challenge must not bypass the lock, even with the correct PIN.
+    fresh = challenge()
+    assert confirm(fresh, '482916').status_code == 423
+    # After the 15-minute lock expires, a newly issued challenge can succeed.
+    clock += 901
+    who = login(client)
+    assert confirm(challenge(), '482916').status_code == 200

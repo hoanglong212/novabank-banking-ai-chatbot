@@ -6,6 +6,4 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   use: { baseURL: 'http://127.0.0.1:8092', viewport: { width: 1440, height: 900 },
     trace: 'retain-on-failure', screenshot: 'only-on-failure', headless: true },
-  webServer: { command: 'node scripts/start-e2e-server.mjs', url: 'http://127.0.0.1:8092/api/health',
-    reuseExistingServer: false, timeout: 60_000 },
 });
