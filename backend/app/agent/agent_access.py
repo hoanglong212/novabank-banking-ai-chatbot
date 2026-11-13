@@ -194,13 +194,19 @@ def private_text(vault, value):
     return vault.pseudonymize(value) if isinstance(value, str) else value
 
 
+SECRET_KEYS = (
+    'delegated_token', 'password', 'code', 'otp', 'pin', 'refresh_token',
+    'access_token', 'authorization', 'token',
+    'secret_text', 'challenge_id', 'action_path',
+    'totp_secret', 'pin_hash', 'mfa_challenge',
+)
+
 def trace_safe(value, vault=None):
     vault = vault or Pseudonymizer()
     if isinstance(value, list):
         return [trace_safe(v, vault) for v in value]
     if isinstance(value, dict):
-        return {k: trace_safe(v, vault) for k, v in value.items() if str(k).lower() not in
-                ('delegated_token', 'password', 'code', 'otp', 'pin', 'refresh_token', 'access_token', 'authorization', 'token')}
+        return {k: trace_safe(v, vault) for k, v in value.items() if str(k).lower() not in SECRET_KEYS}
     return mask(vault.pseudonymize(value)) if isinstance(value, str) else value
 
 

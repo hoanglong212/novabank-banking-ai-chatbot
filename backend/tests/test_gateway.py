@@ -1,7 +1,6 @@
-"""Gateway/tool-boundary tests, rewritten.
+"""Gateway/tool-boundary tests
 
 Expected on current code, before any source fix:
-
     test_multi_id_swap_exposes_gap                  FAIL  (reveals missing 'pay bill-X' binding)
     test_account_nickname_is_screened               FAIL  (get_accounts not in SCREENED_TOOLS)
     test_past_tense_*                               PASS  (3 params + direct-call arm)
@@ -9,9 +8,16 @@ Expected on current code, before any source fix:
     test_descriptive_setting_question               FAIL  (affirmative_action too permissive)
     test_single_run_cannot_flood_proposals          PASS  (rewritten to authorized-add-another)
     test_faq_foreign_read_is_denied                 PASS  (rewritten to ownership boundary)
+    test_staff_account_status_target_must_match_first_mention   FAILED
+    test_staff_ticket_status_target_must_match_first_mention    FAILED
+    test_staff_ticket_reply_target_must_match_first_mention     FAILED
+    test_staff_customer_update_target_must_match_first_mention  FAILED
+    test_trace_safe_filters_secret_keys                         FAILED
+    test_trace_safe_still_filters_existing_keys                 PASSED  (regression guard)
 
 Fixes are documented in each failing test's docstring.
 """
+
 import json
 import pytest
 from tests.acceptance_helpers import client, login, get_db
@@ -280,3 +286,114 @@ def test_faq_foreign_read_is_denied(client):
     assert 'not found' in reason or 'not_owned' in reason, foreign
     # Data must not leak.
     assert '8750000' not in json.dumps(foreign), foreign
+
+
+# ==============================================================================
+# TEST 7: Staff proposals must bind the target to the FIRST mention
+# ==============================================================================
+def test_staff_account_status_target_must_match_first_mention(client):
+    """Two accounts mentioned; the model must not freeze the second-mentioned
+    one when the first-mentioned one was the target."""
+    admin = login(client, 'admin')
+    _, _, token = grant_for(client, admin,
+                            'Freeze ACC-CHARLIE-001. ACC-BOB-001 is fine.')
+
+    r = tool(client, token, 'propose_account_status',
+             {'account_id': 'ACC-BOB-001', 'status': 'FROZEN'})
+    assert r['decision'] == 'DENY', r
+    assert r['reason'] == 'USER_INTENT_MISMATCH', r
+
+    r = tool(client, token, 'propose_account_status',
+             {'account_id': 'ACC-CHARLIE-001', 'status': 'FROZEN'})
+    assert r['decision'] == 'ALLOW', r
+
+
+def _ticket(client, headers, subject, description):
+    r = client.post('/api/support/tickets', headers=headers,
+                    json={'subject': subject, 'description': description})
+    assert r.status_code == 201, r.text
+    return r.json()['id']
+
+
+def test_staff_ticket_status_target_must_match_first_mention(client):
+    alice, admin = login(client, 'alice'), login(client, 'admin')
+    a = _ticket(client, alice, 'Ticket alpha', 'first support request')
+    b = _ticket(client, alice, 'Ticket beta',  'second support request')
+
+    _, _, token = grant_for(client, admin, f'Resolve {a}. {b} is unrelated.')
+
+    r = tool(client, token, 'propose_ticket_status',
+             {'ticket_id': b, 'status': 'RESOLVED'})
+    assert r['decision'] == 'DENY', r
+    assert r['reason'] == 'USER_INTENT_MISMATCH', r
+
+    r = tool(client, token, 'propose_ticket_status',
+             {'ticket_id': a, 'status': 'RESOLVED'})
+    assert r['decision'] == 'ALLOW', r
+
+
+def test_staff_ticket_reply_target_must_match_first_mention(client):
+    alice, admin = login(client, 'alice'), login(client, 'admin')
+    a = _ticket(client, alice, 'Ticket alpha', 'first support request')
+    b = _ticket(client, alice, 'Ticket beta',  'second support request')
+
+    _, _, token = grant_for(client, admin, f'Reply to {a}. {b} is unrelated.')
+
+    r = tool(client, token, 'propose_ticket_reply',
+             {'ticket_id': b, 'body': 'Hello, we are looking into it.'})
+    assert r['decision'] == 'DENY', r
+    assert r['reason'] == 'USER_INTENT_MISMATCH', r
+
+    r = tool(client, token, 'propose_ticket_reply',
+             {'ticket_id': a, 'body': 'Hello, we are looking into it.'})
+    assert r['decision'] == 'ALLOW', r
+
+
+def test_staff_customer_update_target_must_match_first_mention(client):
+    admin = login(client, 'admin')
+    _, _, token = grant_for(client, admin,
+                            'Disable sign-in for alice. Bob is fine.')
+
+    r = tool(client, token, 'propose_customer_update',
+             {'user_id': 'bob', 'status': 'DISABLED'})
+    assert r['decision'] == 'DENY', r
+    assert r['reason'] == 'USER_INTENT_MISMATCH', r
+
+    r = tool(client, token, 'propose_customer_update',
+             {'user_id': 'alice', 'status': 'DISABLED'})
+    assert r['decision'] == 'ALLOW', r
+
+
+# ==============================================================================
+# TEST 8: Trace_safe must strip secret-bearing keys before persistence
+# ==============================================================================
+def test_trace_safe_filters_secret_keys():
+    from app.agent.agent_access import trace_safe
+    payload = {
+        'ok': True,
+        'secret_text': '739284',
+        'challenge_id': 'a' * 43,
+        'action_path': '/#reset-password?token=xyz',
+        'totp_secret': 'JBSWY3DPEHPK3PXP',
+        'pin_hash': 'pbkdf2_sha256$...',
+        'balance_vnd': 12_500_000,
+        'nested': {'access_token': 'eyJ...', 'amount': 100},
+    }
+    cleaned = trace_safe(payload)
+    assert cleaned == {
+        'ok': True,
+        'balance_vnd': 12_500_000,
+        'nested': {'amount': 100},
+    }
+
+
+def test_trace_safe_still_filters_existing_keys():
+    """Regression guard: keys already in the deny list stay filtered."""
+    from app.agent.agent_access import trace_safe
+    payload = {
+        'delegated_token': 'x', 'password': 'y', 'code': '123456',
+        'otp': '123456', 'pin': '482916', 'refresh_token': 'r',
+        'access_token': 'a', 'authorization': 'Bearer a', 'token': 't',
+        'keep': 'value',
+    }
+    assert trace_safe(payload) == {'keep': 'value'}
