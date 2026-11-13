@@ -18,7 +18,7 @@ Needs Docker Desktop and, for the assistant, Ollama running on this machine with
 docker compose -f compose.local.yaml up -d --build
 ```
 
-Open http://127.0.0.1:8080 and the demo inbox at http://127.0.0.1:8080/outbox. Both containers use `restart: unless-stopped`, so they start again whenever Docker Desktop starts; enable Docker Desktop's "Start when you sign in" to make that automatic. Run the same command again after changing code. Data lives in the `novabank-local_bank-data` volume (`docker compose -f compose.local.yaml down -v` resets it to the seed). `NOVABANK_PORT=8081` changes the port; set `JWT_SECRET` in a root `.env` to keep sign-ins across restarts. Banking screens work without Ollama; only the assistant needs it.
+Open http://127.0.0.1:8080. Open the demo inbox from the app (the "local demo inbox" link on the sign-in code screen, or "Open demo inbox" in code dialogs): signed-in users see only their own mail, and before sign-in only the code for that login. Verification and reset links are not served over HTTP; read them with `scripts/dev-outbox.py`. Week 7 demo runbook (inbox, `dev-outbox.py`, gateway measurement sessions): [docs/release/DEMO_RUNBOOK_WEEK7.md](docs/release/DEMO_RUNBOOK_WEEK7.md). Both containers use `restart: unless-stopped`, so they start again whenever Docker Desktop starts; enable Docker Desktop's "Start when you sign in" to make that automatic. Run the same command again after changing code. Data lives in the `novabank-local_bank-data` volume (`docker compose -f compose.local.yaml down -v` resets it to the seed). `NOVABANK_PORT=8081` changes the port; set `JWT_SECRET` in a root `.env` to keep sign-ins across restarts. Banking screens work without Ollama; only the assistant needs it.
 
 ### Without Docker
 

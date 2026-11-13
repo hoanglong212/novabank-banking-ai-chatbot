@@ -135,9 +135,9 @@ export const api = {
     request<Transfer>('/transfers', user, { method: 'POST', body: JSON.stringify(body) }),
   resendOtp: (user: DemoUser, id: string) =>
     request<Transfer>(`/transfers/${encodeURIComponent(id)}/otp`, user, { method: 'POST' }),
-  confirmTransfer: (user: DemoUser, id: string, otp: string, idempotencyKey: string) =>
+  confirmTransfer: (user: DemoUser, id: string, otp: string, idempotencyKey: string, confirmToken?: string) =>
     request<Transfer>(`/transfers/${encodeURIComponent(id)}/confirm`, user, {
-      method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ otp }),
+      method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ otp, confirm_token: confirmToken }),
     }),
   listConversations: (user: DemoUser) => request<Conversation[]>('/conversations', user),
   createConversation: (user: DemoUser, title = 'New conversation') =>

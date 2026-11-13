@@ -4,6 +4,7 @@ import type { LoginResponse, MfaChallenge } from '../../types';
 import { ShieldCheck, Mail } from 'lucide-react';
 import { AuthBack, AuthHeading, AuthSubmit } from './AuthUi';
 import { VerificationCode } from './VerificationCode';
+import { openInbox } from '../dev/Outbox';
 
 export function MfaSignIn({ challenge, complete, cancel }: {
   challenge: MfaChallenge; complete: (session: LoginResponse) => void; cancel: () => void;
@@ -64,6 +65,6 @@ export function MfaSignIn({ challenge, complete, cancel }: {
         {method === 'totp' ? 'Use an email code instead' : cooldown ? `Resend code in ${cooldown}s` : 'Resend code'}
       </button>
     </div>
-    <p className="auth-local-note"><Mail size={15} aria-hidden="true" /><span>No real email is sent. Find your code in the local demo inbox. Codes stay outside the assistant.</span></p>
+    <p className="auth-local-note"><Mail size={15} aria-hidden="true" /><span>No real email is sent. Find your code in the{' '}<button type="button" className="link-button" onClick={() => openInbox(challenge.challenge_id)}>local demo inbox</button>. Codes stay outside the assistant.</span></p>
   </form>;
 }

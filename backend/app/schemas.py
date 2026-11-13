@@ -68,6 +68,8 @@ class TransferArgs(BaseModel):
 
 class TransferConfirm(BaseModel):
     otp: str = Field(pattern=r'^\d{6}$')
+    # Optional in the schema so a missing token is a clear 403 TOKEN_REQUIRED, not a generic 422.
+    confirm_token: str | None = Field(default=None, max_length=2000)
 
 
 class ToolDecision(BaseModel):

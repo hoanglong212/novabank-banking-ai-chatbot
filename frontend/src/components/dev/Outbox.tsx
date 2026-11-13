@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, Copy, Inbox, RefreshCw } from 'lucide-react';
-import { request } from '../../api';
+import { currentSession } from '../../sessionStore';
 import '../../styles/outbox.css';
 
 interface Mail { id: string; kind: string; recipient: string; created_at: number; expires_at: number | null }
@@ -12,6 +12,51 @@ const LABELS: Record<string, string> = {
 };
 const label = (kind: string) => LABELS[kind] ?? kind.charAt(0) + kind.slice(1).replaceAll('_', ' ').toLowerCase();
 const FILTER_KEY = 'outbox-kind'; // recipients are masked by the server, so filter by code type
+
+const SESSION_KEY = 'novabank-session';
+const CHALLENGE_POLL_MS = 300_000; // a sign-in challenge lives five minutes; polling longer only burns the server's rate limit
+const SIGN_IN = 'Open the demo inbox from NovaBank: from the sign-in code screen, or from a signed-in tab.';
+
+/** Opens the inbox in a new tab. Before sign-in, the challenge is the only key to that one sign-in code. */
+export function openInbox(challenge?: string) {
+  window.open('/outbox' + (challenge ? '#challenge=' + encodeURIComponent(challenge) : ''));
+}
+
+function takeChallenge() {
+  const value = new URLSearchParams(window.location.hash.slice(1)).get('challenge');
+  // Keep the challenge in memory only, out of the address bar and history.
+  if (value) window.history.replaceState(null, '', window.location.pathname);
+  return value;
+}
+
+type OpenerLike = { location: { origin: string }; sessionStorage: { getItem(key: string): string | null } };
+
+/** The opener tab's access token, only when the opener is this same origin. Exported for tests. */
+export function openerToken(self: { location: { origin: string }; opener: OpenerLike | null }): string | null {
+  try {
+    const opener = self.opener;
+    // Explicit origin check: never read credentials from, or trust, a page on another origin that opened this tab.
+    if (!opener || opener.location.origin !== self.location.origin) return null;
+    const value: unknown = JSON.parse(opener.sessionStorage.getItem(SESSION_KEY) || 'null')?.token;
+    return typeof value === 'string' && value ? value : null;
+  } catch { return null; } // A cross-origin opener throws on location/storage access; a closed one may too.
+}
+
+function token() {
+  // Opened from NovaBank: borrow that tab's current token. This tab never refreshes it, so it cannot rotate the session away.
+  return openerToken(window as unknown as Parameters<typeof openerToken>[0]) ?? currentSession()?.accessToken ?? null;
+}
+
+async function inboxFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch('/api/dev' + path, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } });
+  if (response.status === 401) throw new Error('Your NovaBank session is not active here. Return to NovaBank, then reopen the inbox.');
+  if (!response.ok) {
+    let reason = `Request failed (${response.status})`;
+    try { const problem = await response.json(); if (typeof problem.detail === 'string') reason = problem.detail; } catch { /* ignore */ }
+    throw new Error(reason);
+  }
+  return response.json() as Promise<T>;
+}
 
 function ago(seconds: number, now: number) {
   const s = Math.max(0, Math.round(now / 1000 - seconds));
@@ -27,21 +72,35 @@ export function Outbox() {
   const [now, setNow] = useState(Date.now());
   const [showExpired, setShowExpired] = useState(false);
   const [kind, setKind] = useState(() => { try { return localStorage.getItem(FILTER_KEY) ?? ''; } catch { return ''; } });
+  const [challenge] = useState(takeChallenge);
+
+  useEffect(() => {
+    // The copied session belongs to the opener; a full load of NovaBank in this tab would reuse its refresh token.
+    if (openerToken(window as unknown as Parameters<typeof openerToken>[0])) try { window.sessionStorage.removeItem(SESSION_KEY); } catch { /* storage blocked */ }
+  }, []);
 
   useEffect(() => {
     let alive = true;
     const controller = new AbortController();
     async function load() {
       try {
-        const data = await request<{ items: Mail[] }>('/dev/outbox', undefined, { signal: controller.signal });
+        if (challenge) {
+          const mail = await inboxFetch<Message>('/outbox/challenge', { method: 'POST', body: JSON.stringify({ challenge_id: challenge }), signal: controller.signal });
+          if (alive) { setItems([mail]); setMessage(mail); setError(''); }
+          return;
+        }
+        const bearer = token();
+        if (!bearer) { if (alive) setError(SIGN_IN); return; }
+        const data = await inboxFetch<{ items: Mail[] }>('/outbox', { headers: { Authorization: 'Bearer ' + bearer }, signal: controller.signal });
         if (alive) { setItems(data.items); setError(''); }
       } catch (e) { if (alive && !controller.signal.aborted) setError((e as Error).message); }
     }
     void load();
     const poll = window.setInterval(() => void load(), 3000);
+    const stop = challenge ? window.setTimeout(() => clearInterval(poll), CHALLENGE_POLL_MS) : undefined;
     const tick = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => { alive = false; controller.abort(); clearInterval(poll); clearInterval(tick); };
-  }, []);
+    return () => { alive = false; controller.abort(); clearInterval(poll); clearTimeout(stop); clearInterval(tick); };
+  }, [challenge]);
 
   const kinds = useMemo(() => [...new Set(items.map(i => i.kind))], [items]);
   const shown = useMemo(() => items.filter(i => (!kind || i.kind === kind) && (showExpired || !i.expires_at || i.expires_at * 1000 > now)), [items, kind, showExpired, now]);
@@ -50,18 +109,21 @@ export function Outbox() {
 
   useEffect(() => {
     setCopied(false);
+    if (challenge) return; // the list poll already carries the one challenge message
     if (!selected) { setMessage(null); return; }
     let alive = true;
     async function load() {
       try {
-        const mail = await request<Message>('/dev/outbox/' + encodeURIComponent(selected!));
+        const bearer = token();
+        if (!bearer) throw new Error(SIGN_IN);
+        const mail = await inboxFetch<Message>('/outbox/' + encodeURIComponent(selected!), { headers: { Authorization: 'Bearer ' + bearer } });
         if (alive) setMessage(mail);
       } catch (e) { if (alive) { setMessage(null); setError((e as Error).message); } }
     }
     void load();
     const timer = window.setInterval(() => void load(), 3000);
     return () => { alive = false; clearInterval(timer); };
-  }, [selected]);
+  }, [selected, challenge]);
 
   useEffect(() => {
     const code = message?.id === selected ? message?.code : null;

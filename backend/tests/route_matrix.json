@@ -1207,6 +1207,20 @@
     "optional": true
   },
   {
+    "method": "POST",
+    "path": "/api/dev/outbox/challenge",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin",
+      "anonymous"
+    ],
+    "scope": "login-challenge",
+    "demo-only": true
+  },
+  {
     "method": "GET",
     "path": "/api/dev/outbox",
     "roles": [
@@ -1217,7 +1231,7 @@
       "admin",
       "anonymous"
     ],
-    "scope": "public",
+    "scope": "own",
     "demo-only": true
   },
   {
@@ -1231,7 +1245,7 @@
       "admin",
       "anonymous"
     ],
-    "scope": "public",
+    "scope": "own",
     "demo-only": true
   },
   {

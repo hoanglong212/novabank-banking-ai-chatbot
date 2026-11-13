@@ -169,10 +169,10 @@ async def stream(conversation_id: str, payload: StreamInput, request: Request, u
     from . import agent_gateway
     with db.connect() as conn:
         agent_access.enabled(conn)
-        gateway = agent_gateway.state(conn)
+        gateway = agent_gateway.state(conn, user.id)
     verdict = inspect_prompt(payload.content)
     if verdict.reason:
-        agent_gateway.record({'created_at': now(), 'gateway': gateway, 'profile': payload.profile, 'owner_id': user.id, 'role': user.role,
+        agent_gateway.record({'created_at': now(), 'gateway': gateway, 'profile': agent_access.effective_profile(user, payload.profile), 'owner_id': user.id, 'role': user.role,
                               'chat_request_id': request_id.get(), 'tool': 'input_guard',
                               'decision': 'DENY' if gateway == 'on' else 'ALLOW', 'reason': verdict.reason})
     if verdict.reason and gateway == 'on':
@@ -185,7 +185,7 @@ async def stream(conversation_id: str, payload: StreamInput, request: Request, u
     grant = agent_access.create_run(db, user, conversation_id, payload.content, payload.profile)
     db.append_message(conversation_id, 'user', verdict.text)
     async def events():
-        yield sse('run', {'run_id': grant['run_id'], 'status': 'RUNNING'})
+        yield sse('run', {'run_id': grant['run_id'], 'status': 'RUNNING', 'profile': grant['profile']})
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(135, connect=5)) as client:
                 async with client.stream('POST', setting('AGENT_SERVICE_URL', 'http://127.0.0.1:8093').rstrip('/') + '/run',

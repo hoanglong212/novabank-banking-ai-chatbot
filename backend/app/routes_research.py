@@ -102,7 +102,8 @@ def launch(payload: Launch):
         args.append('--ablations')
     # No shell interpolation, arbitrary file paths, model downloads, or bank DB argument.
     env = os.environ.copy()
-    for key in ('DB_PATH', 'JWT_SECRET', 'MFA_ENCRYPTION_KEY'):
+    from .auth import SECRET_ENV
+    for key in ('DB_PATH', *SECRET_ENV):
         env.pop(key, None)
     log = (REPORTS / ('launcher-' + uuid.uuid4().hex + '.log')).open('w', encoding='utf-8')
     try:

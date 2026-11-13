@@ -42,18 +42,18 @@ def test_outbox_demo_gate_redaction_expiry_and_transfer_secret(client, monkeypat
     assert response.status_code == 201
     draft = response.json()
     assert 'demo_otp' not in draft and 'otp' not in draft
-    rows = client.get('/api/dev/outbox').json()['items']
+    rows = client.get('/api/dev/outbox', headers=who).json()['items']
     row = next(r for r in rows if r['kind'] == 'TRANSFER_OTP')
     assert '@novabank.test' not in json.dumps(rows)
     assert not {'code', 'secret_text', 'action_path', 'challenge_id'} & row.keys()
-    message = client.get('/api/dev/outbox/' + row['id']).json()
+    message = client.get('/api/dev/outbox/' + row['id'], headers=who).json()
     code = message['code']
     assert len(code) == 6
     assert client.post('/api/transfers/' + draft['id'] + '/confirm', headers=who, json={'otp': code}).status_code == 200
-    assert client.get('/api/dev/outbox/' + row['id']).json()['code'] is None
+    assert client.get('/api/dev/outbox/' + row['id'], headers=who).json()['code'] is None
     with get_db().connect() as conn:
         conn.execute('UPDATE dev_outbox SET secret_text=?,expires_at=? WHERE id=?', ('123456', int(time.time())-1, row['id']))
-    assert client.get('/api/dev/outbox/' + row['id']).json()['code'] is None
+    assert client.get('/api/dev/outbox/' + row['id'], headers=who).json()['code'] is None
 
 
 @pytest.mark.parametrize('role,tool,allowed', [

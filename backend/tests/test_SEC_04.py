@@ -78,6 +78,8 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
     who = login(client,'admin' if path.startswith(('/api/admin/','/api/research/')) else 'support' if path=='/api/support/tickets/{ticket_id}' else 'alice')
     monkeypatch.setenv('RESEARCH_SANDBOX_ENABLED','true')
     monkeypatch.setenv('LEGACY_AGENT_TEST_MODE','true')
+    if path.startswith('/api/dev/'):
+        monkeypatch.setenv('ENV','demo')  # the demo mailbox answers 404 before validating outside ENV=demo
     # Fail rather than launch an experiment if validation regresses.
     from app import routes_research
     monkeypatch.setattr(routes_research.subprocess, 'Popen', lambda *a,**k: pytest.fail('SEC-04 allowed a research launch'))

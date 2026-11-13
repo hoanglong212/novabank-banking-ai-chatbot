@@ -10,7 +10,8 @@ def test_AI_15_trace_metadata_and_payloads_do_not_persist_raw_identity_or_secret
     exercise(client, monkeypatch, token, responses)
     detail = client.get('/api/agent/runs/'+grant['run_id'], headers=who).json()
     assert detail['status'] == 'COMPLETED'
-    assert detail['model'] and detail['profile'] == 'baseline'
+    # run_for asks for baseline; a customer is always served defended (R2).
+    assert detail['model'] and detail['profile'] == 'defended'
     assert detail['input_tokens'] == 34 and detail['output_tokens'] == 18
     assert detail['latency_ms'] >= 0 and detail['completed_at']
     call = detail['tool_calls'][0]

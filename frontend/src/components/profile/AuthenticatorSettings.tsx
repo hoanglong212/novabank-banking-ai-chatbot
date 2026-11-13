@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api } from '../../api';
 import type { DemoUser, MfaStatus } from '../../types';
 import { Sheet } from '../ui/Sheet';
+import { openInbox } from '../dev/Outbox';
 
 type Action = 'setup' | 'disable';
 export function AuthenticatorSettings({ user, status, changed }: {
@@ -73,7 +74,7 @@ export function FactorForm({ user, action, done }: { user: DemoUser; action: Act
           <figcaption>Scan with Google Authenticator, Microsoft Authenticator or similar.</figcaption></figure>}
         <p className="small">{pending.qr ? 'Or add a time-based account named NovaBank with this key.' : 'In your app, add a time-based account named NovaBank and enter this key.'} Keep the key private.</p>
         <label className="field"><span>Setup key</span><input className="setup-key" readOnly value={pending.secret} autoComplete="off" spellCheck={false} /></label>
-      </> : <p className="auth-hint">Open the email confirmation code in your local demo inbox. It is valid for two minutes.</p>}
+      </> : <p className="auth-hint">Open the email confirmation code in your local demo inbox. It is valid for two minutes. <button type="button" className="link-button" onClick={() => openInbox()}>Open demo inbox</button></p>}
       <label className="field"><span>{action === 'setup' ? 'Authenticator code' : 'Email confirmation code'}</span>
         <input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" minLength={6} maxLength={6}
           value={code} onChange={event => setCode(event.target.value.replace(/\D/g, ''))} disabled={busy} />

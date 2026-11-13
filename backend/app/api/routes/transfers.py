@@ -14,8 +14,18 @@ router = APIRouter()
 
 def transfer_failed(exc: transfers.TransferError) -> HTTPException:
     status = {'TRANSFER_NOT_FOUND': 404, 'VIETQR_UNAVAILABLE': 502, 'IDEMPOTENCY_CONFLICT': 409,
-              'POSTING_FAILED': 503, 'LEDGER_MISMATCH': 503, 'PIN_REQUIRED': 403, 'PIN_LOCKED': 423}.get(exc.reason_code, 400)
+              'POSTING_FAILED': 503, 'LEDGER_MISMATCH': 503, 'PIN_REQUIRED': 403, 'PIN_LOCKED': 423,
+              'TOKEN_REQUIRED': 403, 'TOKEN_INVALID': 403, 'TOKEN_EXPIRED': 403, 'TOKEN_MISMATCH': 403, 'TOKEN_REPLAYED': 409}.get(exc.reason_code, 400)
     return HTTPException(status_code=status, detail=exc.reason_code)
+
+
+def with_token(draft: dict) -> dict:
+    """Public view plus a fresh confirmation token while the owner can still confirm it (B5)."""
+    result = transfers.public(draft)
+    if draft['status'] == 'PENDING_OTP' and not draft.get('settlement_status'):
+        from ...transfer_token import issue
+        result['confirm_token'] = issue(draft, transfers._expires_at(draft), transfers.now())
+    return result
 
 
 @router.post('/api/transfers', status_code=201)
@@ -26,7 +36,7 @@ async def create_transfer(payload: TransferArgs, user: DemoPrincipal = Depends(c
         draft, _ = transfers.issue_otp(db, user, draft['id'])
     except transfers.TransferError as exc:
         raise transfer_failed(exc) from exc
-    return transfers.public(draft)
+    return with_token(draft)
 
 
 @router.post('/api/transfers/{transfer_id}/otp')
@@ -35,7 +45,7 @@ async def resend_transfer_otp(transfer_id: str, user: DemoPrincipal = Depends(cu
         draft, _ = transfers.issue_otp(get_db(), user, transfer_id)
     except transfers.TransferError as exc:
         raise transfer_failed(exc) from exc
-    return transfers.public(draft)
+    return with_token(draft)
 
 
 @router.get('/api/transfers/{transfer_id}')
@@ -43,7 +53,7 @@ def transfer_status(transfer_id: str, user: DemoPrincipal = Depends(customer_use
     try:
         with get_db().connect() as conn:
             draft = transfers._own_transfer(conn, transfer_id, user)
-            result = transfers.public(draft)
+            result = with_token(draft)
             if draft['transaction_id']:
                 row = conn.execute('SELECT balance_after_vnd FROM transaction_details WHERE transaction_id=?', (draft['transaction_id'],)).fetchone()
                 if row:
@@ -58,7 +68,7 @@ def confirm_transfer(transfer_id: str, payload: TransferConfirm, user: DemoPrinc
                      idempotency_key: str | None = Header(default=None, min_length=1, max_length=128,
                                                          pattern=r'^[A-Za-z0-9._:-]+$')):
     try:
-        return transfers.confirm(get_db(), user, transfer_id, payload.otp, idempotency_key)
+        return transfers.confirm(get_db(), user, transfer_id, payload.otp, idempotency_key, payload.confirm_token)
     except transfers.TransferError as exc:
         raise transfer_failed(exc) from exc
 

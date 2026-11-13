@@ -70,7 +70,7 @@ def servers(directory, provider, model, *, legacy_test_mode=True):
                BANK_WORKER_ENABLED='false', LEGACY_AGENT_TEST_MODE=str(legacy_test_mode).lower(), FRONTEND_DIST='',
                JWT_SECRET=secrets.token_urlsafe(48), GATEWAY_MODE='local', PYTHONIOENCODING='utf-8',
                BANKING_API_URL=f'http://127.0.0.1:{bank_port}', AGENT_SERVICE_URL=f'http://127.0.0.1:{agent_port}')
-    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
+    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'QR_SIGNING_KEY', 'OTP_HASH_KEY', 'TRANSFER_TOKEN_KEY', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
     children = []
     with (directory / 'servers.log').open('w', encoding='utf-8') as log:
         try:
@@ -324,7 +324,7 @@ def main():
     parser.add_argument('--scenario', nargs='+', help='Explicit scenario IDs for a labelled regression subset.')
     parser.add_argument('--out', type=Path, default=ROOT / 'tools/live_attack/out')
     parser.add_argument('--corpus', choices=['v1', 'hard', 'all'], default='v1', help='v1.1 corpus, Week 7 hard corpus plus direct/multi-turn attacks, or both.')
-    parser.add_argument('--profiles', nargs='+', choices=['legacy-off', 'baseline', 'defended'], default=['legacy-off', 'baseline', 'defended'])
+    parser.add_argument('--profiles', nargs='+', choices=['legacy-off', 'defended'], default=['legacy-off', 'defended'])  # 'baseline' is gone: the bank serves customer runs as defended (R2, admin+lab only).
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 10 or args.limit < 0:
         parser.error('Use 1–10 repetitions and nonnegative limit')

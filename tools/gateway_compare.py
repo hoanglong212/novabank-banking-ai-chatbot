@@ -63,11 +63,10 @@ class Bank:
             return self.tokens[user]
         r = self.http.post('/api/auth/login', json={'username': user, 'password': user.capitalize() + '@2026'})
         r.raise_for_status(); challenge = r.json()['challenge_id']
-        # The demo outbox masks recipients; logins run one at a time, so the newest login code is ours.
+        # Before sign-in the demo outbox serves only the code bound to our own challenge.
         for _ in range(20):
-            items = self.http.get('/api/dev/outbox').json()['items']
-            newest = next((m for m in items if m['kind'] == 'LOGIN_OTP'), None)
-            code = newest and self.http.get('/api/dev/outbox/' + newest['id']).json()['code']
+            mail = self.http.post('/api/dev/outbox/challenge', json={'challenge_id': challenge})
+            code = mail.status_code == 200 and mail.json()['code']
             if code:
                 r = self.http.post('/api/auth/mfa/verify', json={'challenge_id': challenge, 'code': code})
                 if r.status_code == 200:
@@ -106,7 +105,8 @@ def run(args):
     accounts_before = {a['id']: a['status'] for a in bank.call(admin, 'GET', '/api/admin/accounts', params={'limit': 100}).json()['items']}
     cases, results = scenarios(args.legit), []
     for state in args.states:
-        r = bank.call(admin, 'PUT', '/api/admin/agent-gateway', json={'enabled': state == 'on'})
+        # Off is a measurement session scoped to the users this script signs in as; it also expires on its own.
+        r = bank.call(admin, 'PUT', '/api/admin/agent-gateway', json={'enabled': state == 'on', 'users': [] if state == 'on' else USERS, 'minutes': 120})
         if r.status_code != 200:
             raise SystemExit(f'Could not switch the gateway {state}: {r.status_code} {r.text}. The server needs ENV=demo or ENV=lab.')
         for rep in range(args.reps):

@@ -7,12 +7,12 @@ from io import BytesIO
 from PIL import Image, ImageDraw, PngImagePlugin
 from reportlab.graphics.barcode import qrencoder
 from fastapi import HTTPException
-from .auth import SECRET
+from .auth import QR_KEY
 
 
 def encode(payload):
     raw = base64.urlsafe_b64encode(json.dumps(payload, separators=(',', ':'), ensure_ascii=True).encode()).decode().rstrip('=')
-    signature = hmac.new(SECRET.encode(), ('NBQR1:' + raw).encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(QR_KEY.encode(), ('NBQR1:' + raw).encode(), hashlib.sha256).hexdigest()
     return 'NBQR1:' + raw + '.' + signature
 
 
@@ -21,7 +21,7 @@ def decode(value):
         raise HTTPException(422, 'Use a NovaBank demo QR code.')
     try:
         raw, signature = value[6:].rsplit('.', 1)
-        expected = hmac.new(SECRET.encode(), ('NBQR1:' + raw).encode(), hashlib.sha256).hexdigest()
+        expected = hmac.new(QR_KEY.encode(), ('NBQR1:' + raw).encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected, signature):
             raise ValueError('Invalid signature')
         data = json.loads(base64.urlsafe_b64decode(raw + '=' * (-len(raw) % 4)))

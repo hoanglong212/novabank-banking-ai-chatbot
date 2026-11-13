@@ -93,7 +93,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out',type=Path,required=True)
     parser.add_argument('--case',nargs='+')
-    parser.add_argument('--profiles',nargs='+',choices=['baseline','defended'],default=['defended','baseline'])
+    parser.add_argument('--profiles',nargs='+',choices=['defended'],default=['defended'])  # 'baseline' is gone: the bank serves customer runs as defended (R2, admin+lab only).
     parser.add_argument('--repetitions',type=int,default=1,choices=range(1,6))
     args=parser.parse_args()
     selected=cases()

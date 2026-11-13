@@ -13,7 +13,7 @@ async function transfer(page: Page, bank: string, account: string, amount: numbe
   expect(draft.status()).toBe(201);
   const body = await draft.json();
   const id = body.id;
-  const result = await page.request.post(`/api/transfers/${id}/confirm`, { headers: auth, data: { otp: transactionCode(body, 'alice@novabank.test', 'TRANSFER_OTP') } });
+  const result = await page.request.post(`/api/transfers/${id}/confirm`, { headers: auth, data: { otp: transactionCode(body, 'alice@novabank.test', 'TRANSFER_OTP'), confirm_token: body.confirm_token } });
   expect(result.ok()).toBeTruthy();
   return id as string;
 }

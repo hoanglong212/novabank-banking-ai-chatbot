@@ -1,4 +1,7 @@
-"""Lab switch for the agent gateway, and the per-call ALLOW/DENY log used to compare gateway off with on.
+"""Lab measurement sessions for the agent gateway, and the per-call ALLOW/DENY log used to compare gateway off with on.
+
+Gateway OFF is never global: an admin opens a time-boxed measurement session naming the users it covers. Only runs
+those users start while it is open record gateway='off'; everyone else, and every run after it closes or expires, is on.
 
 Gateway ON (default) is every bank-side AI guard: the prompt tripwire on the user's message, the tool boundary (role
 allowlist, binding to the latest request, proposal checks, staff read checks), source screening, the two-denial stop
@@ -11,6 +14,7 @@ import csv
 import io
 import json
 from pathlib import Path
+import time
 from fastapi import HTTPException
 from .config import setting
 from .database import now
@@ -33,24 +37,40 @@ def initialize(conn, stamp):
     conn.execute('INSERT INTO schema_migrations VALUES (10,?)', (stamp,))
 
 
-def state(conn):
-    # Outside a lab environment the gateway is always on, whatever the database or environment says.
+def session(conn):
+    """The open measurement session {users, expires_at, opened_by}, or None. Outside a lab there is never one."""
     if not lab():
-        return 'on'
+        return None
     row = conn.execute("SELECT value_json FROM bank_settings WHERE key='agent_gateway'").fetchone()
-    value = json.loads(row[0]) if row else setting('AGENT_GATEWAY', 'on')
-    return 'off' if value == 'off' else 'on'
+    value = json.loads(row[0]) if row else None
+    # A pre-session global "off" string is ignored on purpose: OFF must name its users and expire.
+    if not isinstance(value, dict) or value.get('expires_at', 0) <= time.time():
+        return None
+    return value
 
 
-def set_state(conn, user, enabled):
-    target = 'on' if enabled else 'off'
-    if target == 'off' and not lab():
+def state(conn, user_id=None):
+    """'off' only for a user inside the open session; without user_id, whether a session is open."""
+    current = session(conn)
+    return 'off' if current and (user_id is None or user_id in current['users']) else 'on'
+
+
+def set_state(conn, user, enabled, users=(), minutes=30):
+    if not enabled and not lab():
         raise HTTPException(403, 'The gateway can be switched off only when ENV is demo or lab.')
-    before = state(conn)
+    names = sorted(set(users))
+    if not enabled:
+        if not names:
+            raise HTTPException(422, 'Name the users this measurement session covers.')
+        known = {r[0] for r in conn.execute(f"SELECT id FROM users WHERE id IN ({','.join('?' * len(names))})", names)}
+        if known != set(names):
+            raise HTTPException(422, 'Unknown user: ' + ', '.join(sorted(set(names) - known)))
+    before = session(conn)
+    value = None if enabled else {'users': names, 'expires_at': int(time.time()) + minutes * 60, 'opened_by': user.id}
     conn.execute('''INSERT INTO bank_settings VALUES ('agent_gateway',?,?)
-                    ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at''', (json.dumps(target), now()))
-    audit(conn, user.id, 'SETTING_UPDATED', 'agent_gateway', json.dumps({'before': before, 'after': target}), now())
-    return target
+                    ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at''', (json.dumps(value), now()))
+    audit(conn, user.id, 'SETTING_UPDATED', 'agent_gateway', json.dumps({'before': before, 'after': value}), now())
+    return 'on' if enabled else 'off'
 
 
 def log_path():

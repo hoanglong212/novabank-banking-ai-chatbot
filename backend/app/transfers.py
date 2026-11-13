@@ -30,7 +30,9 @@ MAX_OTP_ATTEMPTS = 3
 
 
 def _otp_hash(transfer_id: str, otp: str) -> str:
-    return hashlib.sha256(f'{transfer_id}:{otp}'.encode()).hexdigest()
+    # Keyed (R7): a leaked database alone no longer lets anyone brute-force the 10^6 codes offline.
+    from .auth import OTP_KEY
+    return hmac.new(OTP_KEY.encode(), f'transfer:{transfer_id}:{otp}'.encode(), hashlib.sha256).hexdigest()
 
 
 def _expires_at(transfer: dict) -> str:
@@ -168,8 +170,11 @@ def issue_otp(db: Database, user: DemoPrincipal, transfer_id: str) -> tuple[dict
     return t, otp
 
 
-def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, otp: str, key: str | None):
+def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, otp: str, key: str | None, token: str | None):
+    from . import transfer_token
     t = _own_transfer(conn, transfer_id, user)
+    # B5: the confirmation must carry the signed token for exactly this draft, owner, recipient and amount.
+    claims = transfer_token.verify(token, t, now())
     if key is not None:
         previous = conn.execute('SELECT * FROM idempotency_keys WHERE owner_id=? AND key=?', (user.id, key)).fetchone()
         if previous:
@@ -177,6 +182,8 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
                 raise TransferError('IDEMPOTENCY_CONFLICT')
             # Authenticated receipt retrieval: never persist the OTP in the retry cache.
             return json.loads(previous['response_json'])
+    if transfer_token.spent(conn, claims):
+        raise TransferError('TOKEN_REPLAYED')
     if t['status'] != 'PENDING_OTP':
         raise TransferError('ALREADY_PROCESSED')
     stamp = now()  # Read time after acquiring the write lock.
@@ -204,6 +211,7 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
     _check_daily_limit(conn, user.id, t['amount_vnd'], stamp)
     _check_velocity_and_recipient(conn, user.id, t, stamp)
     posted = post_transfer(conn, t, stamp)
+    transfer_token.spend(conn, claims, transfer_id, stamp)  # spent only on success, so a mistyped OTP can be retried
     conn.execute('UPDATE dev_outbox SET secret_text=NULL WHERE challenge_id=?', ('transfer:' + transfer_id,))
     conn.execute("UPDATE transfers SET status='COMPLETED',otp_hash=NULL,transaction_id=?,completed_at=? WHERE id=?",
                  (posted['transaction_id'], stamp, transfer_id))
@@ -218,12 +226,13 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
     return result
 
 
-def confirm(db: Database, user: DemoPrincipal, transfer_id: str, otp: str, idempotency_key: str | None = None) -> dict:
+def confirm(db: Database, user: DemoPrincipal, transfer_id: str, otp: str, idempotency_key: str | None = None,
+            token: str | None = None) -> dict:
     """Serialize OTP validation, mutable rules, posting and receipt persistence."""
     try:
         with db.connect() as conn:
             conn.execute('BEGIN IMMEDIATE')
-            result = _confirm_locked(conn, db, user, transfer_id, otp, idempotency_key)
+            result = _confirm_locked(conn, db, user, transfer_id, otp, idempotency_key, token)
     except (TransferError, sqlite3.Error) as exc:
         reason = exc.reason_code if isinstance(exc, TransferError) else 'POSTING_FAILED'
         if reason in {'INSUFFICIENT_FUNDS', 'DAILY_LIMIT_EXCEEDED', 'VELOCITY_LIMIT_EXCEEDED', 'NEW_RECIPIENT_LIMIT_EXCEEDED', 'ACCOUNT_NOT_ACTIVE',

@@ -29,7 +29,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / 'backend')]
 HOP = {'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers',
        'transfer-encoding', 'upgrade', 'host', 'content-length'}
 SECRET_HEADERS = {'authorization', 'cookie', 'set-cookie'}
-SECRET_KEYS = re.compile(r'("(?:password|otp|code|access_token|refresh_token|delegated_token|token|totp_secret|secret_text|'
+SECRET_KEYS = re.compile(r'("(?:password|otp|code|access_token|refresh_token|delegated_token|confirm_token|token|totp_secret|secret_text|'
                          r'challenge_id|image_base64)"\s*:\s*)"[^"]*"')
 JWT = re.compile(r'eyJ[\w-]+\.[\w-]+\.[\w-]+')
 BODY_LIMIT = 256 * 1024
@@ -118,8 +118,7 @@ def session(client, profile='defended'):
 
     def login(user):
         challenge = step('login ' + user, client.post('/api/auth/login', json={'username': user, 'password': user.capitalize() + '@2026'})).json()['challenge_id']
-        newest = step('outbox list', client.get('/api/dev/outbox')).json()['items'][0]['id']
-        code = step('outbox message', client.get('/api/dev/outbox/' + newest)).json()['code']
+        code = step('outbox challenge', client.post('/api/dev/outbox/challenge', json={'challenge_id': challenge})).json()['code']
         token = step('mfa verify ' + user, client.post('/api/auth/mfa/verify', json={'challenge_id': challenge, 'code': code})).json()['access_token']
         return {'Authorization': 'Bearer ' + token}
 
@@ -142,10 +141,10 @@ def session(client, profile='defended'):
         approved = step('approve', client.post('/api/agent/approvals/' + waiting[0]['id'], headers=alice, json={'approve': True})).json()
         tid = approved.get('draft_id')
         if tid:
-            step('request transfer OTP', client.post(f'/api/transfers/{tid}/otp', headers=alice))
-            newest = step('outbox list', client.get('/api/dev/outbox')).json()['items'][0]['id']
-            code = step('outbox message', client.get('/api/dev/outbox/' + newest)).json()['code']
-            step('confirm transfer', client.post(f'/api/transfers/{tid}/confirm', headers=alice, json={'otp': code}))
+            token = step('request transfer OTP', client.post(f'/api/transfers/{tid}/otp', headers=alice)).json().get('confirm_token')
+            newest = step('outbox list', client.get('/api/dev/outbox', headers=alice)).json()['items'][0]['id']
+            code = step('outbox message', client.get('/api/dev/outbox/' + newest, headers=alice)).json()['code']
+            step('confirm transfer', client.post(f'/api/transfers/{tid}/confirm', headers=alice, json={'otp': code, 'confirm_token': token}))
     from app.local_qr import png
     step('upload URL QR', client.post('/api/qr/decode', headers=alice, json={'image_base64': base64.b64encode(png('https://lab.invalid/pay')).decode()}))
     admin = login('admin')
@@ -165,7 +164,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--out', type=Path, default=ROOT / 'docs/release/week7-evidence/capture')
     parser.add_argument('--model', default='qwen2.5:7b')
-    parser.add_argument('--profile', choices=['baseline', 'defended'], default='defended')
+    parser.add_argument('--profile', choices=['defended'], default='defended')  # 'baseline' is gone: the bank serves customer runs as defended (R2, admin+lab only).
     args = parser.parse_args()
     ollama = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11435').rstrip('/')
     run = ROOT / '.local/week7-capture' / ('run-' + uuid.uuid4().hex[:10]); run.mkdir(parents=True)
@@ -181,7 +180,7 @@ def main():
            'GUARD_MODEL': args.model, 'OLLAMA_URL': url['app-ollama'], 'BANK_WORKER_ENABLED': 'false', 'LEGACY_AGENT_TEST_MODE': 'false',
            'BANK_REQUIRE_AGENT': 'true', 'FRONTEND_DIST': '', 'JWT_SECRET': secrets.token_urlsafe(48), 'GATEWAY_MODE': 'local',
            'PYTHONIOENCODING': 'utf-8', 'BANKING_API_URL': f'http://127.0.0.1:{bank}', 'AGENT_SERVICE_URL': url['bank-agent']}
-    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
+    agent_env = {k: v for k, v in env.items() if k not in ('DB_PATH', 'JWT_SECRET', 'QR_SIGNING_KEY', 'OTP_HASH_KEY', 'TRANSFER_TOKEN_KEY', 'MFA_ENCRYPTION_KEY', 'FRONTEND_DIST')}
     agent_env['BANKING_API_URL'] = url['agent-bank']
     children = []
     try:

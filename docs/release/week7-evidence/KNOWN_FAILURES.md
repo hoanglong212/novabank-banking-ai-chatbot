@@ -43,3 +43,9 @@ Fix: imperative phrasings ("prepare/make/create/initiate/send a transfer of …"
 ## Pseudonyms without brackets made baseline transfer proposals invalid
 
 In baseline, Qwen wrote `to_account: "ACCOUNT_2"` instead of `<ACCOUNT_2>`. `Pseudonymizer.restore` only matched the bracketed form, so 28/30 benign transfers were denied with `INVALID_ARGUMENTS`. As a result, baseline's 0% misdirect ASR on nickname attacks was not evidence of binding. Fix: restore also accepts the bare form, but only for tokens that run's vault issued. After the fix, baseline benign transfers are 30/30, nickname tasks 24/24, and misdirected transfers still 0/24. Test: `backend/tests/test_week7_live_fixes.py`.
+
+## A challenge_id reads its sign-in code: a leaked password defeats demo email MFA
+
+Recorded 2026-11-14, after the R1 fix (`OUTBOX_TAKEOVER.md`). Before sign-in, `POST /api/dev/outbox/challenge` returns the `LOGIN_OTP` mail bound to a `challenge_id`. The bank hands that `challenge_id` only to whoever just entered the correct password. So in the demo, **anyone who knows a user's password can sign in, receive the challenge and read the code themselves: email MFA adds nothing against a leaked password.** Real email is a separate channel the password holder does not control; the simulated inbox is not.
+
+What still limits damage: transfers need the user's transaction PIN or authenticator (step-up), plus the daily, velocity and new-recipient limits; staff always pass MFA. What this is not: the anonymous takeover of R1. Without the password there is no challenge, a guessed challenge returns 404, and lookups are capped at 600 per 15 minutes per address. Tests: `tests/test_outbox_takeover.py`, `tests/test_outbox_variants.py`. Not fixed by design: binding codes to a second factor would need a real out-of-band channel.

@@ -204,12 +204,18 @@ def trace_safe(value, vault=None):
     return mask(vault.pseudonymize(value)) if isinstance(value, str) else value
 
 
+def effective_profile(user, requested):
+    # Baseline drops source screening, the two-denial stop and the hardened prompt: the client never chooses it.
+    return 'baseline' if requested == 'baseline' and user.role == 'admin' and agent_gateway.lab() else 'defended'
+
+
 def create_run(db, user, conversation_id, content, profile):
     if profile not in ('baseline', 'defended'):
         raise HTTPException(422, 'Naive mode exists only in the isolated research harness.')
+    profile = effective_profile(user, profile)
     verdict = inspect_prompt(content)
     with closing(db.connect()) as conn:
-        input_guard = agent_gateway.state(conn) == 'on'
+        input_guard = agent_gateway.state(conn, user.id) == 'on'
     if verdict.reason and input_guard:
         raise HTTPException(400, verdict.reply)
     vault = Pseudonymizer()
@@ -222,7 +228,7 @@ def create_run(db, user, conversation_id, content, profile):
         if not conn.execute('SELECT 1 FROM conversations WHERE id=? AND owner_id=?', (conversation_id, user.id)).fetchone():
             raise HTTPException(404, 'Conversation not found.')
         allowed = quota(conn, 'agent-run', user.id, 30, 900, seconds)
-        gateway = agent_gateway.state(conn)
+        gateway = agent_gateway.state(conn, user.id)
         for account in conn.execute('SELECT id,holder_name FROM accounts WHERE owner_id=?', (user.id,)):
             vault._swap('ACCOUNT', account['id'])
             vault._swap('NAME', account['holder_name'])
@@ -244,7 +250,7 @@ def create_run(db, user, conversation_id, content, profile):
     token = jwt.encode({'iss': auth.ISSUER, 'aud': AUDIENCE, 'sub': user.id, 'sid': user.session_id,
                         'ver': user.auth_version, 'run': run_id, 'scope': ['ai:read', 'ai:prepare'],
                         'iat': seconds, 'exp': seconds + 180}, auth.SECRET, algorithm='HS256')
-    return {'run_id': run_id, 'delegated_token': token, 'expires_in': 180}
+    return {'run_id': run_id, 'delegated_token': token, 'expires_in': 180, 'profile': profile}
 
 
 def authenticate(db, authorization):

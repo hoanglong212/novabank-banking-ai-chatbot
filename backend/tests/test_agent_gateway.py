@@ -6,8 +6,9 @@ from tests.acceptance_helpers import client, login, get_db
 from tests.test_week7 import grant_for
 
 
-def switch(client, admin, enabled):
-    return client.put('/api/admin/agent-gateway', headers=admin, json={'enabled': enabled})
+def switch(client, admin, enabled, users=('alice', 'support')):
+    # Off opens a measurement session for the named users only.
+    return client.put('/api/admin/agent-gateway', headers=admin, json={'enabled': enabled, 'users': [] if enabled else list(users)})
 
 
 def call(client, token, name, args):

@@ -69,5 +69,7 @@ export interface Transfer {
   id: string; from_account: string; to_bank: string; to_account: string; to_name: string; amount_vnd: number;
   content: string; status: 'PENDING_OTP' | 'PENDING' | 'COMPLETED' | 'FAILED'; otp_expires_at?: string; transaction_id?: string | null; fee_vnd?: number;
   balance_vnd?: number; expires_at?: string; otp_method?: 'totp' | 'pin' | 'email';
+  /** B5: signed, single-use token for confirming exactly this draft; issued while it is PENDING_OTP. */
+  confirm_token?: string;
 }
 export interface TransferStart { draftId?: string; to_bank?: string; to_account?: string; to_name?: string; amount_vnd?: number; content?: string }

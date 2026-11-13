@@ -1,5 +1,7 @@
 # Live HTTP results — Ollama
 
+> **Đọc trước (thêm ngày 14/11/2026):** bảng này **KHÔNG có cấu hình gateway tắt thật**. Cả ba cột `legacy-off`, `baseline` và `defended` vẫn giữ binding tham số, phê duyệt của khách và OTP/PIN, nên ASR 0% ở mọi cột không phải là so sánh tắt/bật. Riêng vector `beneficiary_nickname`, 0% là do tool chuyển tiền không được cấp (lỗi binding đã ghi trong `KNOWN_FAILURES.md`), không phải do gateway chặn. Số đo gateway tắt/bật thật nằm ở `GATEWAY_OFF_ON.md` (research lab) và `../gateway-compare/summary.md` (app thật, phiên đo). Từ R2, khách hàng không còn chạy được `baseline`.
+
 **Real local model configured; some requests are rejected before model invocation.**
 
 2070 scheduled observations; 138 scenarios × 3 paths × 5 repetitions. Subset: False.
