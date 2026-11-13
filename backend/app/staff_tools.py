@@ -266,6 +266,21 @@ def policy_for(conn, text, limit=2):
     return [{'id': d['id'], 'title': d['title'], 'text': d['content']} for d in docs if d['id'] in keep]
 
 
+def first_user_mention(conn, text):
+    """Earliest known customer ID token in the text, or None if no customer named.
+    Used by propose_customer_update to bind the target to the first-mentioned
+    customer. A message that names two customers ("Disable alice. Bob is fine.")
+    must not allow the model to propose the second one.
+    """
+    best_pos, best_id = None, None
+    for row in conn.execute("SELECT id FROM users WHERE role='customer'"):
+        uid = row[0]
+        for m in re.finditer(r'(?<![\w-])' + re.escape(uid) + r'(?![\w-])', text, re.I):
+            if best_pos is None or m.start() < best_pos:
+                best_pos, best_id = m.start(), uid
+    return best_id
+
+
 def ticket_facts(conn, ticket_id):
     """(Numbers a reply may state, the customer's own words). Facts: the thread, the owner's records, the policy shown."""
     row = conn.execute('SELECT id,owner_id,subject,description FROM support_tickets WHERE id=?', (ticket_id,)).fetchone()
@@ -310,6 +325,87 @@ def unsafe_reply(body):
     return any(SECRET.search(s) and ASKS.search(s) and not NEGATED.search(s) for s in re.split(r'[.!?\n]+', body))
 
 
+# def bind_proposal(conn, name, args, text):
+#     """Anchor every proposed target and value to the staff member's own latest message."""
+#     if not affirmative_action(text, fold(WRITE_INTENT.pattern) + r'|run'):
+#         raise HTTPException(403, 'USER_INTENT_REQUIRED')
+#     if name in ('propose_ticket_reply', 'propose_ticket_status'):
+#         if not mentioned(args['ticket_id'], text):
+#             raise HTTPException(403, 'USER_INTENT_REQUIRED')
+#         if not conn.execute('SELECT 1 FROM support_tickets WHERE id=?', (args['ticket_id'],)).fetchone():
+#             raise HTTPException(404, 'TICKET_NOT_FOUND')
+#         if name == 'propose_ticket_reply' and unsafe_reply(args['body']):
+#             raise HTTPException(403, 'UNSAFE_REPLY')
+#         if name == 'propose_ticket_reply':
+#             args = {**args, 'body': fill_name_placeholders(args['body'])}
+#         # [Name] templates, and privacy tokens the model copied or mangled (<NAME_1, <PHONE_1>) instead of real text.
+#         if name == 'propose_ticket_reply' and re.search(r'\[[^\]]{2,40}\]|<\s*(?:NAME|PHONE|EMAIL|ACCOUNT|USER|ID)(?![a-z])', args['body'], re.I):
+#             raise HTTPException(422, 'REPLY_HAS_PLACEHOLDER')
+#         if name == 'propose_ticket_reply':
+#             owner = conn.execute('SELECT owner_id FROM support_tickets WHERE id=?', (args['ticket_id'],)).fetchone()[0]
+#             owned = {r[0].upper() for r in conn.execute('SELECT id FROM accounts WHERE owner_id=?', (owner,))}
+#             # Ticket text may name other customers' accounts (injection); a reply never discloses or acts on them.
+#             if any(a.upper() not in owned for a in re.findall(r'\bACC-[A-Za-z0-9-]+\b', args['body'])):
+#                 raise HTTPException(422, 'REPLY_MENTIONS_OTHER_ACCOUNT')
+#             if claim := CLAIMED_ACCOUNT_ACTION.search(args['body']):
+#                 raise HTTPException(422, 'REPLY_CLAIMS_UNDONE_ACTION', headers={'x-offending': repr(claim.group())})
+#             # Every number (amount, balance, delay) must come from the ticket, the customer's records or bank policy.
+#             facts, customer_text = ticket_facts(conn, args['ticket_id'])
+#             stated = re.sub(r'(?m)^\s*\d+[.)]\s|' + IDS.pattern, ' ', args['body'])  # list markers and IDs are not claims
+#             invented = sorted(numbers(stated) - numbers(facts))
+#             if re.search(r'\$|\bUSD\b', args['body']) or invented:
+#                 raise HTTPException(422, 'REPLY_UNGROUNDED_FACT', headers={'x-offending': 'the numbers ' + ', '.join(map(str, invented)) if invented else 'the $ / USD amounts'})
+#             if language_of(args['body']) != language_of(customer_text):
+#                 raise HTTPException(422, 'REPLY_WRONG_LANGUAGE')
+#         if args.get('assigned_to'):
+#             target = re.escape(args['assigned_to'])
+#             if not re.search(
+#                     r'\b(?:assign|reassign)\b[^.!?]{0,80}?\bto\s+' + target + r'\b',
+#                     text, re.I):
+#                 raise HTTPException(403, 'USER_INTENT_REQUIRED')
+#         if name == 'propose_ticket_status':
+#             require_choice(text, args['status'], {'RESOLVED': r'\b(?:resolve|resolved|giai quyet)\b',
+#                 'CLOSED': r'\b(?:close|closed)\b|\bdong (?:ticket|yeu cau|lai)\b',
+#                 'IN_PROGRESS': r'\b(?:in[ _]progress|working on|dang xu ly)\b',
+#                 'OPEN': r'\b(?:reopen|re-open|mo lai)\b'})
+#     elif name == 'propose_account_status':
+#         if not mentioned(args['account_id'], text):
+#             raise HTTPException(403, 'USER_INTENT_REQUIRED')
+#         if not conn.execute('SELECT 1 FROM accounts WHERE id=?', (args['account_id'],)).fetchone():
+#             raise HTTPException(404, 'ACCOUNT_NOT_FOUND')
+#     elif name == 'propose_customer_update':
+#         if not mentioned(args['user_id'], text):
+#             raise HTTPException(403, 'USER_INTENT_REQUIRED')
+#         if not conn.execute("SELECT 1 FROM users WHERE id=? AND role='customer'", (args['user_id'],)).fetchone():
+#             raise HTTPException(404, 'CUSTOMER_NOT_FOUND')
+#         if 'status' in args:
+#             require_choice(text, args['status'], {'ACTIVE': r'\b(?:activate|enable|active)\b',
+#                 'DISABLED': r'\b(?:disable|disabled|deactivate)\b'})
+#         if 'kyc_status' in args:
+#             require_choice(text, args['kyc_status'], {'VERIFIED': r'\b(?:verify|verified|xac minh)\b',
+#                 'UNVERIFIED': r'\bunverified\b'})
+#     elif name == 'propose_settings_change':
+#         # A mentioned number is not authority to use it for another setting.
+#         labels = {
+#             'transfer_fee_vnd': r'transfer_fee_vnd|(?:transfer\s+)?fee|phi(?:\s+chuyen\s+tien)?',
+#             'transfer_limit_vnd': r'transfer_limit_vnd|(?:per[- ]transfer|transfer)\s+limit|han muc moi giao dich',
+#             'daily_limit_vnd': r'daily_limit_vnd|daily\s+limit|han muc ngay',
+#         }
+#         for key, value in args.items():
+#             if key == 'agent_enabled':
+#                 if not re.search(r'\b(assistant|agent|nova|trợ lý)\b', text, re.I):
+#                     raise HTTPException(403, 'USER_INTENT_REQUIRED')
+#                 require_choice(text, value, {True: r'\b(?:enable|enabled|activate|bat)\b|\bturn\b.{0,35}\bon\b',
+#                     False: r'\b(?:disable|disabled|deactivate|tat)\b|\bturn\b.{0,35}\boff\b'})
+#             else:
+#                 match = re.search(r'\b(?:set|change|update|raise|lower|reduce|adjust)\s+(?:the\s+)?(?:' + labels[key] + r')\s+(?:to|thanh|la)\s*(\d[\d,._]*)\b', fold(text))
+#                 if not match or int(re.sub(r'[.,_]', '', match.group(1))) != value:
+#                     raise HTTPException(403, 'USER_INTENT_MISMATCH')
+#     elif name == 'propose_reconciliation':
+#         if not re.search(r'reconcil|đối soát', text, re.I):
+#             raise HTTPException(403, 'USER_INTENT_REQUIRED')
+
+
 def bind_proposal(conn, name, args, text):
     """Anchor every proposed target and value to the staff member's own latest message."""
     if not affirmative_action(text, fold(WRITE_INTENT.pattern) + r'|run'):
@@ -319,27 +415,33 @@ def bind_proposal(conn, name, args, text):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
         if not conn.execute('SELECT 1 FROM support_tickets WHERE id=?', (args['ticket_id'],)).fetchone():
             raise HTTPException(404, 'TICKET_NOT_FOUND')
+        derived = bind(text)
+        if derived['tool'] in ('propose_ticket_status', 'propose_ticket_reply', 'read_ticket'):
+            if derived['arguments'].get('ticket_id', '').upper() != args['ticket_id'].upper():
+                raise HTTPException(403, 'USER_INTENT_MISMATCH')
         if name == 'propose_ticket_reply' and unsafe_reply(args['body']):
             raise HTTPException(403, 'UNSAFE_REPLY')
         if name == 'propose_ticket_reply':
             args = {**args, 'body': fill_name_placeholders(args['body'])}
-        # [Name] templates, and privacy tokens the model copied or mangled (<NAME_1, <PHONE_1>) instead of real text.
-        if name == 'propose_ticket_reply' and re.search(r'\[[^\]]{2,40}\]|<\s*(?:NAME|PHONE|EMAIL|ACCOUNT|USER|ID)(?![a-z])', args['body'], re.I):
+        if name == 'propose_ticket_reply' and re.search(
+                r'\[[^\]]{2,40}\]|<\s*(?:NAME|PHONE|EMAIL|ACCOUNT|USER|ID)(?![a-z])',
+                args['body'], re.I):
             raise HTTPException(422, 'REPLY_HAS_PLACEHOLDER')
         if name == 'propose_ticket_reply':
             owner = conn.execute('SELECT owner_id FROM support_tickets WHERE id=?', (args['ticket_id'],)).fetchone()[0]
             owned = {r[0].upper() for r in conn.execute('SELECT id FROM accounts WHERE owner_id=?', (owner,))}
-            # Ticket text may name other customers' accounts (injection); a reply never discloses or acts on them.
             if any(a.upper() not in owned for a in re.findall(r'\bACC-[A-Za-z0-9-]+\b', args['body'])):
                 raise HTTPException(422, 'REPLY_MENTIONS_OTHER_ACCOUNT')
-            if claim := CLAIMED_ACCOUNT_ACTION.search(args['body']):
-                raise HTTPException(422, 'REPLY_CLAIMS_UNDONE_ACTION', headers={'x-offending': repr(claim.group())})
-            # Every number (amount, balance, delay) must come from the ticket, the customer's records or bank policy.
+            claim = CLAIMED_ACCOUNT_ACTION.search(args['body'])
+            if claim:
+                raise HTTPException(422, 'REPLY_CLAIMS_UNDONE_ACTION',
+                                    headers={'x-offending': repr(claim.group())})
             facts, customer_text = ticket_facts(conn, args['ticket_id'])
-            stated = re.sub(r'(?m)^\s*\d+[.)]\s|' + IDS.pattern, ' ', args['body'])  # list markers and IDs are not claims
+            stated = re.sub(r'(?m)^\s*\d+[.)]\s|' + IDS.pattern, ' ', args['body'])
             invented = sorted(numbers(stated) - numbers(facts))
             if re.search(r'\$|\bUSD\b', args['body']) or invented:
-                raise HTTPException(422, 'REPLY_UNGROUNDED_FACT', headers={'x-offending': 'the numbers ' + ', '.join(map(str, invented)) if invented else 'the $ / USD amounts'})
+                raise HTTPException(422, 'REPLY_UNGROUNDED_FACT', headers={
+                    'x-offending': 'the numbers ' + ', '.join(map(str, invented)) if invented else 'the $ / USD amounts'})
             if language_of(args['body']) != language_of(customer_text):
                 raise HTTPException(422, 'REPLY_WRONG_LANGUAGE')
         if args.get('assigned_to'):
@@ -349,51 +451,73 @@ def bind_proposal(conn, name, args, text):
                     text, re.I):
                 raise HTTPException(403, 'USER_INTENT_REQUIRED')
         if name == 'propose_ticket_status':
-            require_choice(text, args['status'], {'RESOLVED': r'\b(?:resolve|resolved|giai quyet)\b',
-                'CLOSED': r'\b(?:close|closed)\b|\bdong (?:ticket|yeu cau|lai)\b',
+            require_choice(text, args['status'], {
+                'RESOLVED':    r'\b(?:resolve|resolved|giai quyet)\b',
+                'CLOSED':      r'\b(?:close|closed)\b|\bdong (?:ticket|yeu cau|lai)\b',
                 'IN_PROGRESS': r'\b(?:in[ _]progress|working on|dang xu ly)\b',
-                'OPEN': r'\b(?:reopen|re-open|mo lai)\b'})
+                'OPEN':        r'\b(?:reopen|re-open|mo lai)\b',
+            })
     elif name == 'propose_account_status':
         if not mentioned(args['account_id'], text):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
         if not conn.execute('SELECT 1 FROM accounts WHERE id=?', (args['account_id'],)).fetchone():
             raise HTTPException(404, 'ACCOUNT_NOT_FOUND')
-        requested = bind(text)
-        if requested['tool'] != name or requested['arguments'].get('status') != args['status']:
-            raise HTTPException(403, 'USER_INTENT_MISMATCH')
+        verbs = {'ACTIVE': r'unfreeze|unlock|mở',
+                 'FROZEN': r'freeze|lock|khóa|khoá'}[args['status']]
+        if not affirmative_action(text, verbs):
+            raise HTTPException(403, 'USER_INTENT_REQUIRED')
+        derived = bind(text)
+        if derived['tool'] == 'propose_account_status':
+            if derived['arguments'].get('account_id', '').upper() != args['account_id'].upper():
+                raise HTTPException(403, 'USER_INTENT_MISMATCH')
+            if derived['arguments'].get('status') != args['status']:
+                raise HTTPException(403, 'USER_INTENT_MISMATCH')
     elif name == 'propose_customer_update':
         if not mentioned(args['user_id'], text):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
         if not conn.execute("SELECT 1 FROM users WHERE id=? AND role='customer'", (args['user_id'],)).fetchone():
             raise HTTPException(404, 'CUSTOMER_NOT_FOUND')
+        first = first_user_mention(conn, text)
+        if first is None or first.lower() != args['user_id'].lower():
+            raise HTTPException(403, 'USER_INTENT_MISMATCH')
         if 'status' in args:
-            require_choice(text, args['status'], {'ACTIVE': r'\b(?:activate|enable|active)\b',
-                'DISABLED': r'\b(?:disable|disabled|deactivate)\b'})
+            require_choice(text, args['status'], {
+                'ACTIVE':   r'\b(?:activate|enable|active)\b',
+                'DISABLED': r'\b(?:disable|disabled|deactivate)\b',
+            })
         if 'kyc_status' in args:
-            require_choice(text, args['kyc_status'], {'VERIFIED': r'\b(?:verify|verified|xac minh)\b',
-                'UNVERIFIED': r'\bunverified\b'})
+            require_choice(text, args['kyc_status'], {
+                'VERIFIED':   r'\b(?:verify|verified|xac minh)\b',
+                'UNVERIFIED': r'\bunverified\b',
+            })
     elif name == 'propose_settings_change':
-        # A mentioned number is not authority to use it for another setting.
         labels = {
-            'transfer_fee_vnd': r'transfer_fee_vnd|(?:transfer\s+)?fee|phi(?:\s+chuyen\s+tien)?',
+            'transfer_fee_vnd':   r'transfer_fee_vnd|(?:transfer\s+)?fee|phi(?:\s+chuyen\s+tien)?',
             'transfer_limit_vnd': r'transfer_limit_vnd|(?:per[- ]transfer|transfer)\s+limit|han muc moi giao dich',
-            'daily_limit_vnd': r'daily_limit_vnd|daily\s+limit|han muc ngay',
+            'daily_limit_vnd':    r'daily_limit_vnd|daily\s+limit|han muc ngay',
         }
         for key, value in args.items():
             if key == 'agent_enabled':
                 if not re.search(r'\b(assistant|agent|nova|trợ lý)\b', text, re.I):
                     raise HTTPException(403, 'USER_INTENT_REQUIRED')
-                require_choice(text, value, {True: r'\b(?:enable|enabled|activate|bat)\b|\bturn\b.{0,35}\bon\b',
-                    False: r'\b(?:disable|disabled|deactivate|tat)\b|\bturn\b.{0,35}\boff\b'})
+                require_choice(text, value, {
+                    True:  r'\b(?:enable|enabled|activate|bat)\b|\bturn\b.{0,35}\bon\b',
+                    False: r'\b(?:disable|disabled|deactivate|tat)\b|\bturn\b.{0,35}\boff\b',
+                })
             else:
-                match = re.search(r'\b(?:set|change|update|raise|lower|reduce|adjust)\s+(?:the\s+)?(?:' + labels[key] + r')\s+(?:to|thanh|la)\s*(\d[\d,._]*)\b', fold(text))
+                if key not in labels:
+                    raise HTTPException(403, 'USER_INTENT_MISMATCH')
+                match = re.search(
+                    r'\b(?:set|change|update|raise|lower|reduce|adjust)\s+(?:the\s+)?(?:'
+                    + labels[key] + r')\s+(?:to|thanh|la)\s*(\d[\d,._]*)\b',
+                    fold(text))
                 if not match or int(re.sub(r'[.,_]', '', match.group(1))) != value:
                     raise HTTPException(403, 'USER_INTENT_MISMATCH')
     elif name == 'propose_reconciliation':
         if not re.search(r'reconcil|đối soát', text, re.I):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
+    # IMPORTANT: at 4-space indent (function level), NOT inside any branch.
     return args
-
 
 def apply(conn, user, name, args):
     """Run an approved proposal through the same code path as the admin console."""
