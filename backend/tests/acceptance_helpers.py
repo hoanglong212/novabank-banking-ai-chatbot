@@ -21,7 +21,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv('LLM_PROVIDER', 'mock')
     monkeypatch.setenv('BANK_WORKER_ENABLED', 'false')
     monkeypatch.setenv('LEGACY_AGENT_TEST_MODE', 'false')
-    with TestClient(app) as result:
+    from tests.conftest import TokenClient  # remembers B5 confirmation tokens
+    with TokenClient(app) as result:
         yield result
         assert reconcile(get_db())['balanced']
 

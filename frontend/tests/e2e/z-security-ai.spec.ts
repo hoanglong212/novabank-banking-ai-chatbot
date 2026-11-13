@@ -26,7 +26,7 @@ test('SEC-06 stored XSS stays text in customer, Operations and support screens',
   expect(ticket.status()).toBe(201);
   const ticketId = (await ticket.json()).id;
   const draft = await (await page.request.post('/api/transfers', { headers, data: { to_account: 'ACC-BOB-001', amount_vnd: 1000, content: img } })).json();
-  const payment = await page.request.post('/api/transfers/' + draft.id + '/confirm', { headers, data: { otp: transactionCode(draft, 'alice@novabank.test', 'TRANSFER_OTP') } });
+  const payment = await page.request.post('/api/transfers/' + draft.id + '/confirm', { headers, data: { otp: transactionCode(draft, 'alice@novabank.test', 'TRANSFER_OTP'), confirm_token: draft.confirm_token } });
   expect(payment.ok()).toBeTruthy();
   const tx = (await payment.json()).transaction_id;
   await page.reload();

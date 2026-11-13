@@ -126,7 +126,7 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
     event.preventDefault();
     // A lost HTTP response must retry the same confirmation, including after an OTP correction.
     const key = confirmationKey.current ??= newKey();
-    void run(() => api.confirmTransfer(user, transfer!.id, otp, key));
+    void run(() => api.confirmTransfer(user, transfer!.id, otp, key, transfer!.confirm_token));
   }
 
   if (transfer && transfer.status !== 'PENDING_OTP') {

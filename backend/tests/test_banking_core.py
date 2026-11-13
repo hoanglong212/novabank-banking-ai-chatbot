@@ -120,7 +120,8 @@ def test_expired_quote_cannot_be_revived_by_otp_resend(client, alice, monkeypatc
     transfer_code(t)  # Read the delivered code before expiry invalidates the mailbox secret.
     monkeypatch.setattr(transfers, 'now', lambda: '2026-10-31T10:05:00+00:00')
     assert client.post(f'/api/transfers/{t["id"]}/otp', headers=alice).json()['detail'] == 'DRAFT_EXPIRED'
-    assert confirm(client, alice, t).json()['detail'] in ('DRAFT_EXPIRED', 'ALREADY_PROCESSED')
+    # The B5 token expires with the draft, so it may refuse first.
+    assert confirm(client, alice, t).json()['detail'] in ('DRAFT_EXPIRED', 'ALREADY_PROCESSED', 'TOKEN_EXPIRED')
     assert balance(client, alice) == 12_500_000
 
 
@@ -152,13 +153,19 @@ def test_rollback_after_debit_leaves_no_financial_effect(client, alice, bob):
     assert get_db().get_transfer(t['id'], 'alice')['failure_reason'] == 'POSTING_FAILED'
 
 
+def token(t):
+    # HTTP drafts carry their B5 token; drafts made with transfers.prepare() get one exactly as the route issues it.
+    from app.transfer_token import issue
+    return t.get('confirm_token') or issue(t, transfers._expires_at(t), transfers.now())
+
+
 def simultaneous_confirm(db, drafts, keys, otps=None):
     barrier = Barrier(len(drafts))
     def run(item):
         index, t = item
         barrier.wait(timeout=5)
         try:
-            return transfers.confirm(db, USERS['alice'], t['id'], (otps or [transfer_code(d) for d in drafts])[index], keys[index])
+            return transfers.confirm(db, USERS['alice'], t['id'], (otps or [transfer_code(d) for d in drafts])[index], keys[index], token(t))
         except transfers.TransferError as exc:
             return exc.reason_code
     with ThreadPoolExecutor(max_workers=len(drafts)) as pool:

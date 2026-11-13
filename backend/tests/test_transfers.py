@@ -36,7 +36,7 @@ def test_internal_transfer_moves_money_once_after_otp(client, alice, bob):
     assert (bob_tx['direction'], bob_tx['amount_vnd'], bob_tx['description']) == ('in', 200000, 'Transfer from ALICE NGUYEN · lunch')
 
     replay = client.post(f'/api/transfers/{t["id"]}/confirm', headers=alice, json={'otp': transfer_code(t)})
-    assert replay.json()['detail'] == 'ALREADY_PROCESSED'
+    assert replay.json()['detail'] == 'TOKEN_REPLAYED'  # B5: the spent confirmation token is refused before the status check
     assert balance(client, alice) == 12300000
 
 

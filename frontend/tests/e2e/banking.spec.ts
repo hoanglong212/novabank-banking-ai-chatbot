@@ -91,7 +91,7 @@ test('Alice–Bob: nine-step banking acceptance with real backend', async ({ pag
 
   // Retry the successful confirmation with the exact same request key.
   const replay = await page.request.post(`/api/transfers/${draft.id}/confirm`, {
-    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: DEMO_PIN },
+    headers: { ...headers, 'Idempotency-Key': key }, data: { otp: DEMO_PIN, confirm_token: draft.confirm_token },
   });
   expect(replay.status()).toBe(200);
   expect((await replay.json()).transaction_id).toBe(receipt.transaction_id);
@@ -125,7 +125,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
     const draft = await draftResponse.json();
     const confirmed = await page.request.post(`/api/transfers/${draft.id}/confirm`, {
       headers: { ...headers, 'Idempotency-Key': `responsive-${viewport.width}` },
-      data: { otp: transactionCode(draft, 'alice@novabank.test', 'TRANSFER_OTP') },
+      data: { otp: transactionCode(draft, 'alice@novabank.test', 'TRANSFER_OTP'), confirm_token: draft.confirm_token },
     });
     expect(confirmed.ok()).toBeTruthy();
     const receipt = await confirmed.json();

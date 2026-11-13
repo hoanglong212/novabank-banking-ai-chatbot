@@ -1,3 +1,4 @@
+import re
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -14,6 +15,38 @@ def transfer_code(draft):
     return draft['_test_otp']
 
 
+class TokenClient(TestClient):
+    """TestClient that remembers each draft's confirmation token (B5) and sends it on confirm.
+
+    Only when the test leaves confirm_token out: B5 tests pass it explicitly (a bad value, or None for missing).
+    The token always comes from a real bank response, so every older test still exercises real verification.
+    """
+    CONFIRM = re.compile(r'^/api/transfers/([^/?]+)/confirm$')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.confirm_tokens = {}
+
+    def request(self, method, url, *args, **kwargs):
+        match = self.CONFIRM.match(str(url)) if method.upper() == 'POST' else None
+        body = kwargs.get('json')
+        if match and isinstance(body, dict) and 'confirm_token' not in body:
+            token = self.confirm_tokens.get(match.group(1))
+            if token is None:  # e.g. a draft prepared by the assistant: fetch it as the same user, like the UI does
+                fetched = super().request('GET', '/api/transfers/' + match.group(1), headers=kwargs.get('headers'))
+                token = fetched.json().get('confirm_token') if fetched.status_code == 200 else None
+            if token:
+                kwargs['json'] = {**body, 'confirm_token': token}
+        response = super().request(method, url, *args, **kwargs)
+        try:
+            data = response.json()
+        except ValueError:
+            return response
+        if isinstance(data, dict) and data.get('confirm_token') and isinstance(data.get('id'), str):
+            self.confirm_tokens[data['id']] = data['confirm_token']
+        return response
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv('DB_PATH', str(tmp_path / 'test.sqlite3'))
@@ -21,7 +54,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv('GATEWAY_MODE', 'local')
     monkeypatch.setenv('BANK_WORKER_ENABLED', 'false')
     monkeypatch.setenv('LEGACY_AGENT_TEST_MODE', 'true')
-    with TestClient(app) as c:
+    with TokenClient(app) as c:
         yield c
 
 

@@ -139,6 +139,8 @@ class Database:
             initialize_agent_termination(conn, now())
             from .agent_gateway import initialize as initialize_agent_gateway
             initialize_agent_gateway(conn, now())
+            from .transfer_token import initialize as initialize_transfer_tokens
+            initialize_transfer_tokens(conn, now())
             from .request_context import initialize
             initialize(conn)
             from .banking_queries import initialize_announcements

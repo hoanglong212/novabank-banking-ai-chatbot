@@ -29,7 +29,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / 'backend')]
 HOP = {'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers',
        'transfer-encoding', 'upgrade', 'host', 'content-length'}
 SECRET_HEADERS = {'authorization', 'cookie', 'set-cookie'}
-SECRET_KEYS = re.compile(r'("(?:password|otp|code|access_token|refresh_token|delegated_token|token|totp_secret|secret_text|'
+SECRET_KEYS = re.compile(r'("(?:password|otp|code|access_token|refresh_token|delegated_token|confirm_token|token|totp_secret|secret_text|'
                          r'challenge_id|image_base64)"\s*:\s*)"[^"]*"')
 JWT = re.compile(r'eyJ[\w-]+\.[\w-]+\.[\w-]+')
 BODY_LIMIT = 256 * 1024
@@ -141,10 +141,10 @@ def session(client, profile='defended'):
         approved = step('approve', client.post('/api/agent/approvals/' + waiting[0]['id'], headers=alice, json={'approve': True})).json()
         tid = approved.get('draft_id')
         if tid:
-            step('request transfer OTP', client.post(f'/api/transfers/{tid}/otp', headers=alice))
+            token = step('request transfer OTP', client.post(f'/api/transfers/{tid}/otp', headers=alice)).json().get('confirm_token')
             newest = step('outbox list', client.get('/api/dev/outbox', headers=alice)).json()['items'][0]['id']
             code = step('outbox message', client.get('/api/dev/outbox/' + newest, headers=alice)).json()['code']
-            step('confirm transfer', client.post(f'/api/transfers/{tid}/confirm', headers=alice, json={'otp': code}))
+            step('confirm transfer', client.post(f'/api/transfers/{tid}/confirm', headers=alice, json={'otp': code, 'confirm_token': token}))
     from app.local_qr import png
     step('upload URL QR', client.post('/api/qr/decode', headers=alice, json={'image_base64': base64.b64encode(png('https://lab.invalid/pay')).decode()}))
     admin = login('admin')
