@@ -164,7 +164,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--out', type=Path, default=ROOT / 'docs/release/week7-evidence/capture')
     parser.add_argument('--model', default='qwen2.5:7b')
-    parser.add_argument('--profile', choices=['baseline', 'defended'], default='defended')
+    parser.add_argument('--profile', choices=['defended'], default='defended')  # 'baseline' is gone: the bank serves customer runs as defended (R2, admin+lab only).
     args = parser.parse_args()
     ollama = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11435').rstrip('/')
     run = ROOT / '.local/week7-capture' / ('run-' + uuid.uuid4().hex[:10]); run.mkdir(parents=True)

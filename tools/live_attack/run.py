@@ -324,7 +324,7 @@ def main():
     parser.add_argument('--scenario', nargs='+', help='Explicit scenario IDs for a labelled regression subset.')
     parser.add_argument('--out', type=Path, default=ROOT / 'tools/live_attack/out')
     parser.add_argument('--corpus', choices=['v1', 'hard', 'all'], default='v1', help='v1.1 corpus, Week 7 hard corpus plus direct/multi-turn attacks, or both.')
-    parser.add_argument('--profiles', nargs='+', choices=['legacy-off', 'baseline', 'defended'], default=['legacy-off', 'baseline', 'defended'])
+    parser.add_argument('--profiles', nargs='+', choices=['legacy-off', 'defended'], default=['legacy-off', 'defended'])  # 'baseline' is gone: the bank serves customer runs as defended (R2, admin+lab only).
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 10 or args.limit < 0:
         parser.error('Use 1–10 repetitions and nonnegative limit')

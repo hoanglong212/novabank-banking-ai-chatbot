@@ -83,7 +83,8 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
         />
       </Sheet>
       <Sheet open={panel === 'log'} onClose={() => setPanel(null)} title="Security log" side="right">
-        {chat.health?.agent_mode === 'service' && <section className="safeguard-panel">
+        {/* The server honours Baseline only for an admin in a lab environment; everyone else always runs Defended. */}
+        {chat.health?.agent_mode === 'service' && chat.user.role === 'admin' && <section className="safeguard-panel">
           <h3>Assistant safeguards</h3>
           <div className="safeguard-switch" role="radiogroup" aria-label="Assistant safeguards">
             {([['defended', 'Defended', 'Input screening and output checks on'], ['baseline', 'Baseline', 'Model only; bank permissions still apply']] as const).map(([id, label, hint]) => (

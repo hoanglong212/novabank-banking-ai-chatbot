@@ -195,9 +195,15 @@ def trace_safe(value, vault=None):
     return mask(vault.pseudonymize(value)) if isinstance(value, str) else value
 
 
+def effective_profile(user, requested):
+    # Baseline drops source screening, the two-denial stop and the hardened prompt: the client never chooses it.
+    return 'baseline' if requested == 'baseline' and user.role == 'admin' and agent_gateway.lab() else 'defended'
+
+
 def create_run(db, user, conversation_id, content, profile):
     if profile not in ('baseline', 'defended'):
         raise HTTPException(422, 'Naive mode exists only in the isolated research harness.')
+    profile = effective_profile(user, profile)
     verdict = inspect_prompt(content)
     with closing(db.connect()) as conn:
         input_guard = agent_gateway.state(conn) == 'on'
@@ -235,7 +241,7 @@ def create_run(db, user, conversation_id, content, profile):
     token = jwt.encode({'iss': auth.ISSUER, 'aud': AUDIENCE, 'sub': user.id, 'sid': user.session_id,
                         'ver': user.auth_version, 'run': run_id, 'scope': ['ai:read', 'ai:prepare'],
                         'iat': seconds, 'exp': seconds + 180}, auth.SECRET, algorithm='HS256')
-    return {'run_id': run_id, 'delegated_token': token, 'expires_in': 180}
+    return {'run_id': run_id, 'delegated_token': token, 'expires_in': 180, 'profile': profile}
 
 
 def authenticate(db, authorization):
