@@ -8,6 +8,8 @@ import { vnd } from '../../format';
 import { BankPicker } from '../qr/BankPicker';
 import { Sheet } from '../ui/Sheet';
 import { ReceiptButton } from '../activity/ReceiptButton';
+import { TransferStepUpGate } from './TransferStepUp';
+import { openInbox } from '../dev/Outbox';
 
 const NOVABANK: Bank = { bin: 'NovaBank', code: 'NOVA', shortName: 'NovaBank', name: 'Internal transfer · instant', logo: '' };
 const AMOUNTS = [50000, 100000, 200000, 500000];
@@ -163,22 +165,28 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
           <div><dt>Total debit</dt><dd>{vnd(transfer.amount_vnd + (transfer.fee_vnd ?? 0))}</dd></div>
           <div><dt>Content</dt><dd>{transfer.content}</dd></div>
         </dl>
-        {transfer.otp_method === 'email' && step !== 'review'
+        <TransferStepUpGate user={user} transfer={transfer} step={step} onTransfer={result => { setTransfer(result); setOtp(''); }}>
+        {({ emailConfirmation }) => <>
+        {transfer.otp_method === 'email' && !emailConfirmation && step !== 'review'
           // No PIN yet: create one here; the server then accepts it for this same draft.
           ? <div className="pin-first"><p className="otp-hint"><KeyRound size={18} aria-hidden="true" /><span><strong>Create your transaction PIN.</strong> You will use these 6 digits to confirm this and every future payment.</span></p>
             <PinForm user={user} submitLabel="Save PIN and continue" done={() => setTransfer({ ...transfer, otp_method: 'pin' })} /></div>
-          : <p className="otp-hint"><KeyRound size={18} aria-hidden="true" /><span>{transfer.otp_method === 'totp'
+          : <p className="otp-hint"><KeyRound size={18} aria-hidden="true" /><span>{emailConfirmation
+            ? <>Enter the separate <strong>email verification code</strong> for this transfer. <button type="button" className="link-button" onClick={() => openInbox()}>Open demo inbox</button></>
+            : transfer.otp_method === 'totp'
             ? <>Open your <strong>authenticator app</strong> and enter the current 6-digit NovaBank code.</>
             : <>Enter your <strong>6-digit transaction PIN</strong>.</>} Never share it, not even with Nova.</span></p>}
         {error && <div className="form-error" role="alert">{error}</div>}
-        {step === 'review' ? <button className="primary-button" type="button" onClick={() => onNavigate?.(transfer.id, 'otp')}>Continue to verification</button> : transfer.otp_method !== 'email' && <form className="qr-form" onSubmit={confirm} noValidate>
+        {step === 'review' ? <button className="primary-button" type="button" onClick={() => onNavigate?.(transfer.id, 'otp')}>Continue to verification</button> : (transfer.otp_method !== 'email' || emailConfirmation) && <form className="qr-form" onSubmit={confirm} noValidate>
         <label className="field">
-          <span>{transfer.otp_method === 'totp' ? 'Authenticator code' : 'Transaction PIN'}</span>
+          <span>{emailConfirmation ? 'Transfer email code' : transfer.otp_method === 'totp' ? 'Authenticator code' : 'Transaction PIN'}</span>
           <input className="otp-input" type={transfer.otp_method === 'pin' ? 'password' : 'text'} inputMode="numeric" autoComplete={transfer.otp_method === 'pin' ? 'off' : 'one-time-code'} maxLength={6} value={otp} placeholder="••••••"
             autoFocus onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} />
         </label>
         <button className="primary-button" type="submit" disabled={busy || otp.length !== 6}>{busy ? 'Confirming…' : 'Confirm transfer'}</button>
         </form>}
+        </>}
+        </TransferStepUpGate>
       </div>
     );
   }
