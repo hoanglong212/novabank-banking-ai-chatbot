@@ -1,3 +1,25 @@
+# Current Week8 authority matrix (2026-11-15)
+
+Authority comes from `auth.ROLE_PERMISSIONS`, `staff_tools.allowed`, current DB role/session checks and bank-owned approval/posting functions. Prompts, QR fields and model arguments never grant a role. The historical Week7 matrix and measurements below are preserved with their original dates.
+
+| Role | Current scope and additional Week8 boundaries |
+|---|---|
+| customer | Own banking/notifications; bounded own-data reads; transfer, bill, card, ticket and transfer-limit proposals subject to intent/ownership/approval. New-payee confirmation requires bank-derived step-up and a separate final email OTP. No staff tools, quarantine release or agent confirmation tool. |
+| support | Support read/write plus own notifications; ticket/knowledge reads and ticket reply/status proposals. Quarantine review/release requires `support:write`; release is audited. No customer transfer/posting or bank settings proposal. |
+| operations | Masked transaction, failed-transfer, overview, customer/account/settings and audit reads according to existing permission map; approved knowledge search. No proposal/approval or ticket-content authority. |
+| auditor | Same read-only operational tool permissions as operations. No ticket content, quarantine release or write proposal. |
+| admin | Operational reads plus support read/write and settings write; all six staff proposal types and user count. Can review/release quarantines. Current role is rechecked on approval, with owner/session binding; no agent tool that directly confirms customer transfers. |
+
+`search_knowledge` has its existing separately handled approved-knowledge path. Customer transfer-limit tools do not let staff change arbitrary customer limits by prompt. Actor identity, source label, rule/risk evidence and frozen bank templates are displayed at approval; model text is never approval authority.
+
+Ticket content is untrusted. With dual-LLM enabled, raw ticket assessment is isolated: the main model receives constrained enum output, while an owner-bound staff trace exposes the human-only assessment. The historical `read_ticket` raw conversation/customer-record behavior below must not be read as the current default dual-LLM contract. Disabling that layer in a permitted lab configuration is an experiment condition, not the deployed default.
+
+C2 removes private fields and unsolicited financial details before model exposure and checks restored final output. One nested-alias leak was independently reproduced and verified fixed; a credit-debt minimization gap was separately reported. Review status is in [INDEPENDENT_REVIEW.md](week8/INDEPENDENT_REVIEW.md); final root regression evidence takes precedence over this snapshot.
+
+## Historical Week7 matrix and measurements
+
+The following role/proposal tests and Qwen attack numbers are historical evidence, not newly executed Week8 A-D results.
+
 # Week 7 — quyền staff và công cụ AI
 
 Nguồn chuẩn: `backend/app/auth.py::ROLE_PERMISSIONS`, `staff_tools.py` (`READS`, `PROPOSALS`, `allowed()`), `dependencies.py` (`approval_user`), `agent/agent_access.py`, `backend/tests/route_matrix.json`. Đối chiếu với code ngày 14/11/2026; bảng dưới khớp với `staff_tools.allowed(role)`.
