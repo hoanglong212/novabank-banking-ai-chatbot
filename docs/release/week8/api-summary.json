@@ -1,0 +1,16 @@
+{
+  "run": "3e72ced55b464647bb9940c2beee976a",
+  "runtime_sources": [
+    "C:\\Users\\Admin\\Downloads\\NovaBank_Banking_AI_Chatbot_MVP\\banking-ai-chatbot"
+  ],
+  "route_count": 128,
+  "observations": 580,
+  "status_counts": {
+    "not_applicable": 128,
+    "passed": 452
+  },
+  "route_matrix_drift": false,
+  "unobserved_routes": [],
+  "credentials_included": false,
+  "caido_capture": "not_available; TestClient HTTP evidence only"
+}
