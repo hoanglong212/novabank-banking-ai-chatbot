@@ -62,6 +62,15 @@ def test_layer_flag_requires_explicit_true_and_does_not_modify_history():
     assert context == original
 
 
+def test_known_run_marker_is_restored_for_display_without_touching_other_text():
+    from agent_service.spotlighting import Spotlighter
+    spotlight = Spotlighter(True)
+    marked = 'Nova' + spotlight.marker + 'City' + spotlight.marker + 'Water'
+    assert spotlight.restore_text(marked) == 'Nova City Water'
+    assert spotlight.restore_text('Account ACC-ALICE-001: 10,000 VND') == 'Account ACC-ALICE-001: 10,000 VND'
+    assert Spotlighter(False).restore_text(marked) == marked
+
+
 @pytest.mark.parametrize('enabled', [False, True])
 def test_service_marks_tool_text_only_and_retains_wrapper_when_enabled(monkeypatch, enabled):
     from agent_service import main
@@ -77,13 +86,15 @@ def test_service_marks_tool_text_only_and_retains_wrapper_when_enabled(monkeypat
         if request.url.path == '/api/chat':
             calls.append(payload)
             message = ({'tool_calls': [{'function': {'name': 'get_recent_transactions', 'arguments': {}}}]}
-                       if len(calls) == 1 else {'content': 'Here is the result.'})
+                       if len(calls) == 1 else {'content': 'Salary' + (marker if enabled else ' ') + 'payment.'})
             return httpx.Response(200, text=json.dumps({'message': message, 'done': True}) + '\n')
         if request.url.path == '/api/agent/tools':
             return httpx.Response(200, json=bank_result)
         if request.url.path == '/api/agent/preview':
+            assert payload['answer'] == 'Salary payment.'
             return httpx.Response(200, json={'text': payload['answer']})
         if request.url.path == '/api/agent/finish':
+            assert payload['answer'] == 'Salary payment.'
             return httpx.Response(200, json={'message': {'content': payload['answer']}})
         raise AssertionError(request.url)
 

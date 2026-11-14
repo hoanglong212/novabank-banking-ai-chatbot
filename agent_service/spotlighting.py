@@ -62,6 +62,10 @@ class Spotlighter:
 
         return walk(value)
 
+    def restore_text(self, text):
+        """Make display prose readable; banking arguments remain bank-validated."""
+        return text.replace(self.marker, ' ') if self.enabled else text
+
 
 def for_context(context):
     layers = context.get('layers')

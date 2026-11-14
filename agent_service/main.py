@@ -91,8 +91,9 @@ async def run_events(authorization, context):
                             count += bool(message.get('content'))
                             # Publish complete sentence prefixes only, after bank filtering.
                             # The bank returns restored, vetted text; never emit raw model tokens.
-                            boundaries = list(re.finditer(r'[.!?](?:\s+|$)|\n', content))
-                            stable = content[:boundaries[-1].end()].strip() if boundaries else ''
+                            display_content = spotlight.restore_text(content)
+                            boundaries = list(re.finditer(r'[.!?](?:\s+|$)|\n', display_content))
+                            stable = display_content[:boundaries[-1].end()].strip() if boundaries else ''
                             if stable and stable != previewed and not calls:
                                 preview = await client.post(BANKING_URL + '/api/agent/preview', headers={'Authorization': authorization}, json={'answer': stable[:24000]})
                                 preview.raise_for_status()
@@ -159,7 +160,7 @@ async def run_events(authorization, context):
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(BANKING_URL + '/api/agent/finish', headers={'Authorization': authorization}, json={
-                'answer': answer[:24000], 'input_tokens': input_tokens, 'output_tokens': output_tokens,
+                'answer': spotlight.restore_text(answer)[:24000], 'input_tokens': input_tokens, 'output_tokens': output_tokens,
                 'latency_ms': min(300000, int((time.perf_counter() - started) * 1000)), 'status': 'FAILED' if failed else 'COMPLETED',
                 'termination_reason': termination_reason})
             response.raise_for_status()
