@@ -26,7 +26,8 @@ def decode(value):
             raise ValueError('Invalid signature')
         data = json.loads(base64.urlsafe_b64decode(raw + '=' * (-len(raw) % 4)))
         from .schemas import VietQRArgs
-        return VietQRArgs(**data).model_dump(exclude_none=True)
+        from .qr_security import decoded_review
+        return decoded_review(VietQRArgs(**data).model_dump(exclude_none=True), value)
     except (ValueError, TypeError, KeyError):
         raise HTTPException(422, 'The demo QR code is invalid or was signed by a different server.')
 
