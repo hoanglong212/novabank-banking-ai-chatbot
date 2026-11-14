@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import replace
 import json
+from datetime import datetime, timedelta, timezone
 import pytest
 from app import auth, session_security as security, transfers
 from app.auth_crypto import totp
@@ -64,7 +65,7 @@ def test_genuine_totp_is_bound_to_exact_draft_and_does_not_replace_final_otp(cli
         assert transfer_stepup.email_confirmation_required(conn, user, transfer) is True
         assert conn.execute("SELECT COUNT(*) FROM dev_outbox WHERE kind='TRANSFER_OTP'").fetchone()[0] == 0
         assert conn.execute('SELECT balance_vnd FROM accounts WHERE id=?', ('ACC-ALICE-001',)).fetchone()[0] == 12500000
-        for field, value in [('to_account', 'ACC-CHARLIE-001'), ('amount_vnd', 20000), ('fee_vnd', 999)]:
+        for field, value in [('to_account', 'ACC-CHARLIE-001'), ('amount_vnd', 20000), ('fee_vnd', 999), ('content', 'changed memo'), ('source_origin', 'qr')]:
             with pytest.raises(Exception, match='STEP_UP_REQUIRED'):
                 transfer_stepup.require_stepup(conn, user, {**transfer, field: value})
         stored = json.dumps([dict(r) for r in conn.execute('SELECT * FROM transfer_stepups')])
@@ -138,3 +139,47 @@ def test_known_settled_recipient_preserves_existing_factors(client):
         transfer_stepup.require_stepup(conn, user, transfer)
         assert transfer_stepup.email_confirmation_required(conn, user, transfer) is False
         assert conn.execute('SELECT COUNT(*) FROM transfers').fetchone()[0] == before
+
+
+def test_direct_confirm_cannot_bypass_stepup_even_with_valid_bank_token_and_totp(client, monkeypatch):
+    """A valid transaction TOTP is insufficient without exact-draft step-up.
+
+    This exercises root integration: the test must fail against the pre-C4
+    confirmation path, which would accept the otherwise valid TOTP challenge.
+    """
+    who = login(client)
+    secret, clock = enable(client, who, monkeypatch)
+    user, transfer = draft(who)
+    forged = totp(secret, clock // 30)
+    expires = (datetime.now(timezone.utc) + timedelta(seconds=120)).isoformat(timespec='seconds')
+    with get_db().connect() as conn:
+        # Represents an already issued legacy/TOTP challenge, not a public API
+        # that allows the attacker to write the bank database.
+        conn.execute('UPDATE transfers SET otp_hash=?,otp_expires_at=? WHERE id=?',
+            ('TOTP', expires, transfer['id']))
+        before = dict(conn.execute('SELECT id,balance_vnd FROM accounts WHERE id IN (?,?)', ('ACC-ALICE-001', 'ACC-BOB-001')).fetchall())
+    bank_token = client.get('/api/transfers/' + transfer['id'], headers=who).json()['confirm_token']
+    body = {'otp': forged, 'confirm_token': bank_token}
+    denied = client.post('/api/transfers/' + transfer['id'] + '/confirm', headers=who, json=body)
+    assert denied.status_code == 400 and denied.json()['detail'] == 'STEP_UP_REQUIRED', denied.text
+    with get_db().connect() as conn:
+        assert dict(conn.execute('SELECT id,balance_vnd FROM accounts WHERE id IN (?,?)', ('ACC-ALICE-001', 'ACC-BOB-001')).fetchall()) == before
+        assert conn.execute('SELECT COUNT(*) FROM transfer_token_uses').fetchone()[0] == 0
+    verify = client.post('/api/transfers/' + transfer['id'] + '/step-up', headers=who, json={'code': totp(secret, clock // 30)})
+    assert verify.status_code == 200, verify.text
+    otp_reply = client.post('/api/transfers/' + transfer['id'] + '/otp', headers=who)
+    assert otp_reply.status_code == 200 and otp_reply.json()['otp_method'] == 'email'
+    with get_db().connect() as conn:
+        emailed = conn.execute('SELECT secret_text FROM dev_outbox WHERE challenge_id=? ORDER BY rowid DESC LIMIT 1', ('transfer:' + transfer['id'],)).fetchone()[0]
+    headers = {**who, 'Idempotency-Key': 'c4-real-positive'}
+    completed = client.post('/api/transfers/' + transfer['id'] + '/confirm', headers=headers, json={'otp': emailed, 'confirm_token': bank_token})
+    assert completed.status_code == 200 and completed.json()['status'] == 'COMPLETED', completed.text
+    assert client.post('/api/transfers/' + transfer['id'] + '/confirm', headers=headers, json={'otp': emailed, 'confirm_token': bank_token}).json() == completed.json()
+    replay = client.post('/api/transfers/' + transfer['id'] + '/confirm', headers=who, json={'otp': emailed, 'confirm_token': bank_token})
+    assert replay.status_code == 409 and replay.json()['detail'] == 'TOKEN_REPLAYED'
+    with get_db().connect() as conn:
+        after = dict(conn.execute('SELECT id,balance_vnd FROM accounts WHERE id IN (?,?)', ('ACC-ALICE-001', 'ACC-BOB-001')).fetchall())
+        assert after['ACC-ALICE-001'] == before['ACC-ALICE-001'] - 10000
+        assert after['ACC-BOB-001'] == before['ACC-BOB-001'] + 10000
+        known = conn.execute('SELECT source_transfer_id,origin FROM verified_payees WHERE owner_id=? AND to_account=?', (user.id, transfer['to_account'])).fetchone()
+        assert tuple(known) == (transfer['id'], 'settled_transfer')

@@ -16,3 +16,10 @@ def mark_known(conn, owner_id, to_account, to_bank='NovaBank'):
         raise ValueError('Only explicitly listed synthetic regression payees may be marked known')
     conn.execute("INSERT INTO verified_payees VALUES (?,lower(?),?,?,NULL,'fixture_known') ON CONFLICT(owner_id,to_bank,to_account) DO NOTHING",
         (owner_id, to_bank, to_account, now()))
+
+
+def seed_regression_payees(conn):
+    """Call once in disposable test-server fixtures, never production startup."""
+    for owner_id in ('alice', 'bob', 'charlie'):
+        for bank, account in sorted(FIXED_RECIPIENTS):
+            mark_known(conn, owner_id, account, bank)

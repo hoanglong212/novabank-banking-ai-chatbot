@@ -45,7 +45,7 @@ def initialize(conn, stamp):
 
 
 def fingerprint(transfer):
-    fields = ('id', 'owner_id', 'from_account', 'to_bank', 'to_account', 'to_name', 'amount_vnd', 'fee_vnd')
+    fields = ('id', 'owner_id', 'from_account', 'to_bank', 'to_account', 'to_name', 'amount_vnd', 'fee_vnd', 'content', 'source_origin')
     return hashlib.sha256(json.dumps({k: transfer.get(k, 0 if k == 'fee_vnd' else None) for k in fields},
         sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
 

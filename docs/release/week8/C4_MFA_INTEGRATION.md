@@ -72,3 +72,13 @@ node node_modules/@playwright/test/cli.js test new-recipient-stepup.spec.ts --re
 ```
 
 This lane has not independently reviewed the final root integration. It does not claim C4's full end-to-end/GIF acceptance until that integrated browser test passes. Rollback removes the new routes/UI and leaves additive migration18 tables unused; do not delete data or downgrade a live database.
+
+## Follow-up read-only integration review
+
+Root installed the migration, create/issue/confirm guards, separate email-factor selection, posting/settlement trust registration and two route-matrix entries. Read-only review confirmed that authenticated cached-receipt retrieval remains before fresh-proof checks and a live pending confirmation rechecks proof before money posting. Root additionally bound proof to memo content and source origin; the focused test now checks those fields too.
+
+Added `test_direct_confirm_cannot_bypass_stepup_even_with_valid_bank_token_and_totp`: a real bank-signed confirmation token and genuinely correct transaction TOTP against a legacy TOTP challenge completed a10.000VND transfer on the pre-integration path (watched red: HTTP200/COMPLETED instead of STEP_UP_REQUIRED). Against the integrated root source, the same call is refused without spending the token or moving funds. Explicit step-up using that fresh code, then a separate emailed OTP completes exactly once; idempotent retry is stable and spent-token replay is409. This is a meaningful boundary regression, not a denial caused by a malformed token/wrong code.
+
+Validation of the updated focused suite against integrated root application modules: **7passed**. Root source was read-only; all financial mutations were in pytest temporary databases. Full E2E/GIF remains separately scheduled by root.
+
+`tests.stepup_helpers.seed_regression_payees(conn)` may be invoked once after TestClient startup in ordinary `conftest.client` and `acceptance_helpers.client` fixtures, and once in the disposable E2E launcher after initialization. Its finite Alice/Bob/Charlie recipient list is explicit. It must never be called from TokenClient.request, from a draft hook, from ordinary production startup, or for arbitrary newly registered customers. C4 security fixtures clear all `origin='fixture_known'` trust before testing; the C4 E2E case explicitly clears its target's trust and asserts no completed historical transfer. Registry entries reflect fixture starting state, not successful MFA. Do not count them as live security evidence.
