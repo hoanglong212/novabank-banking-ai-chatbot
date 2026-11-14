@@ -160,7 +160,7 @@ def main():
     if args.benign_controls:
         cases = [case for case in cases if case['kind'] != 'benign'] + [case for case in all_cases if case['kind'] == 'benign'][:args.benign_controls]
     source = source_identity(args.project_root)
-    manifest = {'version': 'week8-exact-goals-v1', **source, 'cases': cases, 'models': args.models,
+    manifest = {'version': 'week8-exact-goals-v2', **source, 'cases': cases, 'models': args.models,
         'configs': args.configs, 'attempts': args.attempts, 'provider': args.provider, 'attacker_model': args.attacker_model,
         'max_trials': args.max_trials, 'benign_controls': args.benign_controls, 'seed_db': str(args.seed_db) if args.seed_db else None,
         'subset': bool(args.channels or args.goals or args.max_trials), 'automatic_payment_approval': False}
