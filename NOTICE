@@ -1,0 +1,7 @@
+Built with Llama.
+
+Llama 4 is licensed under the Llama 4 Community License, Copyright © Meta Platforms, Inc. All Rights Reserved.
+
+Prompt Guard model weights are separately provisioned local dependencies and
+are not distributed in this repository. See the model's accompanying LICENSE
+and USE_POLICY.md for the terms applicable to those materials.
