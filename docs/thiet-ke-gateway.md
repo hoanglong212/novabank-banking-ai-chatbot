@@ -12,7 +12,32 @@ Mốc nguồn: nhánh `week8/t1-security-events`, nền `6a6617e`, có các thay
 - Chỉ cho customer đọc dữ liệu tài chính của chính mình khi yêu cầu tương ứng; không gửi số tài khoản đầy đủ của người khác hoặc thông tin liên hệ không cần thiết vào model. Support không có quyền đọc số dư.
 - Chức năng mới để demo là đổi hạn mức chuyển tiền cá nhân qua đề xuất, duyệt và xác minh. Dữ liệu demo Week8 là dữ liệu tổng hợp riêng, không ghi đè DB đang chạy.
 - Ngưỡng rủi ro và thời gian chờ là lựa chọn kỹ thuật có thể cấu hình, chưa phải mô hình chống gian lận đã được chứng nhận hoặc chuẩn chung của ngành. [Hiệu chuẩn thực tế](release/week8/T6_BENIGN_CALIBRATION.md) đã chạy 100 yêu cầu chính và 20 yêu cầu bổ sung: 100 đề xuất có dải đúng kỳ vọng; chín lần thiếu detector và một lần sai tham số được giữ trong kết quả của snapshot cũ.
-- Quyền sử dụng Prompt Guard phải do con người chấp nhận. Người dùng chưa chấp nhận giấy phép ở thời điểm lập tài liệu; cài thư viện không thay thế giấy phép hoặc trọng số hợp lệ.
+- Quyền sử dụng Prompt Guard do con người chấp nhận. Người dùng đã xác nhận chấp nhận giấy phép và cung cấp hai thư mục model local; không tải thêm hoặc truy cập token Hugging Face.
+
+## QĐ6 — bộ phát hiện nguồn sau T10
+
+Giữ thứ tự **regex → Prompt Guard 2 bản gốc → qwen2.5:7b** ở B/D; A/C vẫn tắt
+classifier theo thiết kế. Prompt Guard là bước lọc nhanh với ngưỡng mặc định
+**0.5** (`PROMPT_GUARD_THRESHOLD=0.5`), dùng thư mục local bản gốc qua
+`PROMPT_GUARD_MODEL_PATH`. Không bật bản fine-tune tiếng Việt. Qwen2.5:7b là tín
+hiệu phân loại chính, đặc biệt cho tiếng Việt; `GUARD_MODEL` mặc định riêng là
+`qwen2.5:7b`, không tự đổi theo model trả lời chính `OLLAMA_MODEL`.
+
+Lý do dựa trên [T10_PROMPTGUARD_RESULTS.md](release/week8/T10_PROMPTGUARD_RESULTS.md):
+trên phần giữ lại, bản VI chặn nhầm 8/14 mẫu lành tiếng Việt. Bản gốc không chặn
+nhầm 14 mẫu đó nhưng bỏ sót cả sáu mẫu tấn công không dấu; Qwen bắt 12/12 mẫu
+tấn công tiếng Việt với 0/14 dương tính giả. Ngưỡng bản gốc 0.01 của lượt hiệu
+chỉnh cũ gây ba false block trong mười task đọc nguồn thực tế (utility 97/100),
+nên không dùng ngưỡng ấy làm cấu hình vận hành. Đây là bộ nhỏ có mẫu cùng khuôn,
+không phải bằng chứng bảo đảm an toàn hay độ chính xác trên dữ liệu thực tế.
+
+Mỗi tầng đã chạy ghi một `classifier_signal`. PG cho qua vẫn phải chờ Qwen;
+PG thiếu model/timeout vẫn fail closed. Bất kỳ tín hiệu nào cũng không cấp quyền
+vượt qua kiểm tra ngân hàng. Một tầng chặn thì không gọi tầng sau. Lượt 100 task
+lành D mới dùng đúng bản gốc/0.5/Qwen2.5 trên database tổng hợp riêng; không dùng
+kết quả 0.01 trước đó thay cho phép đo mới. [Kết quả QĐ6 mới](release/week8/QD6_UTILITY_RESULTS.md):
+100/100 utility, 0 detector unavailable, PG chặn nhầm 0/10 task đọc nguồn
+được sàng lọc (0 task trong cả bộ 100); đây vẫn là tập tổng hợp nhỏ.
 
 ## Năm lớp kiểm soát và luồng thực thi
 

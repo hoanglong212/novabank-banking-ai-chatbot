@@ -29,7 +29,7 @@ async def classify(text):
     if provider() == 'mock':
         return {'injection': False, 'method': 'offline_rules_only'}
     try:
-        model = setting('GUARD_MODEL', setting('OLLAMA_MODEL', 'qwen2.5:7b'))
+        model = setting('GUARD_MODEL', 'qwen2.5:7b')
         async with httpx.AsyncClient(timeout=20) as client:
             r = await client.post(setting('OLLAMA_URL', 'http://127.0.0.1:11434').rstrip('/') + '/api/chat', json=model_request(text, model))
             r.raise_for_status(); result = json.loads(r.json()['message']['content'])

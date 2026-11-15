@@ -37,3 +37,20 @@ def test_only_b_and_d_enable_classifier_layer():
     from app.agent.policy import load
     assert {config: load(config)['layers']['classifier'] for config in 'ABCD'} == {
         'A': False, 'B': True, 'C': False, 'D': True}
+
+
+def test_qd6_guard_defaults_to_qwen25_independent_of_primary_model(monkeypatch):
+    import httpx
+    monkeypatch.setenv('LLM_PROVIDER', 'ollama')
+    monkeypatch.setenv('OLLAMA_MODEL', 'qwen3:8b')
+    monkeypatch.delenv('GUARD_MODEL', raising=False)
+    seen = []
+    async def handle(request):
+        import json
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={'message': {'content': '{"injection":false}'}})
+    original = httpx.AsyncClient
+    monkeypatch.setattr(agent_guard.httpx, 'AsyncClient', lambda **kw: original(transport=httpx.MockTransport(handle), **kw))
+    result = asyncio.run(agent_guard.classify('Ordinary salary payment'))
+    assert result['injection'] is False
+    assert seen[0]['model'] == 'qwen2.5:7b'

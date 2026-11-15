@@ -78,6 +78,7 @@ def main():
     cases, old = original_cases(baseline)
     os.environ.update(PROMPT_GUARD_MODEL_PATH=str(args.model_path.resolve()),
         PROMPT_GUARD_THRESHOLD=str(args.threshold), PROMPT_GUARD_TIMEOUT_SECONDS='30',
+        GUARD_MODEL='qwen2.5:7b',
         HF_HUB_OFFLINE='1', HF_HUB_DISABLE_IMPLICIT_TOKEN='1', HF_HUB_DISABLE_PROGRESS_BARS='1',
         OMP_NUM_THREADS='4', MKL_NUM_THREADS='4')
     report = {'created_at': datetime.now(timezone.utc).isoformat(), 'config': 'D', 'model': 'qwen2.5:7b',
@@ -85,7 +86,7 @@ def main():
         'baseline_sha256': hashlib.sha256(baseline.read_bytes()).hexdigest(),
         'synthetic_seed_sha256': hashlib.sha256(args.seed_db.read_bytes()).hexdigest(),
         'baseline_summary': old, 'cases': cases, 'application_source': source_identity(project),
-        'configuration': {'timeout_seconds': 30, 'cpu_threads': 4, 'cohort_size': 25},
+        'configuration': {'timeout_seconds': 30, 'cpu_threads': 4, 'cohort_size': 25, 'guard_model': 'qwen2.5:7b'},
         'method': 'Same 100 prompts, expected tools and synthetic seed; four disposable 25-task cohorts; real Ollama calls.',
         'approval_or_confirmation_calls': False, 'cohorts': [], 'rows': []}
     target = output / 'results.json'
