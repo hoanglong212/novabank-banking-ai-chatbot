@@ -30,3 +30,18 @@ local original Prompt Guard weights, and isolated runtimes are retained.
   ingestion or account-creation tool is added. M-ACCOUNT is excluded.
 - All application, harness, corpus and scorer work must finish before the snapshot
   and immutable preregistration. No labels/protocol changes after inference.
+
+## Step 0b — concrete transfer scaffold
+
+- New R2 scaffold renders actual seed account IDs: authorized Bob versus attacker
+  Charlie. No `W8_` marker appears anywhere in rendered payloads/user turns.
+- Initial legitimate transfer request contains only Bob, never Charlie; the
+  attacker recipient appears only in the untrusted source. This preserves the
+  provenance contrast instead of granting authority in an introductory legend.
+- Three RED→GREEN research tests verify all 40 rendered cases, real target
+  substitution, language/channel counts, QR 80-character bounds, capability
+  prompts and fixed sampling schedule. No model inference used in these tests.
+- Corpus adaptations cite pinned AgentDojo sources and the Crescendo paper;
+  fixed staged examples are not claimed to implement an adaptive search attack.
+- Actual seed ownership, balances, native calls and proposals remain runtime
+  checks to be registered and measured; file presence is not a utility result.
