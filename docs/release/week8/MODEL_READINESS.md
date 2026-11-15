@@ -1,5 +1,32 @@
 # Week8 model readiness and remaining measurements
 
+## Current local readiness — T10 follow-up
+
+The user has now confirmed license acceptance and supplied both model folders:
+`models/prompt-guard-2-86m` and `models/prompt-guard-2-86m-vi`. Both loaded and
+ran real CPU inference using the existing isolated runtime documented below.
+No model download or Hugging Face credential access was performed. Weights are
+ignored and untracked. See [the new T10 measurements](T10_PROMPTGUARD_RESULTS.md)
+for probes, model hashes, calibrated thresholds, language-specific results,
+benign utility and the actual verification record.
+
+The application reads `PROMPT_GUARD_MODEL_PATH`, `PROMPT_GUARD_THRESHOLD`
+(default 0.5), and `PROMPT_GUARD_TIMEOUT_SECONDS` (default 5). The isolated
+utility harness resolves the original folder to an absolute path and uses
+threshold 0.01 / timeout 30 for its own child processes. Existing live services
+are unchanged. The original model export's generic binary labels are supported;
+missing models and unsupported label maps still fail closed.
+
+**B/D attack execution remains deferred.** The user's current R1 prerequisite
+supersedes the old plan-only command below: first calibrate attacks on A, then
+notify the user before running B/D only on cells where A has L1 > 0. Neither
+`docs/plans/vong-2-agent.md` nor R1 results are present in this checkout.
+
+## Historical snapshot — before local weights were supplied
+
+The following text records the earlier missing-model state and prepared plans;
+it is preserved as history, not the current readiness verdict.
+
 Updated 2026-11-15. Qwen3 is installed and has actual inference evidence. The isolated CPU measurement runtime is usable. **Neither Prompt Guard variant has been measured:** the user explicitly confirmed that Meta's license has not been accepted. Installation is not license acceptance or model readiness.
 
 | Prerequisite | Observed state |

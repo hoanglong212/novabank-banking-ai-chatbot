@@ -152,6 +152,7 @@ def test_real_loader_forbids_remote_code_and_pickle_and_checks_all_windows(tmp_p
     result = asyncio.run(guard.classify('Salary', model_path=str(tmp_path)))
     assert result['available'] is True and result['injection'] is True
     assert all(kwargs['local_files_only'] and kwargs['trust_remote_code'] is False for _, kwargs in calls)
+    assert all(kwargs['token'] is False for _, kwargs in calls)
     assert calls[1][1]['use_safetensors'] is True
 
 
@@ -177,3 +178,32 @@ def test_queued_timeout_keeps_worker_claim_until_inference_finishes(tmp_path, mo
             await asyncio.sleep(0.001)
         assert (await guard.classify('Salary', model_path=str(tmp_path)))['available'] is True
     asyncio.run(check())
+
+
+@pytest.mark.parametrize('labels,expected', [
+    ({0: 'LABEL_0', 1: 'LABEL_1'}, 1),
+    ({0: 'BENIGN', 1: 'MALICIOUS'}, 1),
+    ({0: 'MALICIOUS', 1: 'BENIGN'}, 0),
+])
+def test_pg2_binary_label_mapping(labels, expected):
+    assert module().malicious_label_index(labels) == expected
+
+
+@pytest.mark.parametrize('labels', [{0: 'LABEL_0', 1: 'OTHER'},
+    {0: 'BENIGN', 1: 'INJECTION', 2: 'JAILBREAK'}, {0: 'SAFE', 2: 'MALICIOUS'}])
+def test_unknown_label_mapping_is_rejected(labels):
+    with pytest.raises(ValueError):
+        module().malicious_label_index(labels)
+
+
+def test_configured_threshold_and_path_are_used_without_hardcoding(tmp_path, monkeypatch):
+    guard = module()
+    monkeypatch.setenv('PROMPT_GUARD_MODEL_PATH', str(tmp_path))
+    monkeypatch.setenv('PROMPT_GUARD_THRESHOLD', '0.8')
+    monkeypatch.setattr(guard, '_load_local', lambda path: lambda text: 0.6)
+    result = asyncio.run(guard.classify('Salary payment'))
+    assert result['available'] and result['injection'] is False
+    assert result['threshold'] == 0.8
+    monkeypatch.setenv('PROMPT_GUARD_THRESHOLD', 'nan')
+    result = asyncio.run(guard.classify('Salary payment'))
+    assert result['available'] is False and result['injection'] is True

@@ -1,5 +1,10 @@
 # T10 local Prompt Guard adapter and evaluation
 
+Follow-up: both licensed local models have now been measured. See
+[T10_PROMPTGUARD_RESULTS.md](T10_PROMPTGUARD_RESULTS.md) for the current adapter
+configuration, comparison and utility evidence. The original implementation
+handoff below is retained as a historical snapshot.
+
 Implemented independently on `week8/t10-promptguard`. This is adapter/tooling completion, **not completion of the real-model three-detector acceptance criterion**.
 
 ## Integration contract
