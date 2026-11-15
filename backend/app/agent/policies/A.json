@@ -1,0 +1,35 @@
+{
+  "config": "A",
+  "layers": {
+    "spotlighting": false,
+    "classifier": false,
+    "provenance": false,
+    "intent_binding": false,
+    "approval_otp": true,
+    "output_filter": false,
+    "risk_signals": false,
+    "quarantine": false,
+    "dual_llm": false
+  },
+  "risk": {
+    "new_recipient_wait_seconds": 60,
+    "points": {
+      "floor_financial": 20,
+      "floor_account_change": 20,
+      "untrusted": 40,
+      "new_recipient": 20,
+      "flagged_case": 20,
+      "medium": 20,
+      "high": 60,
+      "very_high": 80
+    }
+  },
+  "rules": [
+    {
+      "id": "A-lab-control",
+      "priority": 100,
+      "when": {},
+      "then": "allow"
+    }
+  ]
+}

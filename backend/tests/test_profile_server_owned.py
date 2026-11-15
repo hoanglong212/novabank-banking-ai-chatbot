@@ -16,7 +16,7 @@ def run_profile(client, who, requested):
     ('', 'alice', 'defended'), ('demo', 'alice', 'defended'), ('lab', 'alice', 'defended'),
     ('', 'admin', 'defended'), ('production', 'admin', 'defended'),
     ('demo', 'support', 'defended'), ('demo', 'operations', 'defended'),
-    ('demo', 'admin', 'baseline'), ('lab', 'admin', 'baseline'),
+    ('demo', 'admin', 'defended'), ('lab', 'admin', 'defended'),
 ])
 def test_baseline_only_for_admin_in_lab(client, monkeypatch, environment, role, expected):
     monkeypatch.setenv('ENV', environment)
@@ -26,6 +26,13 @@ def test_baseline_only_for_admin_in_lab(client, monkeypatch, environment, role, 
 def test_defended_is_never_downgraded(client, monkeypatch):
     monkeypatch.setenv('ENV', 'demo')
     assert run_profile(client, login(client, 'admin'), 'defended') == 'defended'
+
+
+def test_admin_baseline_requires_named_expiring_a_session(client, monkeypatch):
+    monkeypatch.setenv('ENV', 'lab')
+    admin = login(client, 'admin')
+    assert client.put('/api/admin/agent-gateway', headers=admin, json={'config': 'A', 'users': ['admin'], 'minutes': 2}).status_code == 200
+    assert run_profile(client, admin, 'baseline') == 'baseline'
 
 
 def test_customer_asking_for_baseline_keeps_the_two_denial_stop(client):

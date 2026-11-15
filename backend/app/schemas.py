@@ -64,6 +64,7 @@ class TransferArgs(BaseModel):
     amount_vnd: int = Field(strict=True, ge=1000, le=100_000_000)
     content: str | None = Field(default=None, max_length=80)
     to_name: str | None = Field(default=None, max_length=50)
+    source_origin: Literal['manual', 'qr', 'ocr'] = 'manual'
 
 
 class TransferConfirm(BaseModel):

@@ -23,6 +23,9 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv('LEGACY_AGENT_TEST_MODE', 'false')
     from tests.conftest import TokenClient  # remembers B5 confirmation tokens
     with TokenClient(app) as result:
+        from tests.stepup_helpers import fixed_known_payees
+        with get_db().connect() as conn:
+            fixed_known_payees(conn)
         yield result
         assert reconcile(get_db())['balanced']
 

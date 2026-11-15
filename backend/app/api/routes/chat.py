@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from ... import transfers, vietqr
 from ...auth import DemoPrincipal
-from ...config import provider, setting
+from ...config import provider, setting, legacy_test_mode
 from ...database import Database
 from ...dependencies import get_db, current_user, customer_user, assistant_user
 from ...schemas import ConversationCreate, SendMessage, DemoToolCheck, TransferArgs, TransferConfirm, VietQRArgs
@@ -53,8 +53,8 @@ async def get_events(conversation_id: str, user: DemoPrincipal = Depends(assista
 
 @router.post('/api/conversations/{conversation_id}/messages')
 async def send_message(conversation_id: str, payload: SendMessage, user: DemoPrincipal = Depends(customer_user)):
-    if setting('LEGACY_AGENT_TEST_MODE') != 'true':
-        raise HTTPException(409, 'Use the /stream endpoint for the isolated assistant and customer approvals.')
+    if not legacy_test_mode():
+        raise HTTPException(404, 'Not found')
     db = get_db()
     with db.connect() as conn:
         from ...agent_access import enabled
@@ -79,6 +79,8 @@ async def send_message(conversation_id: str, payload: SendMessage, user: DemoPri
 @router.post('/api/conversations/{conversation_id}/demo/tool-check')
 async def demo_policy_check(conversation_id: str, payload: DemoToolCheck,
                             user: DemoPrincipal = Depends(customer_user)):
+    if not legacy_test_mode():
+        raise HTTPException(404, 'Not found')
     db = get_db()
     require_own_conversation(db, conversation_id, user)
     return await ToolDispatcher(db, PolicyGateway(db)).dry_run(user, conversation_id, payload.tool_name, payload.arguments)

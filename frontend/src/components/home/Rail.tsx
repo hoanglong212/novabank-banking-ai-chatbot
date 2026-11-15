@@ -4,7 +4,7 @@ import { api } from '../../api';
 import type { Announcement, DemoUser } from '../../types';
 import { vnd } from '../../format';
 import { navigate } from '../../router';
-import { useResource } from '../explore/shared';
+import { Loading, useResource } from '../explore/shared';
 
 // Desktop side rail: small, real-data cards that fill wide screens. Hidden below 1200px by CSS.
 const ZONE = 'Asia/Ho_Chi_Minh';
@@ -20,15 +20,16 @@ function dueIn(day: string) {
 interface Insights { income_vnd: number; expense_vnd: number; categories: { category: string; amount_vnd: number }[]; previous?: { expense_vnd: number } }
 interface Bill { id: string; provider: string; amount_vnd: number; due_date: string; status: string }
 
-export function MonthPulse({ user }: { user: DemoUser }) {
+export function MonthPulse({ user, revision = '' }: { user: DemoUser; revision?: string }) {
   const month = thisMonth();
-  const data = useResource<Insights>(user, `/insights?month=${month}`).data;
+  const state = useResource<Insights>(user, `/insights?month=${month}&revision=${revision}`);
+  const data = state.error ? null : state.data;
   const top = (data?.categories ?? []).filter(c => c.amount_vnd > 0).sort((a, b) => b.amount_vnd - a.amount_vnd).slice(0, 3);
   const max = top[0]?.amount_vnd || 1;
   const change = data?.previous?.expense_vnd ? Math.round((data.expense_vnd / data.previous.expense_vnd - 1) * 100) : null;
   return <section className="card rail-card" aria-label="This month">
     <header className="rail-head"><h2>This month</h2><button className="link-button" onClick={() => navigate('/explore/insights')}>Details <ChevronRight size={14} aria-hidden="true" /></button></header>
-    {!data ? <><span className="skeleton skeleton-text" /><span className="skeleton skeleton-row" /></> : <>
+    {state.error ? <Loading state={state} /> : !data ? <><span className="skeleton skeleton-text" /><span className="skeleton skeleton-row" /></> : <>
       <div className="rail-flow">
         <div><span className="rail-dot in"><ArrowDownLeft size={13} aria-hidden="true" /></span><small>In</small><strong>{vnd(data.income_vnd)}</strong></div>
         <div><span className="rail-dot out"><ArrowUpRight size={13} aria-hidden="true" /></span><small>Out</small><strong>{vnd(data.expense_vnd)}</strong></div>

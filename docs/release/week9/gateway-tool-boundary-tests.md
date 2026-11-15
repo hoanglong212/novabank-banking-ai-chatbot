@@ -1,5 +1,9 @@
 # Gateway & tool-boundary test rewrite — findings log
 
+## Cycle 3 — transaction-status source screening (2026-11-15)
+
+Finding: `get_transaction_status` returned a poisoned owned incoming memo without classification. Regression `backend/tests/test_week8_source_screening.py` observed ALLOW where DENY was expected. Added the tool to `SCREENED_TOOLS`; the injected memo now returns `SOURCE_INJECTION` without its raw text. The same test reads a plain salary memo successfully. Red evidence: `.local/week8/t2-red.log`; green bundle: `.local/week8/t2-green.log` (14 passed). Later signed-capability enforcement changes the past-tense direct-call refusal reason from `USER_INTENT_REQUIRED` to `TOOL_NOT_IN_TOKEN`; its denial assertion was strengthened to that explicit boundary, not relaxed.
+
 Author: `Tran Phuong Ha` | Date: `2026-11-14` | Branch: `test/gateway-tool-boundary` | Base: `main` | Files touched: `backend/tests/test_gateway.py` (new), `docs/release/week9/gateway-tool-boundary-tests.md` (this log)
 
 ## Scope

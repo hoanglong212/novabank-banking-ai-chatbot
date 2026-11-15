@@ -15,6 +15,8 @@ import { useResource } from '../explore/shared';
 interface HomeProps {
   user: DemoUser;
   profile: Profile | null;
+  profileError?: string;
+  revision?: number;
   navigate: (tab: Tab) => void;
   ask: (text: string) => void;
   transfer: () => void;
@@ -34,7 +36,7 @@ const SERVICES = [
   { label: 'All services', icon: LayoutGrid, section: '' },
 ];
 
-export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
+export function Home({ user, profile, profileError, revision = 0, navigate, ask, transfer }: HomeProps) {
   // Hidden by default, as in banking apps: shoulder-surfing protection until the customer asks.
   const visibilityKey = `novabank-balance-visible:${user.id}`;
   const [shown, setShown] = useState(() => {
@@ -48,7 +50,7 @@ export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
   const totalBalance = profile?.accounts.reduce((sum, item) => sum + item.balance_vnd, 0) ?? 0;
   const month = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).slice(0, 7);
   // Balance in the key refetches the summary after a transfer.
-  const summary = useResource<Summary>(user, `/insights?month=${month}&revision=${account?.balance_vnd ?? 0}`).data;
+  const summary = useResource<Summary>(user, `/insights?month=${month}&revision=${revision}:${totalBalance}`).data;
 
   useEffect(() => {
     api.notifications(user).then(page => setUnread(page.unread_count)).catch(() => { });
@@ -123,7 +125,7 @@ export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
           </div>
           {account
             ? <strong className={`balance ${shown ? 'is-shown' : ''}`} key={String(shown)}>{shown ? vnd(totalBalance) : `${hidden} VND`}</strong>
-            : <span className="skeleton skeleton-balance" />}
+            : profileError ? <p className="muted">Balance unavailable</p> : <span className="skeleton skeleton-balance" />}
           <div className="wallet-meta">
             {account && (
               <button className="account-no" onClick={copyAccount} aria-label={`Copy account number ${account.id}`}>
@@ -169,7 +171,7 @@ export function Home({ user, profile, navigate, ask, transfer }: HomeProps) {
       </div>
     </div>
       <aside className="side-rail" aria-label="At a glance">
-        <MonthPulse user={user} />
+        <MonthPulse user={user} revision={`${revision}:${totalBalance}`} />
         <UpcomingBills user={user} />
         <NewsTeaser user={user} />
         <SafetyTip />

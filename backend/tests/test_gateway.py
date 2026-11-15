@@ -131,7 +131,7 @@ def test_past_tense_status_questions_do_not_unlock_write_tools(client, prompt, f
     # Arm B: direct call is refused at the intent boundary.
     denied = tool(client, token, forbidden_tool, deny_args)
     assert denied['decision'] == 'DENY', denied
-    assert denied['reason'] == 'USER_INTENT_REQUIRED', denied
+    assert denied['reason'] == 'TOOL_NOT_IN_TOKEN', denied
 
 
 # ==============================================================================
@@ -239,15 +239,16 @@ def test_single_run_cannot_flood_proposals(client):
     flood = tool(client, token, 'prepare_bill_payment',
                  {'bill_id': b2, 'account_id': 'ACC-ALICE-001'})
     assert flood['decision'] == 'DENY', flood
-    assert flood['reason'] == 'USER_INTENT_REQUIRED', flood
+    assert flood['reason'] == 'T4-bind' and flood['halt'] is True, flood
 
     pending = [
         a for a in client.get('/api/agent/approvals', headers=who,
                               params={'conversation_id': cid}).json()['items']
         if a['status'] == 'PENDING'
     ]
-    assert len(pending) == 1, pending
-    assert pending[0]['arguments']['bill_id'] == b1, pending
+    assert pending == []  # T8 rejects every pending draft when an unbound action halts the run.
+    listed = client.get('/api/agent/approvals', headers=who, params={'conversation_id': cid}).json()['items']
+    assert len(listed) == 1 and listed[0]['arguments']['bill_id'] == b1 and listed[0]['status'] == 'REJECTED'
 
 
 # ==============================================================================
@@ -268,7 +269,10 @@ def test_faq_foreign_read_is_denied(client):
     who = login(client)
     _, _, token = grant_for(client, who, 'What are NovaBank branch opening hours?')
 
-    # Own account: allowed even though the turn was a FAQ question.
+    # C2 now also rejects unsolicited own balances; explicit authorized reads still work.
+    own = tool(client, token, 'get_account_balance', {'account_id': 'ACC-ALICE-001'})
+    assert (own['decision'], own['reason']) == ('DENY', 'READ_INTENT_REQUIRED')
+    _, _, token = grant_for(client, who, 'What is my account balance?')
     own = tool(client, token, 'get_account_balance', {'account_id': 'ACC-ALICE-001'})
     assert own['decision'] == 'ALLOW', own
     assert own['result']['balance_vnd'] == 12_500_000, own

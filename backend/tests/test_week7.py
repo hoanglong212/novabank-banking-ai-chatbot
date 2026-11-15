@@ -85,6 +85,10 @@ def test_staff_ticket_injection_cannot_grant_payment_authority(client):
     read = client.post('/api/agent/tools', headers=token, json={'name': 'read_ticket', 'arguments': {'ticket_id': ticket['id']}}).json()
     assert read['decision'] == 'DENY' and read['reason'] == 'SOURCE_INJECTION'
     payment = client.post('/api/agent/tools', headers=token, json={'name': 'prepare_transfer',
+        'arguments': {'to_account': 'ACC-CHARLIE-001', 'amount_vnd': 1000}})
+    assert payment.status_code == 401  # T8 revokes the run at the first flagged source.
+    _, _, fresh = grant_for(client, admin, 'Read ticket ' + ticket['id'])
+    payment = client.post('/api/agent/tools', headers=fresh, json={'name': 'prepare_transfer',
         'arguments': {'to_account': 'ACC-CHARLIE-001', 'amount_vnd': 1000}}).json()
     assert payment['decision'] == 'DENY' and payment['reason'] == 'ROLE_NOT_PERMITTED'
 

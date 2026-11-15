@@ -55,6 +55,10 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv('BANK_WORKER_ENABLED', 'false')
     monkeypatch.setenv('LEGACY_AGENT_TEST_MODE', 'true')
     with TokenClient(app) as c:
+        from app.dependencies import get_db
+        from tests.stepup_helpers import fixed_known_payees
+        with get_db().connect() as conn:
+            fixed_known_payees(conn)
         yield c
 
 

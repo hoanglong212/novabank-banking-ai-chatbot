@@ -159,13 +159,13 @@ def token(t):
     return t.get('confirm_token') or issue(t, transfers._expires_at(t), transfers.now())
 
 
-def simultaneous_confirm(db, drafts, keys, otps=None):
+def simultaneous_confirm(db, drafts, keys, otps=None, user=None):
     barrier = Barrier(len(drafts))
     def run(item):
         index, t = item
         barrier.wait(timeout=5)
         try:
-            return transfers.confirm(db, USERS['alice'], t['id'], (otps or [transfer_code(d) for d in drafts])[index], keys[index], token(t))
+            return transfers.confirm(db, user, t['id'], (otps or [transfer_code(d) for d in drafts])[index], keys[index], token(t))
         except transfers.TransferError as exc:
             return exc.reason_code
     with ThreadPoolExecutor(max_workers=len(drafts)) as pool:
@@ -174,7 +174,8 @@ def simultaneous_confirm(db, drafts, keys, otps=None):
 
 def test_concurrent_same_key_confirms_post_once(client, alice):
     t = draft(client, alice).json()
-    results = simultaneous_confirm(get_db(), [t, t], ['simultaneous', 'simultaneous'])
+    from app.auth import authenticate
+    results = simultaneous_confirm(get_db(), [t, t], ['simultaneous', 'simultaneous'], user=authenticate(alice['Authorization']))
     assert isinstance(results[0], dict) and results[0] == results[1]
     assert balance(client, alice) == 12_300_000
     with get_db().connect() as conn:
@@ -184,7 +185,8 @@ def test_concurrent_same_key_confirms_post_once(client, alice):
 def test_concurrent_wrong_otps_share_three_attempt_budget(client, alice):
     t = draft(client, alice).json()
     wrong = '000000' if transfer_code(t) != '000000' else '111111'
-    results = simultaneous_confirm(get_db(), [t] * 5, ['wrong'] * 5, [wrong] * 5)
+    from app.auth import authenticate
+    results = simultaneous_confirm(get_db(), [t] * 5, ['wrong'] * 5, [wrong] * 5, user=authenticate(alice['Authorization']))
     assert sorted(results) == ['ALREADY_PROCESSED', 'ALREADY_PROCESSED', 'OTP_INVALID', 'OTP_INVALID', 'OTP_LOCKED']
     assert get_db().get_transfer(t['id'], 'alice')['otp_attempts'] == 3
 
@@ -196,13 +198,20 @@ def test_two_six_million_transfers_from_ten_million_only_one_succeeds(tmp_path):
                      'holder_name TEXT NOT NULL, balance_vnd INTEGER NOT NULL CHECK(balance_vnd>=0))')
         conn.execute("INSERT INTO accounts VALUES ('ACC-ALICE-001','alice','ALICE NGUYEN',10000000)")
     db.initialize()
+    from dataclasses import replace
+    from app import sessions, session_security
+    from tests.stepup_helpers import fixed_known_payees
+    with db.connect() as conn:
+        fixed_known_payees(conn)
+        session = sessions.create(conn, USERS['alice'], '127.0.0.1', 'concurrency-fixture', 'email', session_security.timestamp())
+    user = replace(USERS['alice'], session_id=session['session_id'])
     drafts = []
     for _ in range(2):
-        t = asyncio.run(transfers.prepare(db, USERS['alice'], {
+        t = asyncio.run(transfers.prepare(db, user, {
             'to_bank': 'NovaBank', 'to_account': 'ACC-BOB-001', 'amount_vnd': 6_000_000}))
-        _, otp = transfers.issue_otp(db, USERS['alice'], t['id'])
+        _, otp = transfers.issue_otp(db, user, t['id'])
         drafts.append({**t, 'demo_otp': otp})
-    results = simultaneous_confirm(db, drafts, ['six-a', 'six-b'])
+    results = simultaneous_confirm(db, drafts, ['six-a', 'six-b'], user=user)
     assert sum(isinstance(r, dict) for r in results) == 1
     assert 'INSUFFICIENT_FUNDS' in results
     assert db.account('ACC-ALICE-001')['balance_vnd'] == 4_000_000

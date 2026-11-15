@@ -11,6 +11,7 @@ import time
 import httpx
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import StreamingResponse
+from .spotlighting import for_context
 
 BANKING_URL = os.environ.get('BANKING_API_URL', 'http://127.0.0.1:8000').rstrip('/')
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11434').rstrip('/')
@@ -42,7 +43,11 @@ async def run_events(authorization, context):
     started = time.perf_counter(); input_tokens = output_tokens = 0; answer = ''; failed = False
     termination_reason = None
     defended = context['profile'] == 'defended'
-    messages = [{'role': 'system', 'content': SYSTEM + ('\n' + HARDENED if defended else '')}, *context['messages']]
+    spotlight = for_context(context)
+    system = SYSTEM + ('\n' + HARDENED if defended else '')
+    if spotlight.enabled:
+        system += '\n' + spotlight.instruction
+    messages = [{'role': 'system', 'content': system}, *context['messages']]
     used = 0
     try:
         async with asyncio.timeout(min(context['timeout_seconds'], 120)):
@@ -55,6 +60,9 @@ async def run_events(authorization, context):
                         yield event('tool', {'name': name, 'status': 'running'})
                         response = await client.post(BANKING_URL + '/api/agent/tools', headers={'Authorization': authorization}, json={'name': name, 'arguments': hint.get('arguments', {})})
                         response.raise_for_status(); result = response.json()
+                        if isinstance(result.get('completion'), dict):
+                            yield event('complete', result['completion'])
+                            return
                         answer = 'Demo response (no model): ' + json.dumps(result['result'], ensure_ascii=False)
                     else:
                         answer = 'Demo mode supports specific balance, transaction, transfer and support requests. Use Explore for other services.'
@@ -70,6 +78,7 @@ async def run_events(authorization, context):
                     async with client.stream('POST', OLLAMA_URL + '/api/chat', json={
                         'model': context['model'], 'messages': messages, 'tools': context['tools'], 'stream': True,
                         'options': {'temperature': 0, 'num_predict': 512, 'num_ctx': 8192}, 'keep_alive': '15m',
+                        **({'think': False} if context['model'].lower().startswith('qwen3') else {}),
                     }) as response:
                         response.raise_for_status()
                         count = 0
@@ -83,8 +92,9 @@ async def run_events(authorization, context):
                             count += bool(message.get('content'))
                             # Publish complete sentence prefixes only, after bank filtering.
                             # The bank returns restored, vetted text; never emit raw model tokens.
-                            boundaries = list(re.finditer(r'[.!?](?:\s+|$)|\n', content))
-                            stable = content[:boundaries[-1].end()].strip() if boundaries else ''
+                            display_content = spotlight.restore_text(content)
+                            boundaries = list(re.finditer(r'[.!?](?:\s+|$)|\n', display_content))
+                            stable = display_content[:boundaries[-1].end()].strip() if boundaries else ''
                             if stable and stable != previewed and not calls:
                                 preview = await client.post(BANKING_URL + '/api/agent/preview', headers={'Authorization': authorization}, json={'answer': stable[:24000]})
                                 preview.raise_for_status()
@@ -121,14 +131,19 @@ async def run_events(authorization, context):
                         response = await client.post(BANKING_URL + '/api/agent/tools', headers={'Authorization': authorization},
                                                      json={'name': name, 'arguments': arguments})
                         response.raise_for_status(); result = response.json(); used += 1
+                        if isinstance(result.get('completion'), dict):
+                            # Only the banking API supplies terminal text. A quarantined
+                            # run has already revoked its delegation; never finish it again.
+                            yield event('complete', result['completion'])
+                            return
                         yield event('tool', {'name': name, 'status': result['decision'].lower(), 'reason': result['reason']})
                         if result['decision'] == 'ALLOW':
                             allowed_calls.add(name)
                         if result.get('halt'):
                             termination_reason = 'ANOMALOUS_SEQUENCE'
                             raise ValueError('Anomalous sequence stopped')
-                        text = json.dumps(result, ensure_ascii=False)
-                        if defended:
+                        text = json.dumps(spotlight.transform(name, result), ensure_ascii=False)
+                        if defended or spotlight.enabled:
                             text = '<untrusted_tool_data>\n' + text + '\n</untrusted_tool_data>'
                         messages.append({'role': 'tool', 'tool_name': name, 'content': text[:24000]})
                 else:
@@ -146,7 +161,7 @@ async def run_events(authorization, context):
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(BANKING_URL + '/api/agent/finish', headers={'Authorization': authorization}, json={
-                'answer': answer[:24000], 'input_tokens': input_tokens, 'output_tokens': output_tokens,
+                'answer': spotlight.restore_text(answer)[:24000], 'input_tokens': input_tokens, 'output_tokens': output_tokens,
                 'latency_ms': min(300000, int((time.perf_counter() - started) * 1000)), 'status': 'FAILED' if failed else 'COMPLETED',
                 'termination_reason': termination_reason})
             response.raise_for_status()

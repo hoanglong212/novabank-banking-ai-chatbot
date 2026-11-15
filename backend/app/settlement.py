@@ -64,6 +64,9 @@ def process_due(db, force=False):
                          (status, stamp, 'SIMULATED_RECIPIENT_REJECTED' if failed else None, reversal, row['id']))
             audit(conn, row['owner_id'], 'INTERBANK_' + status, row['id'], 'REVERSED' if failed else 'SETTLED', stamp)
             if not failed:
+                from .transfer_stepup import remember_completed
+                remember_completed(conn, row['id'])
+            if not failed:
                 from .insights import budgets_after_posting
                 budgets_after_posting(conn, row['owner_id'], business_day(row['completed_at']))
     return result

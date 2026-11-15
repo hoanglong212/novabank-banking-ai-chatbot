@@ -25,7 +25,8 @@ def test_model_cannot_substitute_recipient_even_if_regex_misses_source(client, p
     _, grant, token = grant_for(client, who, 'Transfer 10000 VND to ACC-BOB-001.', profile)
     result = client.post('/api/agent/tools', headers=token, json={'name': 'prepare_transfer',
         'arguments': {'to_account': 'ACC-CHARLIE-001', 'amount_vnd': 1000}}).json()
-    assert result['decision'] == 'DENY' and result['reason'] == 'USER_INTENT_MISMATCH'
+    assert result['decision'] == 'DENY' and result['reason'] == 'T4-bind'
+    assert result['halt'] is True
     with get_db().connect() as conn:
         assert conn.execute("SELECT COUNT(*) FROM agent_calls WHERE run_id=? AND name='prepare_transfer' AND decision='ALLOW'", (grant['run_id'],)).fetchone()[0] == 0
         assert conn.execute('SELECT COUNT(*) FROM tool_approvals').fetchone()[0] == 0

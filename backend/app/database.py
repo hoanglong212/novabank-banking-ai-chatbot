@@ -145,6 +145,24 @@ class Database:
             initialize(conn)
             from .banking_queries import initialize_announcements
             initialize_announcements(conn)
+            from .security_events import initialize as initialize_security_events
+            initialize_security_events(conn, now())
+            from .agent.provenance import initialize as initialize_provenance
+            initialize_provenance(conn, now())
+            from .agent.policy import initialize as initialize_agent_policies
+            initialize_agent_policies(conn, now())
+            from .risk.cases import initialize as initialize_risk_cases
+            initialize_risk_cases(conn, now())
+            from .agent.quarantine import initialize as initialize_quarantine
+            initialize_quarantine(conn, now())
+            from .agent.ticket_isolation import initialize as initialize_ticket_assessments
+            initialize_ticket_assessments(conn, now())
+            from .transfer_stepup import initialize as initialize_transfer_stepup
+            initialize_transfer_stepup(conn, now())
+            from .customer_limits import initialize as initialize_customer_limits
+            initialize_customer_limits(conn, now())
+            from .transfer_source import initialize as initialize_transfer_sources
+            initialize_transfer_sources(conn, now())
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())

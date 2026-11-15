@@ -24,6 +24,16 @@ import { pickRange } from '../src/components/activity/TransactionFilters';
 checkPaymentImageText();
 checkOutboxOpener();
 import { TransactionInfo } from '../src/components/activity/TransactionDetails';
+import { ApprovalEvidence } from '../src/components/chat/ApprovalEvidence';
+
+{
+  const html = renderToStaticMarkup(<ApprovalEvidence review={{ title: 'Review your transfer', frozen: true, risk_band: 'medium', risk_label: 'Medium', new_recipient: true, warning: 'New recipient: verify independently', not_before: 0, parameter_sources: { to_account: 'user' }, source_labels: { to_account: 'From your confirmed message' }, rule_ids: ['bank-approval'], rule_explanations: ['Check the exact details <script>'] }} />);
+  assert.ok(html.includes('New recipient: verify independently'));
+  assert.ok(html.includes('From your confirmed message'));
+  assert.ok(html.includes('&lt;script&gt;') && !html.includes('<script>'));
+  assert.equal(renderToStaticMarkup(<ApprovalEvidence />), '');
+  console.log('PASS: bank-owned approval evidence shows recipient warning, origin and risk without executable markup');
+}
 
 {
   const zero = loanSchedule(1000000, 3, 0);

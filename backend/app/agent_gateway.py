@@ -42,7 +42,10 @@ def session(conn):
     if not lab():
         return None
     row = conn.execute("SELECT value_json FROM bank_settings WHERE key='agent_gateway'").fetchone()
-    value = json.loads(row[0]) if row else None
+    try:
+        value = json.loads(row[0]) if row else None
+    except (ValueError, TypeError):
+        return None
     # A pre-session global "off" string is ignored on purpose: OFF must name its users and expire.
     if not isinstance(value, dict) or value.get('expires_at', 0) <= time.time():
         return None
@@ -52,7 +55,27 @@ def session(conn):
 def state(conn, user_id=None):
     """'off' only for a user inside the open session; without user_id, whether a session is open."""
     current = session(conn)
-    return 'off' if current and (user_id is None or user_id in current['users']) else 'on'
+    return 'off' if current and current.get('config', 'A') == 'A' and (user_id is None or user_id in current['users']) else 'on'
+
+
+def configuration(conn, user_id):
+    current = session(conn)
+    if current and user_id in current.get('users', ()) and current.get('config', 'A') in ('A', 'B', 'C'):
+        return current.get('config', 'A')
+    return 'D'
+
+
+def set_configuration(conn, user, config, users=(), minutes=30):
+    if config not in ('A', 'B', 'C', 'D'):
+        raise HTTPException(422, 'Unknown gateway configuration.')
+    if config == 'D':
+        set_state(conn, user, True)
+        return 'D'
+    set_state(conn, user, False, users, minutes)
+    current = session(conn)
+    current['config'] = config
+    conn.execute("UPDATE bank_settings SET value_json=? WHERE key='agent_gateway'", (json.dumps(current),))
+    return config
 
 
 def set_state(conn, user, enabled, users=(), minutes=30):

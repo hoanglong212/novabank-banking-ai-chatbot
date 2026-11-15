@@ -16,6 +16,7 @@ from .database import Database, now
 from .faq import fold
 from .posting import TransferError, VIETNAM, audit, post_transfer, validate_accounts
 from .mfa_settings import PIN_MARK, TOTP_MARK, transaction_factor, verify_factor
+from .security_events import transfer_event
 
 NOVABANK = {'novabank', 'nova', 'nvb'}
 DAILY_LIMIT_VND = 200_000_000
@@ -44,6 +45,7 @@ def public(transfer: dict) -> dict:
                                       'content', 'status', 'otp_expires_at', 'transaction_id', 'fee_vnd') if k in transfer}
     if transfer.get('otp_hash'):
         result['otp_method'] = {TOTP_MARK: 'totp', PIN_MARK: 'pin'}.get(transfer['otp_hash'], 'email')
+    result['source_origin'] = transfer.get('source_origin', 'manual')
     if transfer.get('settlement_status'):
         result['status'] = transfer['settlement_status']
     if 'created_at' in transfer:
@@ -68,9 +70,8 @@ def _check_velocity_and_recipient(conn, owner_id: str, transfer: dict, stamp: st
                           (owner_id, since)).fetchone()[0]
     if recent >= VELOCITY_MAX_TRANSFERS:
         raise TransferError('VELOCITY_LIMIT_EXCEEDED')
-    known = conn.execute("SELECT 1 FROM transfers WHERE owner_id=? AND status='COMPLETED' AND to_bank=? AND to_account=? LIMIT 1",
-                         (owner_id, transfer['to_bank'], transfer['to_account'])).fetchone()
-    if not known and transfer['amount_vnd'] > NEW_RECIPIENT_LIMIT_VND:
+    from .transfer_stepup import new_recipient
+    if new_recipient(conn, transfer) and transfer['amount_vnd'] > NEW_RECIPIENT_LIMIT_VND:
         raise TransferError('NEW_RECIPIENT_LIMIT_EXCEEDED')
 
 
@@ -101,6 +102,10 @@ async def prepare(db: Database, user: DemoPrincipal, args: dict) -> dict:
                     # Customer prose is data, not a QR field. React/PDF escape when rendering.
                     content=(args.get('content') or f'{user.name} transfer').strip()[:80] or 'Transfer',
                     status='PENDING_OTP', created_at=now())
+    transfer['source_origin'] = args.get('source_origin', 'manual')
+    if transfer['source_origin'] in ('qr', 'ocr'):
+        from .qr_security import safe_payment_data
+        safe_payment_data({'account_name': transfer['to_name'], 'add_info': transfer['content']})
     with db.connect() as conn:
         conn.execute('BEGIN IMMEDIATE')
         from .settlement import fee
@@ -114,6 +119,7 @@ async def prepare(db: Database, user: DemoPrincipal, args: dict) -> dict:
                      'content,status,created_at) VALUES (:id,:owner_id,:from_account,:to_bank,:to_account,:to_name,'
                      ':internal,:amount_vnd,:content,:status,:created_at)', transfer)
         conn.execute('INSERT INTO transfer_quotes VALUES (?,?)', (transfer['id'], transfer['fee_vnd']))
+        conn.execute('INSERT INTO transfer_sources VALUES (?,?)', (transfer['id'], transfer['source_origin']))
     return transfer
 
 
@@ -123,7 +129,8 @@ def _own_transfer(conn, transfer_id: str, user: DemoPrincipal) -> dict:
         WHERE t.id=? AND t.owner_id=?''', (transfer_id, user.id)).fetchone()
     if row is None:
         raise TransferError('TRANSFER_NOT_FOUND')
-    return dict(row)
+    from .transfer_source import origin
+    return {**dict(row), 'source_origin': origin(conn, transfer_id)}
 
 
 def _fail(conn, t: dict, reason: str, stamp: str):
@@ -143,10 +150,15 @@ def issue_otp(db: Database, user: DemoPrincipal, transfer_id: str) -> tuple[dict
         stamp = now()
         if t['status'] != 'PENDING_OTP':
             raise TransferError('ALREADY_PROCESSED')
+        from .risk.scorer import guard_otp
+        guard_otp(conn, transfer_id)
+        from . import transfer_stepup
+        transfer_stepup.require_stepup(conn, user, t)
+        new_payee_email = transfer_stepup.email_confirmation_required(conn, user, t)
         if _expires_at(t) <= stamp:
             _fail(conn, t, 'DRAFT_EXPIRED', stamp)
             error = TransferError('DRAFT_EXPIRED')
-        elif (factor := transaction_factor(conn, user.id)) in ('totp', 'pin'):
+        elif not new_payee_email and (factor := transaction_factor(conn, user.id)) in ('totp', 'pin'):
             # The customer supplies the code (authenticator or own PIN): nothing is generated or mailed.
             otp, mark = None, TOTP_MARK if factor == 'totp' else PIN_MARK
             conn.execute('UPDATE transfers SET otp_hash=?,otp_expires_at=? WHERE id=?', (mark, _expires_at(t), transfer_id))
@@ -163,7 +175,9 @@ def issue_otp(db: Database, user: DemoPrincipal, transfer_id: str) -> tuple[dict
                 VALUES (?,?,?,'TRANSFER_OTP',?,?,?,?,?)''',
                 (uuid.uuid4().hex, user.id, email, int(datetime.fromisoformat(stamp).timestamp()),
                  int(datetime.fromisoformat(expires).timestamp()), otp, 'transfer:' + transfer_id,
-                 'Verification code for transfer ' + transfer_id + '. Enter it only in the bank confirmation screen.'))
+                 f'Transfer {t["amount_vnd"]:,} VND to {t["to_name"]} ({t["to_bank"]}, ••••{t["to_account"][-4:]}). '
+                 'If this was not you, do not enter the code. Enter it only in the bank confirmation screen.'))
+            transfer_event(conn, 'otp_sent', transfer_id, user.id)
             t = {**t, 'otp_hash': 'email', 'otp_expires_at': expires}
     if error:
         raise error
@@ -190,12 +204,15 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
     if _expires_at(t) <= stamp:
         _fail(conn, t, 'DRAFT_EXPIRED', stamp)
         return TransferError('DRAFT_EXPIRED')
+    from . import transfer_stepup
+    transfer_stepup.require_stepup(conn, user, t)
+    new_payee_email = transfer_stepup.email_confirmation_required(conn, user, t)
     if not t['otp_hash']:
         return TransferError('OTP_REQUIRED')
     if t['otp_expires_at'] <= stamp:
         return TransferError('OTP_EXPIRED')
     # Checked against the customer's current factor, so setting a PIN mid-payment works on this draft.
-    check = verify_factor(conn, db, user.id, otp, datetime.fromisoformat(stamp).timestamp())
+    check = None if new_payee_email else verify_factor(conn, db, user.id, otp, datetime.fromisoformat(stamp).timestamp())
     if check == 'locked':
         audit(conn, user.id, 'OTP_REJECTED', transfer_id, 'PIN_LOCKED', stamp)
         return TransferError('PIN_LOCKED')
@@ -211,6 +228,8 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
     _check_daily_limit(conn, user.id, t['amount_vnd'], stamp)
     _check_velocity_and_recipient(conn, user.id, t, stamp)
     posted = post_transfer(conn, t, stamp)
+    transfer_event(conn, 'otp_verified', transfer_id, user.id)
+    transfer_event(conn, 'transfer_posted', transfer_id, user.id, detail={'amount_vnd': t['amount_vnd']})
     transfer_token.spend(conn, claims, transfer_id, stamp)  # spent only on success, so a mistyped OTP can be retried
     conn.execute('UPDATE dev_outbox SET secret_text=NULL WHERE challenge_id=?', ('transfer:' + transfer_id,))
     conn.execute("UPDATE transfers SET status='COMPLETED',otp_hash=NULL,transaction_id=?,completed_at=? WHERE id=?",
@@ -219,6 +238,8 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
         from .settlement import enqueue
         enqueue(conn, transfer_id, stamp)
         t['settlement_status'] = 'PENDING'
+    else:
+        transfer_stepup.remember_completed(conn, transfer_id)
     result = {**public({**t, 'status': 'COMPLETED', 'transaction_id': posted['transaction_id']}), **posted}
     if key is not None:
         conn.execute('INSERT INTO idempotency_keys VALUES (?,?,?,?,?)',

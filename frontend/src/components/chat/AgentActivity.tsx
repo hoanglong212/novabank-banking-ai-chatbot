@@ -5,10 +5,11 @@ import { ConfirmAction, Feedback, Loading, send, useOperation, useResource, type
 import { Sheet } from '../ui/Sheet';
 import { vnd } from '../../format';
 import { navigate } from '../../router';
+import { ApprovalEvidence, type ReviewEvidence } from './ApprovalEvidence';
 
-interface Approval { id: string; name: string; status: string; arguments: Record<string, string | number>; expires_at: number }
+interface Approval { id: string; name: string; status: string; arguments: Record<string, string | number>; expires_at: number; review?: ReviewEvidence }
 interface Run { id: string; status: string; model: string; profile: string; latency_ms: number | null; input_tokens: number; output_tokens: number }
-interface Trace extends Run { tool_calls: { id: string; name: string; decision: string; reason: string; latency_ms: number; arguments: unknown; result: unknown }[] }
+interface Trace extends Run { human_assessments?: { ticket_id: string; assessment: { summary?: string; category?: string; urgency?: string; mentions_instruction?: boolean } }[]; tool_calls: { id: string; name: string; decision: string; reason: string; latency_ms: number; arguments: unknown; result: unknown }[] }
 export function AgentActivity({ user, conversationId, revision, openTransfer }: { user: DemoUser; conversationId: string; revision: number; openTransfer: (id: string) => void }) {
   const approvals = useResource<{ items: Approval[] }>(user, '/agent/approvals?conversation_id=' + conversationId);
   const runs = useResource<{ items: Run[] }>(user, '/agent/runs?conversation_id=' + conversationId);
@@ -28,10 +29,11 @@ export function AgentActivity({ user, conversationId, revision, openTransfer }: 
       return <section className="card proposal-card" key={a.id} aria-label={labels[a.name] ?? 'Action proposal'}>
         <header className="proposal-head">
           <span className="proposal-icon" aria-hidden="true"><Icon size={20} /></span>
-          <div><h3>{labels[a.name] ?? 'Action proposal'}</h3><small>Prepared by Nova · nothing has happened yet</small></div>
+          <div><h3>{a.review?.title ?? labels[a.name] ?? 'Action proposal'}</h3><small>Prepared by Nova · nothing has happened yet</small></div>
           <span className={`proposal-badge ${expired ? 'is-expired' : ''}`}>{expired ? 'Expired' : 'Needs your approval'}</span>
         </header>
         {amount !== undefined && <p className="proposal-amount">{vnd(Number(amount))}</p>}
+        <ApprovalEvidence review={a.review} />
         <dl className="proposal-details">{Object.entries(rest).map(([k, v]) => <div key={k} className={k === 'body' ? 'is-body' : undefined}><dt>{k.replaceAll('_', ' ')}</dt><dd>{String(v)}</dd></div>)}</dl>
         <p className="proposal-note"><ShieldCheck size={15} aria-hidden="true" />{a.name.startsWith('propose_') ? a.name === 'propose_ticket_reply' ? 'Approving sends this reply to the customer under your name. Read it first.' : 'Approving applies this change immediately under your name.' : 'Approving a payment opens a separate OTP confirmation. It does not move money by itself.'}</p>
         <div className="inline-actions">
@@ -47,7 +49,9 @@ export function AgentActivity({ user, conversationId, revision, openTransfer }: 
 }
 function RunTrace({ user, id }: { user: DemoUser; id: string }) {
   const state = useResource<Trace>(user, '/agent/runs/' + id);
-  return <><Loading state={state} />{state.data && <><p>{state.data.model} · {state.data.profile} · {state.data.status}</p><ol className="audit-list">{state.data.tool_calls.map(c => <li key={c.id}><strong>{c.name}</strong><span>{c.decision} · {c.reason} · {c.latency_ms} ms</span>{c.name === 'search_knowledge' && <SourceCards user={user} result={c.result} />}<details><summary>Arguments and result / sources</summary><pre className="trace-json">{JSON.stringify({ arguments: c.arguments, result: c.result }, null, 2)}</pre></details></li>)}</ol></>}</>;
+  return <><Loading state={state} />{state.data && <><p>{state.data.model} · {state.data.profile} · {state.data.status}</p>
+    {user.role !== 'customer' && state.data.human_assessments?.map(item => <section className="card" key={item.ticket_id} aria-label="Ticket assessment for staff"><h3>Ticket assessment · {item.ticket_id}</h3><p className="muted">AI assessment for staff review. Check the original ticket before acting.</p><p>{item.assessment.summary ?? 'Assessment unavailable. Read the original ticket.'}</p>{item.assessment.mentions_instruction && <p className="form-error">Suspicious instructions detected in this ticket.</p>}<button className="link-button" onClick={() => navigate('/support')}>Open original ticket in Support</button></section>)}
+    <ol className="audit-list">{state.data.tool_calls.map(c => <li key={c.id}><strong>{c.name}</strong><span>{c.decision} · {c.reason} · {c.latency_ms} ms</span>{c.name === 'search_knowledge' && <SourceCards user={user} result={c.result} />}<details><summary>Arguments and result / sources</summary><pre className="trace-json">{JSON.stringify({ arguments: c.arguments, result: c.result }, null, 2)}</pre></details></li>)}</ol></>}</>;
 }
 
 function SourceCards({ user, result }: { user: DemoUser; result: unknown }) {

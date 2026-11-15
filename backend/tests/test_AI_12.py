@@ -30,7 +30,7 @@ def test_AI_12_cancel_revokes_delegation_and_pending_approval_without_effects(cl
 
 
 def test_AI_12_preview_filters_before_text_leaves_bank(client):
-    who = login(client); _, run, token = run_for(client, who)
+    who = login(client); _, run, token = run_for(client, who, 'Hello')
     safe = client.post('/api/agent/preview', headers=token, json={'answer':'Please open your account overview.'})
     assert safe.status_code == 200
     assert safe.json()['text'] == 'Please open your account overview.'

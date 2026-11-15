@@ -1295,5 +1295,39 @@
       "auditor"
     ],
     "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/agent/quarantine",
+    "roles": [
+      "support",
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "POST",
+    "path": "/api/agent/quarantine/{source_id}/release",
+    "roles": [
+      "support",
+      "admin"
+    ],
+    "scope": "staff"
+  },
+  {
+    "method": "GET",
+    "path": "/api/transfers/{transfer_id}/step-up",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/transfers/{transfer_id}/step-up",
+    "roles": [
+      "customer"
+    ],
+    "scope": "own"
   }
 ]

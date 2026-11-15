@@ -1,0 +1,51 @@
+{
+  "screenshots": [
+    {
+      "file": "caido-401-anonymous.png",
+      "sha256": "6e77cf9f58e382c50a96846fa0a79048a4a4627c4cd241833ebf0361ae6889cb",
+      "bytes": 166790
+    },
+    {
+      "file": "caido-403-customer.png",
+      "sha256": "ae56333a89621259844657db287e58231188bbff02cb155b1b6cfb7794797a37",
+      "bytes": 126619
+    },
+    {
+      "file": "caido-404-foreign-conversation.png",
+      "sha256": "3cf859531327a9a9f6ed023167bdc11d5a589b55e9c9a9f22eb6f15bc1df0db9",
+      "bytes": 126620
+    },
+    {
+      "file": "caido-http-history.png",
+      "sha256": "6f8ab051b001fa3daebec81326fc57f6824ef1c3f2bcf246661b380c1ab742a3",
+      "bytes": 120807
+    },
+    {
+      "file": "caido-privacy-prerequisite.png",
+      "sha256": "7dcb4336bf178e230a22ae60a1cd88b0df672b753e63dd2bc2da7ad7f0c1189f",
+      "bytes": 67134
+    },
+    {
+      "file": "01-genuine-qr-review.png",
+      "sha256": "74329a2c2fba4b4e75a12e791d50961efb37ec35c97dfcb2ab43ecd1a7830024",
+      "bytes": 92392
+    },
+    {
+      "file": "02-genuine-qr-recipient-stepup.png",
+      "sha256": "fbd0297dce7fb52b22e1cdd418a227b42d29c632c7235559bfe9c9556ce22e2f",
+      "bytes": 223791
+    },
+    {
+      "file": "03-genuine-qr-stepup-passed.png",
+      "sha256": "6922d2a39394842e0fbf718f37253ccaf888bb460079b5c2690c56f47c36792b",
+      "bytes": 205857
+    },
+    {
+      "file": "04-genuine-qr-email-otp.png",
+      "sha256": "b288f5c1a7d740bf07b910dc5f3ece59fd19bb62380313d3d9ff273160a0d5cd",
+      "bytes": 213128
+    }
+  ],
+  "pixels_modified": false,
+  "visually_inspected": true
+}

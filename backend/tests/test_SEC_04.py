@@ -12,6 +12,8 @@ import re
 EXTRAS = {'owner_id':'bob','status':'MASS_ASSIGN_SENTINEL','balance':999999999,'balance_vnd':999999999,'role':'admin'}
 STATUS_INPUT = {'AccountState','Assignment','Document','FinishInput','UserState'}
 SAMPLES = {
+    'Release': {'reason': 'Reviewed original record'},
+    'TransferStepUp': {'code': '123456'},
     'NotificationPreferences': {'bill_reminders':True,'budget_alerts':True},
     'RecipientLookup': {'account_id':'ACC-BOB-001','bank':'NovaBank'},
     'ProfileChange': {'field':'name','value':'Test name','password':'Alice@2026'},
@@ -75,7 +77,7 @@ def protected():
 
 @pytest.mark.parametrize('method,path,route',writes(),ids=lambda v:v if isinstance(v,str) else '')
 def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(client, monkeypatch, method,path,route):
-    who = login(client,'admin' if path.startswith(('/api/admin/','/api/research/')) else 'support' if path=='/api/support/tickets/{ticket_id}' else 'alice')
+    who = login(client,'admin' if path.startswith(('/api/admin/','/api/research/','/api/agent/quarantine/')) else 'support' if path=='/api/support/tickets/{ticket_id}' else 'alice')
     monkeypatch.setenv('RESEARCH_SANDBOX_ENABLED','true')
     monkeypatch.setenv('LEGACY_AGENT_TEST_MODE','true')
     if path.startswith('/api/dev/'):

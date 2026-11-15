@@ -72,3 +72,11 @@ export async function enterTransactionPin(scope: Page | Locator, username: strin
 export function transactionCode(draft: { otp_method?: string; method?: string }, email: string, kind: string) {
   return (draft.otp_method ?? draft.method) === 'pin' ? DEMO_PIN : localMessage(email, kind).code;
 }
+
+export function freshPayeeFixture(owner: string, account: string) {
+  const root = resolve('..');
+  const db = JSON.parse(readFileSync(resolve(root, '.local/e2e/latest.json'), 'utf8')).db_path;
+  execFileSync(resolve(root, 'backend/.venv/Scripts/python.exe'), ['-c',
+    'import pathlib,sqlite3,sys; p=pathlib.Path(sys.argv[1]).resolve(); root=pathlib.Path(sys.argv[2]).resolve(); assert p.is_relative_to(root/".local"/"e2e"); c=sqlite3.connect(p); c.execute("DELETE FROM verified_payees WHERE owner_id=? AND to_account=? AND origin=\'fixture_known\'",(sys.argv[3],sys.argv[4])); c.commit(); assert c.execute("SELECT COUNT(*) FROM transfers WHERE owner_id=? AND to_account=? AND status=\'COMPLETED\'",(sys.argv[3],sys.argv[4])).fetchone()[0]==0',
+    db, root, owner, account]);
+}

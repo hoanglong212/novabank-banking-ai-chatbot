@@ -1,5 +1,5 @@
 import { test, expect, type Page } from './fixtures';
-import { completeEmailMfa, demoLogin, enterTransactionPin, localMessage } from './auth-helpers';
+import { authenticatorCode, completeEmailMfa, demoLogin, localMessage } from './auth-helpers';
 
 const password = 'A long browser passphrase 2026!';
 const replacement = 'A different browser passphrase 2026!';
@@ -59,7 +59,16 @@ test('register, verify, recover and revoke previous sessions through the real UI
   await payer.getByRole('button', { name: 'Continue', exact: true }).click();
   await prepared;
   await payer.getByRole('button', { name: 'Continue to verification' }).click();
-  await enterTransactionPin(payer, 'alice');
+  await expect(payer.getByRole('heading', { name: 'Set up your authenticator', exact: true })).toBeVisible();
+  await payer.getByLabel('Current password', { exact: true }).fill('Alice@2026');
+  await payer.getByRole('button', { name: 'Continue', exact: true }).click();
+  const secret = await payer.getByLabel('Setup key', { exact: true }).inputValue();
+  await payer.getByLabel('Authenticator code', { exact: true }).fill(authenticatorCode(secret, -1));
+  await payer.getByRole('button', { name: 'Enable authenticator', exact: true }).click();
+  await payer.getByLabel('New-recipient authenticator code', { exact: true }).fill(authenticatorCode(secret));
+  await payer.getByRole('button', { name: 'Verify new recipient', exact: true }).click();
+  await payer.getByRole('button', { name: 'Request transfer verification code', exact: true }).click();
+  await payer.getByLabel('Transfer email code', { exact: true }).fill(localMessage('alice@novabank.test', 'TRANSFER_OTP').code);
   await payer.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
   await expect(payer.getByText('Transfer successful', { exact: true })).toBeVisible();
   await payer.close();

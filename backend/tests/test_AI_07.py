@@ -12,6 +12,11 @@ def test_AI_07_actual_model_and_classifier_requests_hide_known_identity_and_secr
     with get_db().connect() as conn:
         conn.execute("UPDATE agent_runs SET profile='defended' WHERE id=?", (grant['run_id'],))
     monkeypatch.setenv('LLM_PROVIDER', 'ollama')
+    # Unit transport capture: the unavailable licensed detector is separately tested.
+    from app.agent import promptguard
+    async def clean_detector(text):
+        return {'available': True, 'injection': False, 'method': 'scripted_test'}
+    monkeypatch.setattr(promptguard, 'classify', clean_detector)
     payloads, _, events = exercise(client, monkeypatch, token, [
         calls(('get_accounts',{}), ('get_beneficiaries',{})), {'content':'Your accounts are available.'}])
     assert any(p.get('format') for p in payloads), 'Must capture the classifier request as well'
@@ -23,7 +28,7 @@ def test_AI_07_actual_model_and_classifier_requests_hide_known_identity_and_secr
 
 
 def test_AI_07_pseudonymous_account_can_be_restored_at_authorized_boundary(client):
-    who = login(client); _, _, token = run_for(client, who)
+    who = login(client); _, _, token = run_for(client, who, 'Show my accounts and balances')
     accounts = client.post('/api/agent/tools', headers=token, json={'name':'get_accounts','arguments':{}}).json()
     account = accounts['result']['items'][0]['id']
     assert account.startswith('<ACCOUNT_')

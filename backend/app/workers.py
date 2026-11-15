@@ -28,6 +28,12 @@ def maintenance(db):
             notify(conn, row['owner_id'], 'BILL', 'Bill due soon', f'{row["provider"]}: {row["amount_vnd"]:,} VND due {row["due_date"]}.', now(), row['id'], dedupe='bill-due:' + row['id'])
         conn.execute('UPDATE dev_outbox SET secret_text=NULL,action_path=NULL WHERE expires_at IS NOT NULL AND expires_at<=unixepoch()')
         conn.execute("UPDATE action_challenges SET payload_json='{}',otp_hash='' WHERE expires_at<=unixepoch() AND consumed_at IS NULL")
+        from .risk.cases import finish
+        from .security_events import emit
+        for row in conn.execute("SELECT id FROM agent_runs WHERE expires_at<=unixepoch() AND status IN ('READY','RUNNING')").fetchall():
+            finish(conn, row['id'])
+            emit(conn, 'run_halted', run_id=row['id'], reason='EXPIRED', event_id='halt:' + row['id'])
+            conn.execute("UPDATE tool_approvals SET status='REJECTED',response_json=? WHERE run_id=? AND status='PENDING'", ('{"reason":"RUN_EXPIRED"}', row['id']))
         conn.execute("UPDATE agent_runs SET status='EXPIRED',bound_request_json='{}',vault_json='{}' WHERE expires_at<=unixepoch() AND status IN ('READY','RUNNING')")
     return settled
 

@@ -155,6 +155,12 @@ def bind_request(messages: list[dict]) -> BankingRequest:
     question = messages[-1]['content'].strip()
     text = fold(question)
     history = [m['content'] for m in messages[:-1] if m['role'] == 'user'][-12:]
+    limit = re.search(r'\b(?:transfer limit|han muc chuyen tien)\b', text)
+    if limit:
+        value = amount_in(text[limit.end():])
+        if value and affirmative_action(text, r'set|change|lower|raise|dat|doi|giam|tang'):
+            return BankingRequest('prepare_transfer_limit', {'limit_vnd': value})
+        return BankingRequest('get_transfer_limit', {})
     wants_ticket = bool(re.search(
         r'\b(?:tao|mo|lap|create|open)\s+(?:(?:giup|cho)\s+(?:toi|minh)\s+)?'
         r'(?:(?:mot|1|a|a new|new)\s+)?'
