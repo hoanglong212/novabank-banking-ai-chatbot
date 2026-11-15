@@ -23,20 +23,29 @@ def _unavailable(reason):
             'detector': 'prompt_guard_2', 'reason': reason}
 
 
+def malicious_label_index(mapping):
+    labels = {int(key): str(value).upper() for key, value in mapping.items()}
+    # The original PG2 local export omits id2label: Transformers supplies these
+    # generic labels. PG2's binary contract is 0 benign / 1 malicious. Do not
+    # generalize this fallback to arbitrary label maps or Prompt Guard 1.
+    if labels == {0: 'LABEL_0', 1: 'LABEL_1'}:
+        return 1
+    benign = [key for key, value in labels.items() if value in ('BENIGN', 'SAFE')]
+    malicious = [key for key, value in labels.items() if value in ('MALICIOUS', 'INJECTION')]
+    if set(labels) != {0, 1} or len(benign) != 1 or len(malicious) != 1:
+        raise ValueError('Unsupported local model label mapping')
+    return malicious[0]
+
+
 def _load_local(path):
     # Imports remain optional. Only local safetensors are accepted; no pickle
     # weights, remote code, Hub resolution or implicit model installation.
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(str(path), local_files_only=True, trust_remote_code=False)
+    tokenizer = AutoTokenizer.from_pretrained(str(path), local_files_only=True, trust_remote_code=False, token=False)
     model = AutoModelForSequenceClassification.from_pretrained(
-        str(path), local_files_only=True, trust_remote_code=False, use_safetensors=True).to('cpu').eval()
-    labels = {int(key): str(value).upper() for key, value in model.config.id2label.items()}
-    benign = [key for key, value in labels.items() if value in ('BENIGN', 'SAFE')]
-    malicious = [key for key, value in labels.items() if value in ('MALICIOUS', 'INJECTION')]
-    if set(labels) != {0, 1} or len(benign) != 1 or len(malicious) != 1:
-        raise ValueError('Unsupported local model label mapping')
-    malicious_index = malicious[0]
+        str(path), local_files_only=True, trust_remote_code=False, use_safetensors=True, token=False).to('cpu').eval()
+    malicious_index = malicious_label_index(model.config.id2label)
 
     def predict(text):
         # Evaluate every overlapping token window, rather than silently truncating
@@ -113,9 +122,10 @@ def initialize(model_path=None):
     return {'available': True, 'method': 'prompt_guard_2'} if available else _unavailable('model_unavailable')
 
 
-async def classify(text, *, model_path=None, threshold=0.5, timeout_seconds=None):
+async def classify(text, *, model_path=None, threshold=None, timeout_seconds=None):
     """Return a bounded signal; caller must retain deterministic authorization."""
     try:
+        threshold = float(setting('PROMPT_GUARD_THRESHOLD', '0.5')) if threshold is None else threshold
         timeout = float(setting('PROMPT_GUARD_TIMEOUT_SECONDS', '5')) if timeout_seconds is None else timeout_seconds
         if (not isinstance(text, str) or not text.strip() or len(text) > MAX_CHARS
                 or type(threshold) not in (int, float) or not math.isfinite(threshold) or not 0 < threshold < 1
@@ -143,4 +153,4 @@ async def classify(text, *, model_path=None, threshold=0.5, timeout_seconds=None
     if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1:
         return _unavailable('invalid_score')
     return {'injection': value >= threshold, 'available': True,
-            'method': 'prompt_guard_2', 'score': value}
+            'method': 'prompt_guard_2', 'score': value, 'threshold': threshold}
