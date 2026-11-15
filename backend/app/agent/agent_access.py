@@ -453,6 +453,7 @@ async def execute_tool(db, user, run, name, arguments):
         emit(conn, 'tool_called', run_id=run['id'], tool=name, event_id='call:' + call_id, detail={'arguments': safe_arguments})
     decision, reason, result = 'ALLOW', 'AUTHORIZED', None
     policy_ruling = None
+    provenance_denial = None
     try:
         if name not in MODELS:
             raise HTTPException(403, 'TOOL_NOT_ALLOWED')
@@ -512,6 +513,8 @@ async def execute_tool(db, user, run, name, arguments):
     except (HTTPException, ValidationError, transfers.TransferError) as exc:
         if isinstance(exc, policy.PolicyDenied):
             policy_ruling = exc.ruling
+        if isinstance(exc, provenance.ParameterSourceDenied):
+            provenance_denial = exc
         decision = 'DENY'; reason = exc.detail if isinstance(exc, HTTPException) else (exc.reason_code if isinstance(exc, transfers.TransferError) else 'INVALID_ARGUMENTS')
         result = {'error': str(reason)}
         if isinstance(exc, ValidationError):
@@ -573,25 +576,26 @@ async def execute_tool(db, user, run, name, arguments):
         halt = run['profile'] == 'defended' and not off and blocking_denials(conn, run) >= 2
         ordinal = conn.execute('SELECT ordinal FROM agent_calls WHERE id=?', (call_id,)).fetchone()[0]
         emit(conn, 'policy_decision', run_id=run['id'], tool=name, decision=decision, reason=str(reason), event_id='decision:' + call_id, source_ids=call_sources,
-             rule_id=policy_ruling['rule_id'] if policy_ruling else None, detail=policy_ruling or {})
+             rule_id=policy_ruling['rule_id'] if policy_ruling else 'T4-bind' if provenance_denial else None,
+             detail=policy_ruling or (provenance_denial.audit if provenance_denial else {}))
         from ..risk.scorer import observe as observe_risk
         policy_action = policy_ruling['action'] if policy_ruling else None
         observe_risk(conn, user, run, name, args if 'args' in locals() else {}, decision, str(reason), policy_action=policy_action)
         completion = None
         unavailable = policy_action is None and reason == 'SOURCE_GUARD_UNAVAILABLE'
-        flagged = policy_action == 'deny_and_flag' or (policy_action is None and reason in ('SOURCE_INJECTION', 'PARAM_FROM_UNTRUSTED', 'T4-bind'))
+        flagged = policy_action == 'deny_and_flag' or (policy_action is None and reason in ('SOURCE_INJECTION', 'PARAM_FROM_UNTRUSTED', 'PARAM_NOT_FROM_USER', 'T4-bind'))
         if layer_enabled(run, 'quarantine') and decision == 'DENY' and (flagged or unavailable):
             sources = call_sources
             if unavailable:
                 # Missing infrastructure is not evidence that the source is hostile.
                 # Revoke this run, but allow a fresh check after service recovery.
                 sources = []
-            elif reason == 'PARAM_FROM_UNTRUSTED':
+            elif reason in ('PARAM_FROM_UNTRUSTED', 'PARAM_NOT_FROM_USER'):
                 sources = provenance.parameter_sources(conn, run, args)
             elif policy_ruling:
                 inherited = conn.execute('SELECT source_ids_json FROM agent_runs WHERE id=?', (run['id'],)).fetchone()[0]
                 sources = sorted(set(sources) | set(json.loads(inherited)))
-            rule_id = policy_ruling['rule_id'] if policy_ruling else 'T4-bind' if reason in ('PARAM_FROM_UNTRUSTED', 'T4-bind') else 'source-screen'
+            rule_id = policy_ruling['rule_id'] if policy_ruling else 'T4-bind' if reason in ('PARAM_FROM_UNTRUSTED', 'PARAM_NOT_FROM_USER', 'T4-bind') else 'source-screen'
             completion = quarantine.halt(conn, run, sources, str(reason), rule_id)
             halt = True
     agent_gateway.record({'created_at': now(), 'gateway': 'off' if off else 'on', 'profile': run['profile'], 'owner_id': user.id,

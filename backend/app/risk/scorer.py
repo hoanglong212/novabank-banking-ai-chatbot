@@ -66,7 +66,7 @@ def observe(conn, user, run, name, args, decision, reason, *, policy_action=None
     tier = 'financial' if name in ('prepare_transfer', 'prepare_bill_payment') else 'account_change' if name.startswith(('prepare_', 'propose_', 'request_')) else 'read'
     features = {'tool': name, 'tier': tier, 'context_label': row[0], 'recipient_new': new,
                 'amount_bucket': 'large' if args.get('amount_vnd', 0) >= 1000000 else 'small', 'config': run['config']}
-    flagged = decision == 'DENY' and (policy_action == 'deny_and_flag' or (policy_action is None and reason in ('SOURCE_INJECTION', 'PARAM_FROM_UNTRUSTED', 'T4-bind')))
+    flagged = decision == 'DENY' and (policy_action == 'deny_and_flag' or (policy_action is None and reason in ('SOURCE_INJECTION', 'PARAM_FROM_UNTRUSTED', 'PARAM_NOT_FROM_USER', 'T4-bind')))
     verdict = 'deny_and_flag' if flagged or row[2] == 'deny_and_flag' else 'deny' if decision != 'ALLOW' else row[2]
     value = score(features, cases.nearest(conn, features), settings=policy.load(run['config'])['risk'].get('points'))['score'] if policy.layer_enabled(run, 'risk_signals') else 0
     # Preserve the most consequential action's features for case matching.

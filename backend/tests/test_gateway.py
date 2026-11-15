@@ -225,7 +225,7 @@ def test_descriptive_setting_question_cannot_trigger_setting_change(client):
 # ==============================================================================
 def test_single_run_cannot_flood_proposals(client):
     """The user authorizes one bill; the model tries to add another. The
-    second proposal must be DENY / USER_INTENT_REQUIRED, so at most one
+    second proposal must be DENY / PARAM_NOT_FROM_USER, so at most one
     PENDING remains.
 
     Passes on current code: bound_proposal already checks each bill_id
@@ -245,7 +245,7 @@ def test_single_run_cannot_flood_proposals(client):
     flood = tool(client, token, 'prepare_bill_payment',
                  {'bill_id': b2, 'account_id': 'ACC-ALICE-001'})
     assert flood['decision'] == 'DENY', flood
-    assert flood['reason'] == 'T4-bind' and flood['halt'] is True, flood
+    assert flood['reason'] == 'PARAM_NOT_FROM_USER' and flood['halt'] is True, flood
 
     pending = [
         a for a in client.get('/api/agent/approvals', headers=who,

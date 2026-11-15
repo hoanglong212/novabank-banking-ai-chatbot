@@ -15,7 +15,16 @@ FIELD_TRUST = {
     'read_ticket': ('subject', 'description', 'body'),
     'search_knowledge': ('content', 'text', 'title'), 'list_audit_events': ('detail', 'details'),
 }
-SENSITIVE = frozenset(('to_account', 'amount_vnd', 'limit_vnd', 'account_id', 'from_account', 'card_id', 'bill_id', 'ticket_id', 'user_id'))
+SENSITIVE = frozenset(('to_account', 'amount_vnd', 'limit_vnd', 'account_id', 'from_account', 'card_id', 'bill_id', 'ticket_id', 'user_id',
+                       'target_account', 'email', 'phone', 'new_email', 'new_phone'))
+
+
+class ParameterSourceDenied(HTTPException):
+    def __init__(self, field, sources):
+        super().__init__(403, 'PARAM_NOT_FROM_USER')
+        self.source_ids = sources
+        self.audit = {'field': field, 'untrusted_hash_match': bool(sources),
+                      'secondary_reason': 'PARAM_FROM_UNTRUSTED' if sources else None}
 
 
 def initialize(conn, stamp):
@@ -66,28 +75,50 @@ def observe(conn, run, tool, result):
     return sorted(sources)
 
 
+def user_value(text, key, value):
+    """Compare normalized complete values, never a prefix of a different ID/amount."""
+    normalized = re.sub(r'[\s-]+', '', str(value)).casefold()
+    if not normalized:
+        return False
+    boundary = r'[\w@.+-]' if 'email' in key else r'[\w-]'
+    pattern = r'(?<!' + boundary + ')' + r'[\s-]*'.join(re.escape(char) for char in normalized) + r'(?!' + boundary + ')'
+    if re.search(pattern, text.casefold()):
+        return True
+    if key in ('amount_vnd', 'limit_vnd') and type(value) is int:
+        # The bank's existing numeric parser normalizes explicit monetary
+        # spelling such as 10.000 VND / 10k. Do not trust a supplied canonical
+        # argument alone, and never parse memo text as an authorized amount.
+        from ..banking_workflow import CONTENT, amount_in
+        from ..faq import fold
+        head = CONTENT.split(fold(text))[0]
+        head = re.sub(r'\b(?:acc|card|bill|tkt)-[\w-]+', ' ', head)
+        return amount_in(head) == value
+    return False
+
+
 def validate(conn, run, tool, args, intent):
     row = conn.execute('SELECT context_label,source_ids_json,untrusted_values_json FROM agent_runs WHERE id=?', (run['id'],)).fetchone()
     origins = {}
-    canonical = intent.get('arguments') or {}
     for key, value in args.items():
         if key not in SENSITIVE or value is None:
             continue
-        explicit = bool(re.search(r'(?<![\w-])' + re.escape(str(value)) + r'(?![\w-])', intent['text'], re.I))
-        if explicit or (key in canonical and canonical[key] == value):
+        if user_value(intent['text'], key, value):
             origins[key] = 'user'
             continue
         # Existing payment flow has a server-selected primary funding account.
         # The model cannot choose another account through this exception.
-        if tool == 'prepare_bill_payment' and key == 'account_id':
+        if (tool, key) in (('prepare_bill_payment', 'account_id'), ('prepare_transfer', 'from_account')):
             primary = conn.execute('SELECT id FROM accounts WHERE owner_id=? ORDER BY id LIMIT 1', (run['owner_id'],)).fetchone()
             if primary and primary[0] == value:
                 origins[key] = 'bank_default'
                 continue
-        if row and row[0] == 'UNTRUSTED' and hashlib.sha256(str(value).lower().encode()).hexdigest() in json.loads(row[2]):
-            emit(conn, 'policy_decision', run_id=run['id'], tool=tool, decision='DENY',
-                 reason='PARAM_FROM_UNTRUSTED', rule_id='T4-bind', source_ids=json.loads(row[2])[hashlib.sha256(str(value).lower().encode()).hexdigest()], detail={'field': key})
-            raise HTTPException(403, 'PARAM_FROM_UNTRUSTED')
+        hashes = json.loads(row[2]) if row and row[0] == 'UNTRUSTED' else {}
+        sources = hashes.get(hashlib.sha256(str(value).lower().encode()).hexdigest(), [])
+        denied = ParameterSourceDenied(key, sources)
+        emit(conn, 'policy_decision', run_id=run['id'], tool=tool, decision='DENY',
+             reason='PARAM_NOT_FROM_USER', rule_id='T4-bind', source_ids=sources,
+             detail=denied.audit)
+        raise denied
     return origins
 
 
