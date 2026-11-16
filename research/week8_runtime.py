@@ -28,8 +28,19 @@ def source_identity(project):
     return {'commit': commit, 'source_hashes': hashes}
 
 
+SAMPLING_KEYS = ('W8_SAMPLING_TEMPERATURE', 'W8_SAMPLING_SEED')
+
+
+def sampling_env(env, sampling=None):
+    """Sampling override is off unless the harness passes it explicitly; inherited shell values are dropped."""
+    env = {key: value for key, value in env.items() if key not in SAMPLING_KEYS}
+    if sampling is not None:
+        env.update(W8_SAMPLING_TEMPERATURE=str(float(sampling['temperature'])), W8_SAMPLING_SEED=str(int(sampling['seed'])))
+    return env
+
+
 @contextmanager
-def servers(project, experiment, directory, provider, model, ollama_url, python, seed_db=None):
+def servers(project, experiment, directory, provider, model, ollama_url, python, seed_db=None, sampling=None):
     directory.mkdir(parents=True, exist_ok=False)
     (directory / 'disposable.json').write_text(json.dumps({'project_root': str(project.resolve()), 'disposable': True}), encoding='utf-8')
     db = assert_disposable(project, experiment, directory / 'bank.sqlite3')
@@ -46,7 +57,7 @@ def servers(project, experiment, directory, provider, model, ollama_url, python,
             ports.append(value)
     bank_port, agent_port, proxy_port = ports
     own_root = Path(__file__).resolve().parents[1]
-    env = os.environ.copy()
+    env = sampling_env(os.environ.copy(), sampling)
     env.update(ENV='lab', DB_PATH=str(db), LLM_PROVIDER=provider, OLLAMA_MODEL=model,
         OLLAMA_URL=f'http://127.0.0.1:{proxy_port}', W8_OLLAMA_UPSTREAM=ollama_url,
         W8_PROXY_LOG=str(directory / 'raw-model.jsonl'), BANK_WORKER_ENABLED='false', LEGACY_AGENT_TEST_MODE='false',
