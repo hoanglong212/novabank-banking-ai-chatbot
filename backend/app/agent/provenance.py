@@ -10,10 +10,10 @@ FIELD_TRUST = {
     'get_transaction_status': ('description', 'counterparty_name'),
     'get_accounts': ('nickname',), 'get_beneficiaries': ('nickname', 'holder_name'),
     'get_cards': ('merchant',), 'get_savings': ('label',),
-    'get_bills': ('provider',), 'get_spending_summary': ('description', 'label'),
+    'get_bills': ('provider', 'customer_code'), 'get_spending_summary': ('description', 'label'),
     'get_support_tickets': ('subject', 'description'), 'list_tickets': ('subject', 'description'),
-    'read_ticket': ('subject', 'description', 'body'),
-    'search_knowledge': ('content', 'text', 'title'), 'list_audit_events': ('detail', 'details'),
+    'read_ticket': ('subject', 'description', 'body', 'text', 'title'),
+    'search_knowledge': ('content', 'text', 'title', 'source'), 'list_audit_events': ('detail', 'details', 'reason_code'),
 }
 SENSITIVE = frozenset(('to_account', 'amount_vnd', 'limit_vnd', 'account_id', 'from_account', 'card_id', 'bill_id', 'ticket_id', 'user_id',
                        'target_account', 'email', 'phone', 'new_email', 'new_phone'))

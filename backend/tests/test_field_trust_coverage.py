@@ -5,8 +5,6 @@ bank result (before the quarantine filter, i.e. what FIELD_TRUST is meant to cov
 under a key that FIELD_TRUST does not list for that tool is an untracked untrusted field. Test only: no app
 behaviour changes here.
 """
-import pytest
-
 from tests.acceptance_helpers import client, get_db, login  # noqa: F401
 from tests.test_week7 import grant_for
 
@@ -77,10 +75,6 @@ def marked_fields(value, found, key=None):
                 found.add((key, column))
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    'Known FIELD_TRUST gaps at R2 SNAPSHOT 6729f60, not fixed by this test (see docs/plans/vong-3-progress.md): '
-    'get_bills.customer_code, list_audit_events.reason_code, read_ticket.text, read_ticket.title, '
-    'search_knowledge.source'))
 def test_every_third_party_text_field_in_read_results_is_in_field_trust(client, monkeypatch):
     from app.agent import agent_access, provenance
     with get_db().connect() as conn:

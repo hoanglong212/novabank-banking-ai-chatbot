@@ -62,3 +62,15 @@ local original Prompt Guard weights, and isolated runtimes are retained.
 - Ghi chú phạm vi: các cột trong tài liệu kiến thức chỉ hiện khi tài liệu ở trạng thái
   `PUBLISHED`/`approved` (nhân viên duyệt); vẫn tính là chữ không do logic ngân hàng tạo ra.
   Test không đánh giá cột ngoài 16 cột đã liệt kê (ví dụ hồ sơ người dùng).
+
+## Sửa FIELD_TRUST trước khi đo (quyết định của người dùng)
+
+- Thêm cả 5 trường vào `provenance.FIELD_TRUST`: `get_bills.customer_code`,
+  `list_audit_events.reason_code`, `read_ticket.text`, `read_ticket.title`,
+  `search_knowledge.source`. Bỏ `xfail`; `test_field_trust_coverage.py` pass thật.
+- Lý do: một cột chỉ có một nhãn bất kể tool nào đọc; `search_knowledge` đã coi nội dung
+  `knowledge_documents` là UNTRUSTED, nên `read_ticket` và trường `source` phải nhất quán;
+  mặc định từ chối.
+- Hệ quả đã biết: `customer_code` và `reason_code` luôn có giá trị, nên mọi lượt đọc
+  `get_bills` / `list_audit_events` giờ gắn nhãn run UNTRUSTED.
+- Snapshot cũ `6729f60` bị thay thế; snapshot mới ghi trong [prereg](vong-3-prereg.md).
