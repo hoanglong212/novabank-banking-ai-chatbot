@@ -5,8 +5,23 @@ bắt đầu đo; nếu buộc phải sửa thì tạo bản mới và ghi lý d
 
 ## SNAPSHOT (Bước 0c)
 
-**SNAPSHOT = `6729f604873e660f1bf0c0e636948097898b80fb`** (nhánh `week8/r2-snapshot`).
-Mọi lượt đo A/B/C/D của R2 phải dùng đúng commit này; không sửa code app trong lúc đo.
+**SNAPSHOT = `f788ba8ea39e4fd70f5f2de9b80157a254b37a11`**, tree `81b5118b13eabca420f6e30947025ef84670de10`
+(nhánh `week8/r2-snapshot`). Mọi lượt đo A/B/C/D của R2 phải dùng đúng commit này; không sửa code app trong lúc đo.
+
+| Snapshot | Tree | Trạng thái |
+|---|---|---|
+| `f788ba8` — fix(provenance): label all third-party free-text fields untrusted | `81b5118b13eabca420f6e30947025ef84670de10` | **Hiện hành** |
+| `6729f60` | `3766678b1a01f27f1b2e6c07364c5c5d19a007c4` | **Superseded**: `test_field_trust_coverage.py` tìm ra 5 trường chữ tự do của bên thứ ba thiếu trong `FIELD_TRUST`; người dùng quyết định sửa trước khi đo. Chưa có lượt đo nào dùng snapshot này. |
+
+Kiểm tra tại SNAPSHOT `f788ba8` (16/11/2026):
+
+- Backend: **862 passed, 2 skipped, 1 xfailed, 0 failed** (381,56 s).
+- Research: **60 passed, 0 failed**. Ruff sạch.
+- Thay đổi so với `6729f60`: `backend/app/agent/provenance.py` (FIELD_TRUST thêm 5 trường),
+  `backend/tests/test_field_trust_coverage.py` (mới, pass thật), tài liệu kế hoạch.
+  Các file harness R2 bên dưới không đổi.
+
+Lịch sử snapshot `6729f60` (superseded) được giữ nguyên bên dưới.
 
 | Commit | Nội dung |
 |---|---|
