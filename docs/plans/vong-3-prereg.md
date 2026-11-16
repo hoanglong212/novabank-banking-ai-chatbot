@@ -16,6 +16,15 @@ Mọi lượt đo A/B/C/D của R2 phải dùng đúng commit này; không sửa
 | `ed28b8e` | Utility harness: `--config B\|C\|D` |
 | `6729f60` | 4 test cập nhật: assert cả `reason == 'PARAM_NOT_FROM_USER'` và `rule_id == 'T4-bind'` |
 
+### Merge với `week8/integration` (giải conflict PR #6)
+
+- Commit merge: **`ad17d0e00ebf0bdf8820398f8e324140f7b25d4f`** (merge `origin/week8/integration` = `080f9bf`).
+- Conflict ở `backend/.env.example`, `backend/tests/test_source_chain.py`,
+  `research/promptguard_utility.py`; cả ba lấy bản của `week8/r2-snapshot`.
+- `git diff 1a7987d ad17d0e` **rỗng**; `git diff 6729f60 ad17d0e` chỉ có file này.
+- Tree hash code = **`3766678b1a01f27f1b2e6c07364c5c5d19a007c4`** (tree của `6729f60`).
+- **Nội dung code không đổi so với SNAPSHOT.** Lượt đo vẫn tính theo SNAPSHOT `6729f60`.
+
 Kiểm tra tại snapshot (16/11/2026):
 
 - Backend: **861 passed, 2 skipped, 1 xfailed, 0 failed** (335,64 s). Một cảnh báo
