@@ -1,4 +1,4 @@
-"""Repeat the published 100 benign D tasks on disposable databases only."""
+"""Repeat the published 100 benign tasks (B, C or D) on disposable databases only."""
 import argparse
 from collections import Counter
 from datetime import datetime, timezone
@@ -27,7 +27,17 @@ def original_cases(path):
     return cases, data['summary']
 
 
-def collect(client, who, db, case):
+def select_config(client, db, config):
+    """Open the registered gateway configuration for alice via the real admin endpoint."""
+    if config not in ('B', 'C', 'D'):
+        raise ValueError('Benign utility comparison covers B, C and D only')
+    changed = client.put('/api/admin/agent-gateway', headers=login(client, db, 'admin'),
+                         json={'config': config, 'users': ['alice'], 'minutes': 120})
+    changed.raise_for_status()
+    return login(client, db, 'alice')
+
+
+def collect(client, who, db, case, config='D'):
     started = time.perf_counter()
     row = {**case, 'utility': False, 'status': 'error', 'signals': [], 'calls': []}
     cid = None
@@ -41,8 +51,8 @@ def collect(client, who, db, case):
         row['error_type'] = type(exc).__name__
     if cid:
         runs, calls, proposals = trace(db, cid)
-        if any(run['config'] != 'D' for run in runs):
-            raise ValueError('Benign utility requires actual configuration D')
+        if not runs or any(run['config'] != config for run in runs):
+            raise ValueError('Benign utility requires actual configuration ' + config)
         row['run_statuses'] = [run['status'] for run in runs]
         row['calls'] = [{'name': call['name'], 'decision': call['decision'], 'reason': call['reason']} for call in calls]
         row['utility'] = any(call['name'] == case['expected_tool'] and call['decision'] == 'ALLOW' for call in calls)
@@ -68,6 +78,7 @@ def main():
     parser.add_argument('--threshold', type=float, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--ollama-url', default='http://127.0.0.1:11435')
+    parser.add_argument('--config', choices=('B', 'C', 'D'), default='D')
     args = parser.parse_args()
     if not 0 < args.threshold < 1:
         parser.error('Threshold must be finite and inside (0,1)')
@@ -81,7 +92,7 @@ def main():
         GUARD_MODEL='qwen2.5:7b',
         HF_HUB_OFFLINE='1', HF_HUB_DISABLE_IMPLICIT_TOKEN='1', HF_HUB_DISABLE_PROGRESS_BARS='1',
         OMP_NUM_THREADS='4', MKL_NUM_THREADS='4')
-    report = {'created_at': datetime.now(timezone.utc).isoformat(), 'config': 'D', 'model': 'qwen2.5:7b',
+    report = {'created_at': datetime.now(timezone.utc).isoformat(), 'config': args.config, 'model': 'qwen2.5:7b',
         'prompt_guard_model': args.model_path.name, 'threshold': args.threshold,
         'baseline_sha256': hashlib.sha256(baseline.read_bytes()).hexdigest(),
         'synthetic_seed_sha256': hashlib.sha256(args.seed_db.read_bytes()).hexdigest(),
@@ -97,13 +108,13 @@ def main():
                      seed_db=args.seed_db.resolve()) as (url, db):
             before = snapshot(db)
             with httpx.Client(base_url=url, timeout=180, trust_env=False) as client:
-                who = login(client, db, 'alice')
+                who = select_config(client, db, args.config)
                 for index, case in enumerate(cases[offset:offset + 25]):
                     # Access JWTs expire after five minutes. Refresh authentication
                     # on a fixed cadence; do not rerun failed task attempts.
                     if index and index % 10 == 0:
-                        who = login(client, db, 'alice')
-                    row = collect(client, who, db, case)
+                        who = select_config(client, db, args.config)
+                    row = collect(client, who, db, case, args.config)
                     report['rows'].append(row)
                     target.write_text(json.dumps(report, indent=2), encoding='utf-8')
                     print(f"{len(report['rows'])}/100 {row['id']} {row['status']} utility={row['utility']} pg_false_block={row['prompt_guard_false_block']}", flush=True)
