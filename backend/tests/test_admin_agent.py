@@ -3,6 +3,14 @@ import pytest
 from tests.acceptance_helpers import client, login, get_db
 from tests.test_week7 import grant_for
 
+
+def last_denial_rule(tool):
+    """rule_id is recorded on the committed policy_decision event, not in the tool response."""
+    with get_db().connect() as conn:
+        row = conn.execute("SELECT reason,rule_id FROM security_events WHERE event='policy_decision' AND tool=? "
+                           "AND decision='DENY' ORDER BY rowid DESC LIMIT 1", (tool,)).fetchone()
+    return tuple(row) if row else None
+
 READS = ('get_bank_overview', 'list_customers', 'list_accounts', 'get_bank_settings', 'list_audit_events')
 STAFF_READERS = {'operations', 'auditor', 'admin'}
 
@@ -70,7 +78,8 @@ def test_admin_freeze_needs_human_approval_and_is_audited(client):
 def test_admin_proposal_target_must_come_from_the_admin_message(client):
     _, _, token = grant_for(client, login(client, 'admin'), 'Freeze account ACC-BOB-001')
     swapped = call(client, token, 'propose_account_status', {'account_id': 'ACC-ALICE-001', 'status': 'FROZEN'})
-    assert (swapped['decision'], swapped['reason']) == ('DENY', 'T4-bind')
+    assert (swapped['decision'], swapped['reason']) == ('DENY', 'PARAM_NOT_FROM_USER')
+    assert last_denial_rule('propose_account_status') == ('PARAM_NOT_FROM_USER', 'T4-bind')
 
 
 def test_read_only_admin_question_offers_no_write_tools(client):
@@ -201,7 +210,8 @@ def test_ticket_actions_are_bound_to_the_ticket_the_staff_named(client):
     named, other = new_ticket(client), new_ticket(client)
     _, _, token = grant_for(client, login(client, 'admin'), f'Close {named["id"]}')
     result = call(client, token, 'propose_ticket_status', {'ticket_id': other['id'], 'status': 'CLOSED'})
-    assert (result['decision'], result['reason']) == ('DENY', 'T4-bind')
+    assert (result['decision'], result['reason']) == ('DENY', 'PARAM_NOT_FROM_USER')
+    assert last_denial_rule('propose_ticket_status') == ('PARAM_NOT_FROM_USER', 'T4-bind')
     assert client.get('/api/agent/context', headers=token).status_code == 401
     _, _, token = grant_for(client, login(client, 'admin'), f'Close {named["id"]}')
     assigned = call(client, token, 'propose_ticket_status', {'ticket_id': named['id'], 'status': 'CLOSED', 'assigned_to': 'support'})
