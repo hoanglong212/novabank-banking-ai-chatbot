@@ -45,3 +45,20 @@ local original Prompt Guard weights, and isolated runtimes are retained.
   fixed staged examples are not claimed to implement an adaptive search attack.
 - Actual seed ownership, balances, native calls and proposals remain runtime
   checks to be registered and measured; file presence is not a utility result.
+
+## FIELD_TRUST coverage test (chỉ thêm test)
+
+- `backend/tests/test_field_trust_coverage.py` gắn marker riêng vào 16 cột chữ tự do do
+  bên thứ ba ghi được, gọi **mọi tool đọc** trong registry (khách và nhân viên, tất cả ALLOW),
+  rồi duyệt kết quả ngân hàng thô (trước bộ lọc quarantine). Cả 16 cột đều tới ít nhất một tool.
+- Test **fail** → đánh dấu `xfail(strict=True)`, **không sửa `provenance.FIELD_TRUST`**.
+  Khi FIELD_TRUST được sửa, test sẽ XPASS và báo đỏ để gỡ xfail.
+- Trường thiếu trong FIELD_TRUST (tool.key ← bảng.cột):
+  - `get_bills.customer_code` ← `bills.customer_code`
+  - `list_audit_events.reason_code` ← `banking_audit.reason_code` (FIELD_TRUST chỉ có `detail`/`details`)
+  - `read_ticket.text` ← `knowledge_documents.content` (trích chính sách nhúng trong ticket)
+  - `read_ticket.title` ← `knowledge_documents.title`
+  - `search_knowledge.source` ← `knowledge_documents.source`
+- Ghi chú phạm vi: các cột trong tài liệu kiến thức chỉ hiện khi tài liệu ở trạng thái
+  `PUBLISHED`/`approved` (nhân viên duyệt); vẫn tính là chữ không do logic ngân hàng tạo ra.
+  Test không đánh giá cột ngoài 16 cột đã liệt kê (ví dụ hồ sơ người dùng).
