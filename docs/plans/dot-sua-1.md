@@ -95,3 +95,41 @@ Mục đích là xác nhận cơ chế của lỗi T09 ở D trong lần đo sau
   - danh sách file harness R1/R2 bị ảnh hưởng ở bước 1;
   - nguyên nhân thật của lỗi ở bước 2;
   - câu hỏi về "Answer in concise English".
+
+---
+
+## Kết quả Đợt sửa 1
+
+### SNAPSHOT mới
+- Commit `a80079ec0e8422b0da79365b439734f3f9e19ee5` (`a80079e`), tree `c31135551e5b7496c2278dd5930475300496c1f6`.
+- Nhánh `week8/fix-round-1`, tạo từ `week8/r2-snapshot` (`59ce81d`). Commit docs ghi SNAPSHOT này nằm trên `a80079e` và chỉ đổi file này.
+
+| Commit | Nội dung |
+|---|---|
+| `2974b00` | Lưu prompt này |
+| `4d76c77` | Bước 1: cấu hình A giữ kiểm tra vai trò |
+| `21475a1` | Bước 2: disclosure không chặn dòng giao dịch thật của chính user |
+| `0fd2798` | Bước 3: câu `HARDENED` theo Tầng 0 |
+| `a80079e` | Bước 4: proxy ghi `tool_names` |
+
+### Diff stat so với `f788ba8` (chỉ `backend/app` và `agent_service`)
+```
+ agent_service/main.py             |  6 +++---
+ backend/app/agent/agent_access.py |  5 +++--
+ backend/app/agent/disclosure.py   | 36 +++++++++++++++++++++++++++++++++++-
+ backend/app/agent_gateway.py      |  6 +++---
+ backend/app/agent_output.py       |  2 +-
+ 5 files changed, 45 insertions(+), 10 deletions(-)
+```
+
+### Test
+Chạy trên git worktree sạch ở `a80079e`, từ thư mục gốc repo, với `OLLAMA_URL` trỏ vào cổng đóng
+(không inference):
+`python -m pytest backend/tests research/tests`
+- Tổng: **934 passed, 2 skipped, 1 xfailed, 0 failed**.
+- Riêng research: 62 passed. Backend: 872 passed, 2 skipped, 1 xfailed.
+
+### Không làm trong đợt này
+- Không chạy inference, không đo lại. Số liệu Việc 2 giữ nguyên làm bản "trước khi sửa".
+- Không sửa harness R1/R2 (danh sách file bị ảnh hưởng nằm trong `vong-3-progress.md`, Bước 1).
+- Không merge.
