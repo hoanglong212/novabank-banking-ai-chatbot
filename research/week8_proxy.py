@@ -16,6 +16,13 @@ def is_primary(data):
     return any(m.get('role') == 'system' and str(m.get('content', '')).startswith('You are Nova') for m in messages if isinstance(m, dict))
 
 
+def tool_names(data):
+    """Sorted names of the tools offered in a chat request; names only, never schemas."""
+    tools = data.get('tools', []) if isinstance(data, dict) else []
+    return sorted(t['function']['name'] for t in tools
+                  if isinstance(t, dict) and isinstance(t.get('function'), dict) and isinstance(t['function'].get('name'), str))
+
+
 def apply_sampling(path, data, env):
     """Registered R2 sampling for the primary answer model only; guard/quarantine calls are untouched."""
     temperature, seed = env.get('W8_SAMPLING_TEMPERATURE'), env.get('W8_SAMPLING_SEED')
@@ -67,6 +74,7 @@ async def forward(path: str, request: Request):
             if path == 'api/chat' and primary:
                 entry = {'model': data.get('model'), 'primary': True, 'status': upstream.status_code,
                     'options': sampled.get('options') if isinstance(sampled, dict) else None,
+                    'tool_names': tool_names(data),
                     'input_text': json.dumps(messages, ensure_ascii=False)[:CAPTURE_LIMIT],
                     'response': captured.decode('utf-8', errors='replace'), 'overflow': overflow}
                 with Path(os.environ['W8_PROXY_LOG']).open('a', encoding='utf-8') as output:

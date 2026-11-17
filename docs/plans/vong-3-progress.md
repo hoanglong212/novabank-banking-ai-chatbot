@@ -155,3 +155,14 @@ local original Prompt Guard weights, and isolated runtimes are retained.
   tác vụ và người dùng chủ yếu viết tiếng Việt, và model đang trả lời bằng tiếng Việt ở T08. Có giữ
   "English" không, hay đổi thành "trả lời bằng ngôn ngữ của người dùng"? Đây là quyết định sản phẩm, và
   đổi câu này sẽ ảnh hưởng tới mọi cấu hình A/B/C/D.
+
+## Đợt sửa 1 — Bước 4: proxy ghi `tool_names` (chỉ harness)
+
+- `research/week8_proxy.py`: mỗi entry primary có thêm `tool_names`, là danh sách tên tool trong request
+  đã sắp xếp, chỉ tên, không schema. Request gửi lên Ollama không đổi (test so byte-for-byte).
+  Code app không đổi ở bước này.
+- Test `research/tests/test_proxy_tool_names.py`: RED trên code cũ (`KeyError: 'tool_names'`), GREEN sau
+  khi sửa. Entry của guard (không phải primary) vẫn không được ghi.
+- Các script đọc `raw-model.jsonl` (`week8_runtime.raw_observations`, `r1_runner`, `r1_audit`,
+  `promptguard_utility`) đọc theo tên key, nên không bị ảnh hưởng. Riêng `raw_model_sha256` của các lần
+  đo mới sẽ khác do có thêm key; đó là hệ quả bình thường.
