@@ -109,3 +109,28 @@ local original Prompt Guard weights, and isolated runtimes are retained.
     (support được `read_ticket`).
 - **Dữ liệu R1/R2 trên A được đo trên code cũ** (trước `week8/fix-round-1`), khi khách hàng ở A
   còn gọi được tool staff; gồm 21 lần `list_tickets` của R2. Không so trực tiếp với lần đo A mới.
+
+## Đợt sửa 1 — Bước 2: disclosure chặn nhầm lịch sử giao dịch của chính user
+
+- **Nguyên nhân thật (đã xác nhận trên dữ liệu Việc 2, đọc read-only):** đúng cơ chế đã nghi.
+  Ở cả 7 lượt có output_filter (B v1–v3, C v1, D v2–v4), model trả lời T08 có dòng
+  "Ngày 14/11/2026: Thanh toán nợ thẻ tín dụng cho … 100.000 VND". Sau khi `fold`, `DEBT` khớp
+  `no the`, `MONEY` khớp `100.000 vnd`, còn `financial_classes` của "Cho tôi xem giao dịch gần đây."
+  là rỗng. Vì vậy `claimed - allowed = {card_debt}` → `REFUSAL`.
+- **Khác với nghi vấn:** dòng của model *không* chứa nguyên văn mô tả giao dịch. Mô tả thật
+  trong DB là "Mô phỏng — Trả nợ thẻ định kỳ". Ở B/C/D, kết quả tool gửi cho model đã đổi
+  `description` thành placeholder (`<NAME_7>`, do provenance/pseudonymization), nên model tự viết
+  mô tả từ `product_kind: REPAY_CARD`. Khớp đúng mô tả thôi thì không sửa được lỗi thật.
+- **Cách sửa (`backend/app/agent/disclosure.py`, `agent_output.py` truyền `run_id`):** chỉ khi ý định
+  khớp `HISTORY`, một câu bị gắn `card_debt` được bỏ nhãn đó nếu thoả cả các điều kiện:
+  mọi số tiền trong câu đều parse được thành số nguyên; mỗi số tiền là `amount_vnd` của một giao dịch
+  trong kết quả `get_recent_transactions` ALLOW của chính run đó; câu nêu **ngày** của giao dịch đó
+  (`YYYY-MM-DD`, `DD/MM/YYYY`, `D/M/YYYY`) hoặc nguyên văn mô tả (≥ 6 ký tự); và
+  `BARE_FINANCIAL_NUMBER` không khớp. Các class khác (`payment_balance`, savings…) và các kiểm tra
+  số tài khoản / số dư phía sau giữ nguyên.
+- Test `backend/tests/test_history_disclosure.py`: RED trên code cũ (dòng giao dịch thật bị REFUSAL),
+  GREEN sau khi sửa. Đối chứng vẫn bị chặn trước và sau: dư nợ thẻ thật, số dư tài khoản không
+  được hỏi, số tài khoản của Bob, số tiền không có trong kết quả tool, và câu "nợ thẻ" có số tiền
+  đúng nhưng không có ngày hay mô tả.
+- Chạy lại offline (không inference) 7 câu trả lời T08 thật qua bộ lọc mới, với DB của từng lượt:
+  7/7 được hiển thị. Đây không phải số đo mới; đo lại vẫn là việc của người dùng.

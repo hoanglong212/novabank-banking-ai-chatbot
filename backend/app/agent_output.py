@@ -84,7 +84,7 @@ def _filtered_answer(conn, db, run, answer):
     elif not proposal:
         answer = cite_retrieved_sources(conn, run, answer)
     from .agent.disclosure import filter_answer
-    answer = filter_answer(conn, run['owner_id'], intent, answer, verified_balance=verified_balance)
+    answer = filter_answer(conn, run['owner_id'], intent, answer, verified_balance=verified_balance, run_id=run['id'])
     return answer
 
 

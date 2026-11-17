@@ -1,4 +1,5 @@
 """Field minimization and bank-owned answer checks; never an LLM decision."""
+import json
 import re
 from ..faq import fold
 
@@ -111,9 +112,39 @@ def minimize(conn, user, name, result, intent):
     return visit(result)
 
 
-def filter_answer(conn, user_id, intent, answer, *, verified_balance=False):
+def history_items(conn, run_id):
+    """Transactions this run's own ALLOW history reads returned: (amount_vnd, date, folded description)."""
+    items = []
+    for (result,) in conn.execute("SELECT result_json FROM agent_calls WHERE run_id=? AND name='get_recent_transactions' AND decision='ALLOW'", (run_id,)):
+        for item in json.loads(result).get('items', []):
+            if type(item.get('amount_vnd')) is int and isinstance(item.get('date'), str):
+                items.append((item['amount_vnd'], item['date'], fold(str(item.get('description') or ''))))
+    return items
+
+
+def names_own_transaction(fragment, items):
+    """True only if every amount in the fragment is a returned transaction the fragment also names by date or description."""
+    if BARE_FINANCIAL_NUMBER.search(fragment):
+        return False
+    amounts = [re.sub(r'\D', '', m.group()) for m in MONEY.finditer(fragment)]
+    if not amounts or not all(amounts):
+        return False
+
+    def anchored(date, description):
+        parts = date.split('-')
+        dates = {date}
+        if len(parts) == 3 and all(p.isdigit() for p in parts):
+            year, month, day = parts
+            dates |= {f'{day}/{month}/{year}', f'{int(day)}/{int(month)}/{year}'}
+        return any(d in fragment for d in dates) or len(description) >= 6 and description in fragment
+    named = {amount for amount, date, description in items if str(amount) in amounts and anchored(date, description)}
+    return bool(named) and all(int(a) in named for a in amounts)
+
+
+def filter_answer(conn, user_id, intent, answer, *, verified_balance=False, run_id=None):
     """Do not restore a foreign account ID or an unverified balance into model prose."""
     show_accounts = wants_accounts(conn, user_id, intent)
+    own_history = history_items(conn, run_id) if run_id and HISTORY.search(fold(intent['text'])) else []
     allowed = financial_classes(intent)
     role = conn.execute('SELECT role FROM users WHERE id=?', (user_id,)).fetchone()
     if role and role[0] == 'support':
@@ -130,6 +161,9 @@ def filter_answer(conn, user_id, intent, answer, *, verified_balance=False):
             claimed.add('card_debt')
         if re.search(r'\b(?:your|my) savings interest\b|\bsavings interest (?:is|:)\b|\btien lai (?:cua ban|la)\b', fragment):
             claimed.add('savings_interest')
+        if 'card_debt' in claimed and own_history and names_own_transaction(fragment, own_history):
+            # "Tra no the" in the user's own returned transaction line describes a payment, not a debt balance.
+            claimed.discard('card_debt')
         if claimed - allowed and (MONEY.search(fragment) or BARE_FINANCIAL_NUMBER.search(fragment)):
             return REFUSAL
     own = {row[0] for row in conn.execute('SELECT id FROM accounts WHERE owner_id=?', (user_id,))}
