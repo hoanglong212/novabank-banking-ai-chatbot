@@ -304,7 +304,7 @@ def create_run(db, user, conversation_id, content, profile):
         emit(conn, 'run_started', run_id=run_id, event_id='start:' + run_id)
     token = jwt.encode({'iss': auth.ISSUER, 'aud': AUDIENCE, 'sub': user.id, 'sid': user.session_id,
                         'ver': user.auth_version, 'run': run_id, 'scope': ['ai:read', 'ai:prepare'],
-                        'tools': sorted(set(MODELS) if gateway == 'off' else permitted_tools(intent, user.role) if layers['intent_binding'] else set(MODELS) - set(staff_tools.PERMISSIONS) if user.role == 'customer' else staff_tools.allowed(user.role) | {'search_knowledge'}),
+                        'tools': sorted((set(MODELS) - set(staff_tools.PERMISSIONS) if user.role == 'customer' else set(MODELS)) if gateway == 'off' else permitted_tools(intent, user.role) if layers['intent_binding'] else set(MODELS) - set(staff_tools.PERMISSIONS) if user.role == 'customer' else staff_tools.allowed(user.role) | {'search_knowledge'}),
                         'intent': intent_hash(intent), 'role': user.role,
                         'iat': seconds, 'exp': seconds + 180}, auth.SECRET, algorithm='HS256')
     return {'run_id': run_id, 'delegated_token': token, 'expires_in': 180, 'profile': profile}
@@ -457,7 +457,8 @@ async def execute_tool(db, user, run, name, arguments):
     try:
         if name not in MODELS:
             raise HTTPException(403, 'TOOL_NOT_ALLOWED')
-        if not off and ((name in staff_tools.PERMISSIONS and name not in staff_tools.allowed(user.role)) or (user.role != 'customer' and name not in staff_tools.allowed(user.role) | {'search_knowledge'})):
+        # Role checks are app authorization, not a prompt-injection layer: on in every config, A included.
+        if ((name in staff_tools.PERMISSIONS and name not in staff_tools.allowed(user.role)) or (user.role != 'customer' and name not in staff_tools.allowed(user.role) | {'search_knowledge'})):
             raise HTTPException(403, 'ROLE_NOT_PERMITTED')
         if layer_enabled(run, 'intent_binding') and name not in run.get('_delegation', {}).get('tools', ()):
             raise HTTPException(403, 'TOOL_NOT_IN_TOKEN')

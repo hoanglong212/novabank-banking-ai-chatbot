@@ -41,13 +41,11 @@ def test_off_vs_on_is_measured_per_call_and_logged(client, monkeypatch, tmp_path
     assert switch(client, admin, False).json() == {'gateway': 'off'}
     _, _, off_token = grant_for(client, alice, 'What is my balance?')
     tools = {t['function']['name'] for t in client.get('/api/agent/context', headers=off_token).json()['tools']}
-    assert {'list_customers', 'propose_account_status'} <= tools
-    leaked = call(client, off_token, 'list_customers', {})
-    assert leaked['decision'] == 'ALLOW' and leaked['result']['total'] > 1, leaked
+    # Fix round 1: role checks stay on at A, so a customer is neither offered nor allowed staff tools.
+    assert not {'list_customers', 'propose_account_status'} & tools
+    assert call(client, off_token, 'list_customers', {})['reason'] == 'ROLE_NOT_PERMITTED'
     proposal = call(client, off_token, 'propose_account_status', {'account_id': 'ACC-BOB-001', 'status': 'FROZEN'})
-    assert proposal['decision'] == 'ALLOW', proposal
-    # The approval step is outside the gateway: alice still cannot freeze bob's account.
-    assert client.post(f'/api/agent/approvals/{proposal["result"]["approval_id"]}', headers=alice, json={'approve': True}).status_code == 403
+    assert (proposal['decision'], proposal['reason']) == ('DENY', 'ROLE_NOT_PERMITTED'), proposal
 
     assert switch(client, admin, True).json() == {'gateway': 'on'}
     _, _, on_token = grant_for(client, alice, 'What is my balance?')
@@ -57,12 +55,12 @@ def test_off_vs_on_is_measured_per_call_and_logged(client, monkeypatch, tmp_path
     with get_db().connect() as conn:
         assert conn.execute("SELECT status FROM accounts WHERE id='ACC-BOB-001'").fetchone()[0] == 'ACTIVE'
     status = client.get('/api/admin/agent-gateway', headers=admin).json()
-    assert (status['metrics']['off']['allow'], status['metrics']['on']['deny']) == (2, 2)
+    assert (status['metrics']['off']['allow'], status['metrics']['off']['deny'], status['metrics']['on']['deny']) == (0, 2, 2)
     log = client.get('/api/admin/agent-gateway/log?gateway=off', headers=admin).json()
-    assert {(i['tool'], i['decision'], i['role']) for i in log['items']} == {('list_customers', 'ALLOW', 'customer'), ('propose_account_status', 'ALLOW', 'customer')}
+    assert {(i['tool'], i['decision'], i['role']) for i in log['items']} == {('list_customers', 'DENY', 'customer'), ('propose_account_status', 'DENY', 'customer')}
     assert all(i['tool_request_id'] for i in log['items'])
     lines = [json.loads(line) for line in Path(tmp_path / 'gateway.jsonl').read_text(encoding='utf-8').splitlines()]
-    assert [(l['gateway'], l['decision']) for l in lines] == [('off', 'ALLOW'), ('off', 'ALLOW'), ('on', 'DENY'), ('on', 'DENY')]
+    assert [(l['gateway'], l['decision']) for l in lines] == [('off', 'DENY'), ('off', 'DENY'), ('on', 'DENY'), ('on', 'DENY')]
     csv_text = client.get('/api/admin/agent-gateway/log.csv', headers=admin).text
     assert csv_text.splitlines()[0].startswith('created_at,gateway,profile') and len(csv_text.splitlines()) == 5
 
@@ -72,7 +70,8 @@ def test_off_mode_records_execution_errors_separately(client, monkeypatch):
     switch(client, login(client, 'admin'), False)
     _, _, token = grant_for(client, login(client, 'support'), 'List the open tickets.')
     result = call(client, token, 'get_account_balance', {})
-    assert result['decision'] in ('ALLOW', 'ERROR')  # never a 500
+    # Fix round 1: support calling a customer tool at A is a role denial now (still never a 500).
+    assert (result['decision'], result['reason']) == ('DENY', 'ROLE_NOT_PERMITTED')
 
 
 def test_off_mode_also_lets_injected_prompts_reach_the_model(client, monkeypatch, tmp_path):

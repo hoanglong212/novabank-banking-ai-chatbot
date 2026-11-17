@@ -3,11 +3,11 @@
 Gateway OFF is never global: an admin opens a time-boxed measurement session naming the users it covers. Only runs
 those users start while it is open record gateway='off'; everyone else, and every run after it closes or expires, is on.
 
-Gateway ON (default) is every bank-side AI guard: the prompt tripwire on the user's message, the tool boundary (role
-allowlist, binding to the latest request, proposal checks, staff read checks), source screening, the two-denial stop
+Gateway ON (default) is every bank-side AI guard: the prompt tripwire on the user's message, the tool boundary (binding
+to the latest request, proposal checks, staff read checks), source screening, the two-denial stop
 and the output filter on the answer. Gateway OFF is a measurement mode for ENV=demo/lab only: messages reach the model
 unfiltered, the bank runs whatever tool the model asks for with the model's own arguments, and the answer is stored as
-written. Kept in both modes: sign-in and session checks, secret redaction, schema validation, the 8-call budget,
+written. Kept in both modes: the role allowlist (app authorization), sign-in and session checks, secret redaction, schema validation, the 8-call budget,
 owner-scoped data queries, and the human approval plus OTP/PIN verification before anything changes.
 """
 import csv
