@@ -33,6 +33,9 @@ def test_realistic_seed_has_fifty_multibank_customers_and_balanced_history(tmp_p
         assert conn.execute("SELECT COUNT(*) FROM bills WHERE status='UNPAID'").fetchone()[0] == 150
         assert conn.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
         assert conn.execute('PRAGMA foreign_key_check').fetchall() == []
+        assert conn.execute('SELECT COUNT(*) FROM accounts WHERE balance_vnd=0').fetchone()[0] > 0
+        assert conn.execute("SELECT COUNT(*) FROM transfers WHERE status='PENDING_OTP'").fetchone()[0] > 0
+        assert conn.execute('SELECT MIN(balance_vnd) FROM accounts').fetchone()[0] >= 0
     assert reconcile(Database(str(target)))['balanced']
 
 
