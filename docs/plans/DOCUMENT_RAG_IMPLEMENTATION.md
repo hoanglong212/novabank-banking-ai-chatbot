@@ -30,7 +30,7 @@ Concurrent upload quota/deletion during inference; binary spoof/PDF decompressio
 - [x] Phase 3: documents/reader.py and gateway integration. AskDocumentArgs(document_id,question), owner repository, top4, strict schema, P/intent/provenance/spotlight/policy/disclosure/events. Regression tests all configs, unknown rule, P capture, alias, follow-up risk and mixed actions. Commit.
 - [x] Phase 4: My documents screen using existing styles, /documents navigation and chat selection; browser tests upload/list/status/delete/ask and mobile. Commit.
 - [x] Phase 5: one-command runner creates JUnit + HTML + ID-complete report; deterministic API/security tests and optional measured real-model evaluation, baseline comparison. All prior backend/research/frontend checks. No fabricated live results. Commit.
-- [ ] Phase 6: DOCUMENT_RAG.md seven sections, FUNC_API_TEST_REPORT.md, demo script and completion; independent review, fixes, PR (no merge).
+- [x] Phase 6: DOCUMENT_RAG.md seven sections, FUNC_API_TEST_REPORT.md, demo script and completion; independent review, fixes, PR (no merge).
 
 Sources consulted: https://fastapi.tiangolo.com/tutorial/request-files/ ; https://pypdf.readthedocs.io/en/stable/user/extract-text.html ; https://docs.ollama.com/api/embed . pypdf cannot OCR scans; extraction can expand streams, so enforce extraction budgets. Ollama truncate=false avoids silently incomplete embedding input.
 
@@ -72,3 +72,5 @@ Reviewer: /root/document_rag_review, fresh context gpt-6.2-astra. Nine important
 - Final observer corrections preserve raw evidence: C6 known-input ID echo is adjudicated only from complete DB transcripts; deliberate ANOMALOUS_SEQUENCE is distinct from runtime outage and still requires all security assertions. Research suite: 70 passed. Full D configuration rerun; application/policy hashes unchanged.
 
 - Final real-model acceptance: PASS, 120 trials (A/B/C from da593f8; all 30 D trials rerun with 6a5772f observer, identical application/policy hashes). C/D required cases and all-config ownership/P/benign utility passed. A URL reflection remains a 3/3 positive control. Consolidated JUnit/HTML: .local/document-rag-evidence/reviewed/report.html.
+
+- Review handoff: https://github.com/hoanglong212/novabank-banking-ai-chatbot/pull/10 . Feature branch pushed; main remains 099577f. No merge performed. Application CI 44262971261 passed; new head/PR CI runs separately.
