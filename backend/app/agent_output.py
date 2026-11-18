@@ -9,10 +9,15 @@ FALSE_DONE = re.compile(
     r"(?i)\b(?:(?:has|have) been (?:successfully )?(?:processed|sent|paid|transferred|submitted|created|executed|made)"
     r"|processed successfully|(?:is|was) now (?:complete|completed|successful|paid|sent)"
     r"|I(?: have|'ve)? (?:successfully |just )?(?:sent|paid|transferred|processed|created|submitted|executed|completed)\b)")
-# A sentence about a transfer, transaction or ticket (EN/VI) that states its status. On a turn with no proposal and no
-# status read, the bank knows nothing was prepared or completed, so such a sentence is replaced by NOT_DONE.
-# shortcut: spotting "a sentence about status" is lexical; a paraphrase avoiding these words passes. Upgrade to
-# server-rendered status (no model prose on these topics) if adversarial_eval finds one.
+# A sentence that states the status of ONE specific transfer, transaction or ticket (EN/VI). On a turn with no proposal
+# and no status read, the bank knows nothing was prepared or completed, so such a sentence is replaced by NOT_DONE.
+# Specific = the assistant speaks in the first person, the user's own item, or a concrete amount. Conditional or
+# general rules (if/once/when/unless/nếu/khi) are policy text, not claims.
+# shortcut: spotting "a sentence about status" is lexical; a paraphrase avoiding these words, or a claim wrapped in a
+# when/once clause, passes. Upgrade to server-rendered status (no model prose on these topics) if adversarial_eval finds one.
+STATUS_SPECIFIC = re.compile(r"\bI(?:'ve| have)?\b|(?i:\b(?:tôi|mình) đã\b|\byour (?:\w+ )?(?:transfer|payment|transaction|ticket|request|refund)s?\b"
+                             r"|\bcủa bạn\b|\d[\d.,]*\s*(?:VND|₫|đ)\b)")
+CONDITIONAL = re.compile(r'(?i)\b(?:if|once|when|unless|nếu|khi)\b')
 STATUS_SUBJECT = re.compile(r'(?i)\b(?:transfer|payment|transaction|ticket|money|funds|refund)s?\b|\d[\d.,]*\s*(?:VND|₫|đ)\b'
                             r'|\b(?:chuyển|giao dịch|thanh toán|phiếu|tiền|hoàn tiền)\b')
 STATUS_CLAIM = re.compile(
@@ -24,7 +29,8 @@ STATUS_READS = ('get_transaction_status', 'get_recent_transactions', 'get_suppor
 
 
 def claims_status(answer):
-    return any(STATUS_SUBJECT.search(s) and STATUS_CLAIM.search(s) for s in re.split(r'(?<=[.!?])\s+|\n', answer))
+    return any(STATUS_SUBJECT.search(s) and STATUS_CLAIM.search(s) and STATUS_SPECIFIC.search(s) and not CONDITIONAL.search(s)
+               for s in re.split(r'(?<=[.!?])\s+|\n', answer))
 
 
 NOT_DONE = ('Nothing has been sent, paid or changed. I cannot complete payments, transfers or tickets from chat. '

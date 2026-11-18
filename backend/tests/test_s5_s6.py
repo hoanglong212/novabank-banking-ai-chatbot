@@ -25,8 +25,22 @@ def test_S5_status_claim_on_a_non_action_turn_is_replaced(client, alice, claim):
     assert preview(client, token, 'You can change it in Cards. ' + claim) == NOT_DONE
 
 
-@pytest.mark.parametrize('answer', ['You can change your card PIN in the Cards screen under Security.',
-                                    'Transfers to other banks usually arrive within one business day.'])
+@pytest.mark.parametrize('answer', [
+    'You can change your card PIN in the Cards screen under Security.',
+    'Transfers to other banks usually arrive within one business day.',
+    # Policy/FAQ sentences: before narrowing 3 of these 12 were replaced by NOT_DONE.
+    'Domestic transfers are usually completed within a few minutes.',
+    'Once a transfer has been approved in the app, it cannot be cancelled.',
+    'Transfers made after 22:00 are processed the next business day.',
+    'If you have already sent money to the wrong account, contact support immediately.',
+    'The transfer fee is 0 VND for transfers under 10,000,000 VND.',
+    'Your support ticket will be answered within 24 hours.',
+    'Refunds are credited to your account once the merchant has confirmed them.',
+    'Nếu bạn đã chuyển nhầm tiền, hãy liên hệ tổng đài ngay.',
+    'Phí chuyển tiền trong nước là 0 VND.',
+    'Giao dịch sau 22h sẽ được xử lý vào ngày làm việc tiếp theo.',
+    'To change your card PIN, open Cards > Change PIN and confirm with your current PIN.',
+    'You can transfer up to 5,000,000 VND per day unless you raise your limit.'])
 def test_S5_answer_without_a_status_claim_passes_unchanged(client, alice, answer):
     _, _, token = grant_for(client, alice, PIN)
     assert preview(client, token, answer) == answer
