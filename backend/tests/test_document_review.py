@@ -115,6 +115,18 @@ def test_document_reader_error_event_keeps_target_and_failure_rule(client,engine
     assert event['rule_id']=='DOCUMENT_READER_UNAVAILABLE'
     assert json.loads(event['detail_json'])['document_id']==doc
 
+def test_document_event_preserves_valid_identifiers_with_long_digit_runs(client):
+    from app.security_events import emit, safe
+    key='342602d3-de16-4040-b2c6-7b972207151d'
+    digest='0123456789abcdef'*4
+    with get_db().connect() as conn:
+        event_id=emit(conn,'doc_ingest',user_id='alice',source_ids=[key],
+            detail={'document_id':key,'sha256':digest,'cited_chunk_ids':[key]})
+        row=conn.execute('SELECT * FROM security_events WHERE id=?',(event_id,)).fetchone()
+    assert json.loads(row['source_ids_json'])==[key]
+    assert json.loads(row['detail_json'])=={'document_id':key,'sha256':digest,'cited_chunk_ids':[key]}
+    assert '0912345678' not in json.dumps(safe({'document_id':'0912345678','sha256':'0912345678'}))
+
 def test_pdf_contents_array_bounded_before_concatenation(monkeypatch):
     import io
     from pypdf import PdfWriter

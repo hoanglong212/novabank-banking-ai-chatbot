@@ -26,15 +26,22 @@ def initialize(conn, stamp):
     conn.execute('INSERT INTO schema_migrations VALUES (12,?)', (stamp,))
 
 
-def safe(value):
+def safe(value, field=''):
     from .guard import redact_secrets
     from .agent.agent_access import trace_safe
     if isinstance(value, dict):
-        return {str(k): safe(v) for k, v in value.items() if str(k).lower() not in SECRET_KEYS
+        return {str(k): safe(v, str(k)) for k, v in value.items() if str(k).lower() not in SECRET_KEYS
                 and not str(k).lower().endswith(('_token', '_secret', '_password', '_key'))}
     if isinstance(value, (list, tuple)):
-        return [safe(v) for v in value]
+        return [safe(v, field) for v in value]
     if isinstance(value, str):
+        # Bank-generated document metadata may contain digit runs resembling PII.
+        # Preserve only exact typed hashes/UUID4s; free-form strings still scrub.
+        if field == 'sha256' and re.fullmatch(r'[0-9a-f]{64}', value):
+            return value
+        if field in ('document_id', 'cited_chunk_ids', 'chunk_ids') and re.fullmatch(
+                r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', value):
+            return value
         return trace_safe(redact_secrets(re.sub(r'(?i)\bBearer\s+[^\s<>]+', '[REDACTED CREDENTIAL]', value))[0])
     return value
 
@@ -53,7 +60,8 @@ def emit(conn, event, *, event_id=None, run_id=None, user_id=None, config=None,
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING''',
         (key, now(), run_id, request_id.get() or run.get('request_id'), user_id or run.get('owner_id'),
          config, model or run.get('model'), event, tool, decision, rule_id, reason,
-         json.dumps(safe(source_ids), ensure_ascii=False), json.dumps(safe(detail or {}), ensure_ascii=False)))
+         json.dumps(safe(source_ids, 'document_id' if event.startswith('doc_') else ''), ensure_ascii=False),
+         json.dumps(safe(detail or {}), ensure_ascii=False)))
     return key
 
 
