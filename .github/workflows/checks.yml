@@ -3,6 +3,36 @@ on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 jobs:
+  container-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      # A small real model verifies the deployment path within runner limits.
+      OLLAMA_MODEL: qwen2.5:1.5b
+      GUARD_MODEL: qwen2.5:1.5b
+      QUARANTINED_LLM_MODEL: qwen2.5:1.5b
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate restricted HTTPS configuration
+        env:
+          JWT_SECRET: ci-only-not-a-deployment-secret
+          DEMO_DOMAIN: review.example.com
+          ACME_EMAIL: operator@example.com
+          DEMO_ALLOWED_NETWORKS: 192.0.2.10/32 2001:db8::10/128
+          BACKUP_KEY_FILE: /dev/null
+        run: |
+          docker compose config --quiet
+          docker compose run --rm --no-deps proxy caddy validate --config /etc/caddy/Caddyfile
+      - name: Build and start from a clean checkout
+        run: docker compose -f compose.local.yaml up --build -d --wait --wait-timeout 360
+      - name: Sign in and receive a real agent response
+        run: python3 scripts/smoke-agent.py
+      - name: Container diagnostics
+        if: failure()
+        run: docker compose -f compose.local.yaml logs --tail 80
+      - name: Stop the test stack
+        if: always()
+        run: docker compose -f compose.local.yaml down
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30

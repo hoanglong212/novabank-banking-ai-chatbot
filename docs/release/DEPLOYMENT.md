@@ -1,10 +1,19 @@
-# Local, container và khôi phục
+# Chạy Agent, chia sẻ bản demo và khôi phục dữ liệu
 
-**Phạm vi đã chốt ngày 01/11/2026: chỉ chạy local.** Dùng launcher bên dưới; không cần VPS, tên miền hoặc Docker. Phần container/HTTPS và CI remote là hướng dẫn tùy chọn cho tương lai, không phải điều kiện nghiệm thu hiện tại.
+## Agent từ bản clone mới
 
-## Chạy local một lệnh
+Từ thư mục repo, chạy `docker compose -f compose.local.yaml up -d --build` rồi mở <http://127.0.0.1:8080>. Docker Compose khởi động bank, Agent riêng và Ollama nội bộ. Job `models` tải các model còn thiếu, dùng lại weights trong volume ở những lần sau. Hãy chờ job thoát với mã 0 và `/api/ready` báo `ready` trước khi hỏi Agent.
 
-Khi dependencies của repo đã có, từ PowerShell tại repo:
+Đăng nhập `alice / Alice@2026`, lấy mã xác thực bằng link demo inbox trên màn hình, rồi vào Assistant hỏi **What is my account balance?**. Máy chạy Docker cần internet ở lần build và tải weights đầu. Bộ mặc định gồm Qwen 7B, Llama 3B và Nomic embeddings. Dành khoảng 7 GB cho weights ngoài dung lượng image và nên có 16 GB RAM cho host. Thời gian phản hồi phụ thuộc CPU/GPU.
+
+- Tải model hoặc lỗi startup: `docker compose -f compose.local.yaml logs models ollama agent bank`. Sau khi xử lý, chạy lại lệnh `up`. `models` ở trạng thái `Exited (0)` là bình thường.
+- Port bận: đặt `NOVABANK_PORT=8081` trong file `.env` ở root và mở <http://127.0.0.1:8081>.
+- Có thể chọn model bằng các biến trong [.env.example](../../.env.example). Giữ model mặc định khi cần so với kết quả nghiên cứu. `LLM_PROVIDER=mock` là phản hồi demo có nhãn, bỏ qua tải weights.
+- `docker compose -f compose.local.yaml down` dừng stack và giữ cả dữ liệu SQLite lẫn weights. Chạy lại `up -d --build` sau khi pull bản mới.
+
+## Chạy native trên Windows
+
+Sau khi cài Python, Node.js và Ollama, chạy các lệnh dưới đây từ thư mục repo. Lần đầu thêm `-Setup` để cài dependencies cho launcher. Chuẩn bị model bằng Ollama trước khi chạy `-Mode ollama`.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Mode ollama
@@ -21,26 +30,38 @@ Với DB phong phú mới, không thay DB cũ:
 
 Seed từ chối target đã tồn tại. Tạo 5 customer, 6 tháng dữ liệu giả, 10 thẻ, 20 hóa đơn và 5 savings. Bảy history legacy từ seed gốc vẫn được phân biệt với ledger snapshots mới.
 
-## HTTPS bằng Docker Compose/Caddy
+## Chia sẻ qua HTTPS
 
-`compose.yaml` có bank, agent, proxy và backup. Agent không mount DB, không nhận JWT secret. Chỉ Caddy mở 80/443. Cần Docker Engine đang chạy, VPS/domain thực, DNS/firewall phù hợp và người vận hành cung cấp các biến sau vào môi trường hoặc file `.env` cục bộ:
+Trên máy chủ Linux của nhóm, chạy Docker Engine với Compose v2. Trỏ DNS của tên miền về máy chủ, mở 80/443 cho Caddy và điền cấu hình trong file `.env` riêng trên host. Chọn IP hoặc CIDR của nhóm review hay mạng VPN. Caddy so địa chỉ kết nối trực tiếp, vì vậy dùng cấu hình này khi Caddy nhận kết nối từ trình duyệt. Nếu đặt sau proxy khác, cần cấu hình kiểm soát truy cập tại proxy đó trước khi chia sẻ URL.
 
 ```
 DEMO_DOMAIN=your-demo-host.example
 ACME_EMAIL=your-operator-email
-DEMO_USER=reviewer
-DEMO_PASSWORD_HASH=<Caddy bcrypt hash>
+DEMO_ALLOWED_NETWORKS="203.0.113.10/32 2001:db8::10/128"
 JWT_SECRET=<persistent random secret>
-BACKUP_KEY_FILE=<separate existing Fernet key file>
-LLM_PROVIDER=ollama
-OLLAMA_MODEL=qwen2.5:7b
+BACKUP_KEY_FILE=/absolute/path/to/private-backup.key
 ```
 
-Tạo key bằng `python scripts/backup.py keygen --key-file <new-private-key-path>`. Hash gateway password bằng Caddy `hash-password` trong môi trường vận hành. Không commit secret hay key. Cấu hình dùng Ollama trên host qua `host.docker.internal`; Linux cần Ollama bind vào interface Docker có thể truy cập, giới hạn firewall với host. Không expose Ollama public.
+Thay địa chỉ ví dụ bằng địa chỉ thực của nhóm. Nếu đang dùng bản triển khai Basic Auth cũ, thay `DEMO_USER` và `DEMO_PASSWORD_HASH` bằng `DEMO_ALLOWED_NETWORKS`. NovaBank dùng header `Authorization` cho token phiên, nên dùng giới hạn mạng ở Caddy. Chỉ dùng tài khoản và dữ liệu giả trong môi trường review. Chế độ `review` cho phép demo inbox có xác thực và giữ gateway bật.
 
-Chạy `docker compose config --quiet` trước `docker compose up --build -d`. `/api/ready` và agent `/health` phục vụ healthcheck. Proxy không buffer SSE. Backup tạo snapshot mã hóa mỗi 24 giờ, retry sau 5 phút nếu lỗi. Archive không tự xóa; người vận hành đặt retention sau khi kiểm tra khả năng restore. Volume tạo mới có UID 10001 phù hợp image bank/backup.
+Tạo secret JWT bằng `openssl rand -hex 32`. Tạo key backup bằng `python scripts/backup.py keygen --key-file <new-private-key-path>` trên máy đã có dependencies của repo. Với Docker rootful, đặt file ở thư mục riêng và cấp quyền đọc cho UID 10001 của container backup, ví dụ owner 10001 và mode 0400. Giữ `.env` và key ngoài Git.
 
-**Đã kiểm tra:** Compose parse, Dockerfile/source paths, local two-process serving, backup/restore thực tế. **Chưa kiểm tra:** build/run image do Docker Engine chưa chạy; DNS/ACME/VPS/HTTPS public chưa có môi trường. Không xem cấu hình hợp lệ là đã deploy.
+```sh
+docker compose config --quiet
+docker compose up -d --build
+```
+
+Khi Caddy có chứng chỉ và healthcheck bank đạt, chia sẻ `https://<DEMO_DOMAIN>` với nhóm trong mạng đã cho phép. Người dùng chỉ cần trình duyệt. Caddy là cổng duy nhất mở ra ngoài và stream SSE đến trình duyệt. Bank giữ SQLite, Agent chỉ gọi API nội bộ bằng token giới hạn và Ollama dùng volume riêng. Backup tạo snapshot mã hóa mỗi 24 giờ và giữ lịch sử cho đến khi người vận hành dọn theo chính sách lưu trữ.
+
+## Prompt Guard cho nguồn ngoài
+
+Agent mặc định dùng model thật để chat và gọi các tool ngân hàng như tra số dư. Các luồng cần quét nguồn ngoài, chẳng hạn đọc nội dung ticket, dừng an toàn nếu Prompt Guard 2 chưa có. Đặt thư mục weights đã được cấp phép trên host rồi thêm cấu hình tùy chọn:
+
+```sh
+docker compose -f compose.local.yaml -f compose.prompt-guard.yaml up -d --build
+```
+
+Đặt `PROMPT_GUARD_MODEL_DIR` trong `.env` thành đường dẫn tuyệt đối có thể đọc từ Docker. Image tùy chọn bổ sung runtime CPU, còn weights được mount chỉ đọc. Với máy chủ review, thay `compose.local.yaml` bằng `compose.yaml`. Xác nhận bộ quét đã nạp bằng `docker compose -f compose.local.yaml -f compose.prompt-guard.yaml exec bank python -c "from app.agent.promptguard import initialize; print(initialize())"`. Kết quả mong đợi là `available: True`.
 
 ## Backup và restore
 
@@ -55,4 +76,4 @@ Restore từ chối ghi đè DB/key đang có. Archive chứa consistent SQLite 
 
 ## CI và release
 
-`.github/workflows/checks.yml` chạy compile, full pytest với financial line coverage ≥80%, component tests, build và Playwright Chromium. Có artifact test results/coverage. Chưa có GitHub Actions run cho thay đổi hiện tại; lệnh đọc remote trả danh sách rỗng. Chưa commit/push/tag v1.0. Bản local và release evidence được tách trong [STATUS](STATUS.md).
+`.github/workflows/checks.yml` chạy kiểm tra Python, coverage, frontend và Playwright. Job `container-agent` kiểm tra Caddyfile, build từ checkout sạch, tải model nhỏ rồi đi qua đăng nhập, demo inbox và SSE của Agent. Có thể kiểm tra thủ công trên stack demo mới bằng `python scripts/smoke-agent.py --balance` với model mặc định.
