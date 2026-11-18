@@ -85,6 +85,7 @@ from .api.routes.dev import router as dev_router
 
 
 def create_app():
+    from .routes_documents import router as documents_router
     application = FastAPI(title='NovaBank Banking Chatbot (Demo Only)', version='0.1.0', lifespan=lifespan)
     application.add_exception_handler(RequestValidationError, safe_validation_error)
     origins = [value.strip() for value in setting('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',') if value.strip()]
@@ -98,6 +99,7 @@ def create_app():
                    agent_router, quarantine_router, research_router, transfers_router, chat_router, dev_router,
                    banking_router, identity_router, sessions_router):
         application.include_router(router)
+    application.include_router(documents_router)
     application.add_api_route('/api/health', health, methods=['GET'])
     application.add_api_route('/api/ready', readiness, methods=['GET'])
     application.add_api_route('/api/me', me, methods=['GET'])

@@ -8,7 +8,8 @@ from .request_context import request_id
 
 EVENTS = frozenset(('run_started', 'tool_called', 'policy_decision', 'classifier_signal',
     'approval_shown', 'approval_result', 'otp_sent', 'otp_verified', 'transfer_posted',
-    'output_filtered', 'run_halted', 'attack_observation', 'qr_scanned'))
+    'output_filtered', 'run_halted', 'attack_observation', 'qr_scanned',
+    'doc_ingest', 'doc_quarantine', 'doc_scan_failed', 'doc_retrieve'))
 SECRET_KEYS = frozenset(('password', 'password_hash', 'otp', 'pin', 'code', 'secret_text',
     'access_token', 'refresh_token', 'delegated_token', 'authorization', 'token', 'otp_hash'))
 
@@ -59,8 +60,9 @@ def emit(conn, event, *, event_id=None, run_id=None, user_id=None, config=None,
 def output(conn, run, raw, filtered):
     if raw != filtered:
         digest = hashlib.sha256(json.dumps([raw, filtered], ensure_ascii=False).encode()).hexdigest()
+        document_run = conn.execute("SELECT 1 FROM agent_calls WHERE run_id=? AND name='ask_document'", (run['id'],)).fetchone()
         emit(conn, 'output_filtered', event_id=f'output:{run["id"]}:{digest}', run_id=run['id'],
-             detail={'raw': raw, 'filtered': filtered})
+             detail={'sha256': digest} if document_run else {'raw': raw, 'filtered': filtered})
 
 
 def transfer_event(conn, event, transfer_id, user_id, *, detail=None):

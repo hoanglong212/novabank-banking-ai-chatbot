@@ -33,3 +33,11 @@ Concurrent upload quota/deletion during inference; binary spoof/PDF decompressio
 - [ ] Phase 6: DOCUMENT_RAG.md seven sections, FUNC_API_TEST_REPORT.md, demo script and completion; independent review, fixes, PR (no merge).
 
 Sources consulted: https://fastapi.tiangolo.com/tutorial/request-files/ ; https://pypdf.readthedocs.io/en/stable/user/extract-text.html ; https://docs.ollama.com/api/embed . pypdf cannot OCR scans; extraction can expand streams, so enforce extraction budgets. Ollama truncate=false avoids silently incomplete embedding input.
+
+## Evidence 2026-11-18
+- Phase 1 fixtures: committed 0354c1a; fixture plus fixed-seed checks 4 passed. Existing seed already has 62 users / 125 accounts / 4150 transactions; consistency/cleanup helper remains.
+- Phase 2 API: 14 passed, then integrated document API/gateway/boundary/FIELD_TRUST suite 40 passed. Oversized-body middleware and pypdf 7 configuration regressions reproduced and fixed.
+- Ruling: explicit LLM_PROVIDER=mock uses labeled deterministic embeddings; real providers never fall back. This keeps offline demos executable without misrepresenting model measurements.
+- Ruling: expand FIELD_TRUST coverage fixture to exercise new ask_document tool with owned document and exact read intent; do not loosen capability permissions to satisfy registry test.
+- Phase 4 initial browser check passed desktop/mobile upload/list/question/delete; visual pass found plain form fields, switched to existing Field/card components. No CSS/theme changes.
+- Real-runtime preflight: cached nomic-embed-text returns 768-dimensional vectors. Main venv lacks torch; found already-provisioned D:/NovaBank-Week8-Lab/runtime with torch and transformers. No runtime dependencies installed.
