@@ -97,8 +97,17 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
         active = conn.execute('SELECT status FROM agent_runs WHERE id=?', (run['id'],)).fetchone()
         if not active or active[0] not in ('READY', 'RUNNING'):
             raise HTTPException(409, 'Run is already finished.')
+        if payload.status == 'FAILED' and payload.termination_reason == 'ANOMALOUS_SEQUENCE':
+            # Stopped after repeated denials: cancel proposals made before the stop, as quarantine.halt does.
+            from .agent import quarantine
+            quarantine.reject_pending(conn, run, 'ANOMALOUS_SEQUENCE')
+            agent_access.emit(conn, 'run_halted', run_id=run['id'], event_id='halt:' + run['id'], reason='ANOMALOUS_SEQUENCE', rule_id='blocking-denials')
+            answer = quarantine.HALTED
         # Gateway off (lab): the model's answer is stored as written, without the output filter.
-        answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else vault.restore(payload.answer)
+        elif agent_access.layer_enabled(run, 'output_filter'):
+            answer = filtered_answer(conn, db, run, payload.answer)
+        else:
+            answer = vault.restore(payload.answer)
         from .risk.cases import finish as finish_risk_case
         finish_risk_case(conn, run['id'])
         conn.execute('''UPDATE agent_runs SET status=?,completed_at=?,latency_ms=?,input_tokens=?,output_tokens=?,
