@@ -12,3 +12,6 @@ def test_dependency_basename_does_not_suppress_financial_source():
     application=str(root/'backend/app/products.py')
     assert tracer.ignore.names(dependency,'products')
     assert not tracer.ignore.names(application,'products')
+    for name in module.FILES:
+        assert not tracer.ignore.names(str(root/'backend/app'/name),Path(name).stem)
+    assert tracer.ignore.names(str(root/'backend/app/main.py'),'main')

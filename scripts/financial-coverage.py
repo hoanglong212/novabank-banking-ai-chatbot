@@ -17,9 +17,15 @@ FILES = ['posting.py', 'transfers.py', 'ledger.py', 'products.py', 'settlement.p
 def make_tracer():
     tracer = trace.Trace(count=True, trace=False, ignoredirs=[sys.base_prefix, str(ROOT / 'backend' / '.venv')])
     # stdlib trace caches exclusions by basename: SymPy's products.py can hide
-    # app/products.py. Cache by the full path while retaining the same exclusions.
-    original = tracer.ignore.names
-    tracer.ignore.names = lambda filename, _module: original(filename, filename)
+    # app/products.py. Record the five configured financial files by full path.
+    # All pytest tests still execute; unrelated libraries need no line counters.
+    targets = {(ROOT / 'backend' / 'app' / name).resolve() for name in FILES}
+    excluded = {}
+    def ignore(filename, _module):
+        if filename not in excluded:
+            excluded[filename] = filename is None or Path(filename).resolve() not in targets
+        return excluded[filename]
+    tracer.ignore.names = ignore
     return tracer
 
 

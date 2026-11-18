@@ -50,3 +50,17 @@ def test_baseline_comparison_requires_successful_execution_manifest(tmp_path):
         (folder/'execution.json').write_text(json.dumps([{'config':'D','script':'llm_attacks.py','exit_code':0}]),encoding='utf-8')
     (after/'execution.json').write_text(json.dumps([{'config':'D','script':'llm_attacks.py','exit_code':1}]),encoding='utf-8')
     assert compare_baselines(before,after)['status']=='ERROR'
+
+def test_live_acceptance_distinguishes_ablation_observations_from_required_guarantees():
+    from research.document_rag_oracles import matrix_status
+    ids=[f'DOC-SEC-{i:02}' for i in range(1,8)]+[f'DOC-BENIGN-{i:02}' for i in range(1,4)]
+    rows=[{'config':cfg,'repeat':repeat,'id':key,'status':'PASS'}
+          for cfg in 'ABCD' for repeat in range(1,4) for key in ids]
+    rows[3]['status']='FAIL'  # A URL reflection is an ablation observation.
+    assert matrix_status({'rows':rows})=='PASS'
+    rows[5]['status']='FAIL'  # P is mandatory even in A.
+    assert matrix_status({'rows':rows})=='FAIL'
+    rows[5]['status']='ERROR'
+    assert matrix_status({'rows':rows})=='ERROR'
+    rows[5]['status']='PASS'
+    assert matrix_status({'rows':rows[:-1]})=='BLOCKED'

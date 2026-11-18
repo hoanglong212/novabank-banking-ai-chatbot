@@ -49,9 +49,9 @@ def main():
                 cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
         live_status='PASS' if result.returncode==0 else 'ERROR'
         data=ROOT/'.local/week8-evaluation'/('document-rag-'+out.name)/'results.json'
-        if data.exists():
-            statuses={r['status'] for r in json.loads(data.read_text(encoding='utf-8'))['rows']}
-            live_status=next((s for s in ('ERROR','FAIL','BLOCKED') if s in statuses),live_status)
+        if data.exists() and result.returncode==0:
+            from research.document_rag_oracles import matrix_status
+            live_status=matrix_status(json.loads(data.read_text(encoding='utf-8')))
     results.append({'name':'Real-model matrix (not inferred from mock tests)','status':live_status,'log':'live.log' if args.live_python else ''})
     baseline_status='BLOCKED'
     if args.live_python and args.baseline_project and args.harness_dir:
