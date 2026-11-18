@@ -32,12 +32,12 @@ Seed từ chối target đã tồn tại. Tạo 5 customer, 6 tháng dữ liệu
 
 ## Chia sẻ qua HTTPS
 
-Trên máy chủ Linux của nhóm, chạy Docker Engine với Compose v2. Trỏ DNS của tên miền về máy chủ, mở 80/443 cho Caddy và điền cấu hình trong file `.env` riêng trên host. Chọn IP hoặc CIDR của nhóm review hay mạng VPN. Caddy so địa chỉ kết nối trực tiếp, vì vậy dùng cấu hình này khi Caddy nhận kết nối từ trình duyệt. Nếu đặt sau proxy khác, cần cấu hình kiểm soát truy cập tại proxy đó trước khi chia sẻ URL.
+Trên máy chủ Linux của nhóm, chạy Docker Engine với Compose v2. Trỏ bản ghi DNS A về IPv4 của máy chủ, mở 80/443 cho Caddy và điền cấu hình trong file `.env` riêng trên host. Chọn IPv4 hoặc CIDR của nhóm review hay mạng VPN. Caddy so địa chỉ kết nối trực tiếp, vì vậy dùng cấu hình này khi Caddy nhận kết nối từ trình duyệt. Nếu đặt sau proxy khác, cần cấu hình kiểm soát truy cập tại proxy đó trước khi chia sẻ URL.
 
 ```
 DEMO_DOMAIN=your-demo-host.example
 ACME_EMAIL=your-operator-email
-DEMO_ALLOWED_NETWORKS="203.0.113.10/32 2001:db8::10/128"
+DEMO_ALLOWED_NETWORKS="203.0.113.10/32 198.51.100.0/24"
 JWT_SECRET=<persistent random secret>
 BACKUP_KEY_FILE=/absolute/path/to/private-backup.key
 ```
@@ -51,7 +51,7 @@ docker compose config --quiet
 docker compose up -d --build
 ```
 
-Khi Caddy có chứng chỉ và healthcheck bank đạt, chia sẻ `https://<DEMO_DOMAIN>` với nhóm trong mạng đã cho phép. Người dùng chỉ cần trình duyệt. Caddy là cổng duy nhất mở ra ngoài và stream SSE đến trình duyệt. Bank giữ SQLite, Agent chỉ gọi API nội bộ bằng token giới hạn và Ollama dùng volume riêng. Backup tạo snapshot mã hóa mỗi 24 giờ và giữ lịch sử cho đến khi người vận hành dọn theo chính sách lưu trữ.
+Khi Caddy có chứng chỉ và healthcheck bank đạt, chia sẻ `https://<DEMO_DOMAIN>` với nhóm trong mạng đã cho phép. Người dùng chỉ cần trình duyệt. Caddy là cổng duy nhất mở ra ngoài và stream SSE đến trình duyệt. Bank chỉ tin địa chỉ chuyển tiếp từ IP riêng của Caddy để giới hạn đăng nhập theo địa chỉ truy cập. Nếu subnet Docker của Caddy trùng mạng hiện có, đặt cặp `NOVABANK_PROXY_SUBNET` và `NOVABANK_PROXY_IP` trong `.env`. Bank giữ SQLite, Agent gọi API nội bộ bằng token giới hạn và Ollama dùng volume riêng. Backup tạo snapshot mã hóa mỗi 24 giờ.
 
 ## Prompt Guard cho nguồn ngoài
 

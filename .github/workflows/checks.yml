@@ -18,7 +18,7 @@ jobs:
           JWT_SECRET: ci-only-not-a-deployment-secret
           DEMO_DOMAIN: review.example.com
           ACME_EMAIL: operator@example.com
-          DEMO_ALLOWED_NETWORKS: 192.0.2.10/32 2001:db8::10/128
+          DEMO_ALLOWED_NETWORKS: 192.0.2.10/32 198.51.100.0/24
           BACKUP_KEY_FILE: /dev/null
         run: |
           docker compose config --quiet

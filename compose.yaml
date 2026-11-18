@@ -7,6 +7,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set a persistent random JWT_SECRET}
       DB_PATH: /data/novabank_demo.sqlite3
       CORS_ORIGINS: https://${DEMO_DOMAIN:?Set your HTTPS hostname}
+      FORWARDED_ALLOW_IPS: ${NOVABANK_PROXY_IP:-172.31.86.2}
+    networks: [default, edge]
     volumes:
       - bank-data:/data
       - research-data:/app/.local/research
@@ -18,7 +20,10 @@ services:
     extends: {file: compose.agent.yaml, service: models}
   proxy:
     image: caddy:2
-    ports: ["80:80", "443:443", "443:443/udp"]
+    ports: ["0.0.0.0:80:80", "0.0.0.0:443:443", "0.0.0.0:443:443/udp"]
+    networks:
+      edge:
+        ipv4_address: ${NOVABANK_PROXY_IP:-172.31.86.2}
     environment:
       DEMO_DOMAIN: ${DEMO_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME contact email}
@@ -48,6 +53,11 @@ services:
 secrets:
   backup_key:
     file: ${BACKUP_KEY_FILE:?Set the separate backup key file path}
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: ${NOVABANK_PROXY_SUBNET:-172.31.86.0/28}
 volumes:
   bank-data:
   ollama-models:
