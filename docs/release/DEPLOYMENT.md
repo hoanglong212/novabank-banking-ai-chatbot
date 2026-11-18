@@ -59,6 +59,14 @@ mkdir -p .local/secrets
 
 Điền đường dẫn tuyệt đối của file này vào `BACKUP_KEY_FILE`. Cách đặt quyền trên cấp quyền đọc cho UID 10001 của container backup. Giữ `.env.hosted` và key ngoài Git.
 
+Lần đầu tạo một DB dùng chung mới, chuẩn bị volume trên máy chủ:
+
+```sh
+docker volume create novabank-demo_bank-data
+```
+
+Nếu đã chạy hosted, dùng lại volume đang giữ `/data` thay vì tạo DB mới. Nếu volume có tên khác, đặt `NOVABANK_SHARED_DATA_VOLUME` trong `.env.hosted` thành tên đó. Compose yêu cầu volume tồn tại trước khi chạy Bank. Xem [thiết kế và quy trình dùng chung DB](SHARED_DATABASE.md).
+
 ```sh
 docker compose --env-file .env.hosted config --quiet
 docker compose --env-file .env.hosted up -d --build

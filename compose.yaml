@@ -60,6 +60,9 @@ networks:
         - subnet: ${NOVABANK_PROXY_SUBNET:-172.31.86.0/28}
 volumes:
   bank-data:
+    # Retain the existing hosted volume by default. Prepare it explicitly on a new host.
+    external: true
+    name: ${NOVABANK_SHARED_DATA_VOLUME:-novabank-demo_bank-data}
   ollama-models:
   research-data:
   backup-data:

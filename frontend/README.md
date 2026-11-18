@@ -7,7 +7,17 @@ npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite, normally <http://127.0.0.1:5173>. Vite forwards `/api` to `http://127.0.0.1:8080`. If you change the app port, update the proxy target in [vite.config.ts](vite.config.ts).
+Open the URL printed by Vite, normally <http://127.0.0.1:5173>. Vite forwards `/api` to `http://127.0.0.1:8080` by default. Set `NOVABANK_DEV_API_TARGET` to your loopback origin if you change that port.
+
+## Use the shared database
+
+If the team already has a hosted NovaBank demo, copy [the frontend environment template](.env.example) to `frontend/.env.local` and set the team's HTTPS origin:
+
+```dotenv
+NOVABANK_DEV_API_TARGET=https://review.example.com
+```
+
+Restart `npm run dev` and sign in. Vite forwards API requests to that server, so actions use the team's data and Agent. Your machine needs access to the review network. The hosted Bank handles user permissions. For experiments that need disposable data, leave the target unset and run your local stack.
 
 ## Where to make changes
 
