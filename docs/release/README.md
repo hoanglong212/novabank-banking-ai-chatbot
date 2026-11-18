@@ -1,6 +1,6 @@
 # Hồ sơ bàn giao NovaBank
 
-Đọc [trạng thái nghiệm thu](STATUS.md) và [kết quả kiểm thử theo PDF mới](acceptance-audit/REPORT_VI.md) trước. Bản local hoạt động nhưng chưa đáp ứng toàn bộ 121 ca; bảng dưới là tài liệu triển khai trước lượt audit. Phát hành ngoài máy không thuộc phạm vi người dùng đã chốt. Các báo cáo vẫn giữ giới hạn kiểm chứng và cảnh báo dependency.
+Để chạy Agent từ repo mới hoặc chia sẻ bản demo qua HTTPS, bắt đầu với [README dự án](../../README.md) và [hướng dẫn triển khai](DEPLOYMENT.md). Xem [trạng thái nghiệm thu](STATUS.md) và [kết quả kiểm thử theo PDF](acceptance-audit/REPORT_VI.md) để biết phạm vi và giới hạn của từng đợt kiểm tra.
 
 | # | Tài liệu |
 |---|---|

@@ -2,41 +2,59 @@
 
 A banking simulation and prompt-injection research project. React 19/Vite/TypeScript/Tailwind, FastAPI/SQLite, and a separate HTTP agent. All accounts and money are fictional.
 
-**Current handoff:** [implementation and verification status](docs/release/STATUS.md), [12-document dossier](docs/release/README.md), [25 use cases](docs/release/SRS.md), [security report PDF](docs/release/Security-Evaluation.pdf), [demo video](docs/release/media/NovaBank-demo.mp4), [defense slides](docs/release/Defense-Slides.html).
+| I want to… | Start here |
+| --- | --- |
+| Run a real Agent from a fresh clone | [Quick start with Docker](#quick-start-with-docker) |
+| Give the team one URL they can open in a browser | [Host a shared HTTPS demo](docs/release/DEPLOYMENT.md#chia-sẻ-qua-https) |
+| Develop the app on Windows | [Native Windows development](#native-windows-development) and the [frontend guide](frontend/README.md) |
 
-## Start the real Agent from a fresh clone
+## Quick start with Docker
 
-Start Docker Desktop or Docker Engine with Compose v2. From the repository root, run:
+Start Docker Desktop or Docker Engine with the `docker compose` command available. Run the following from a terminal:
 
 ```sh
+git clone https://github.com/hoanglong212/novabank-banking-ai-chatbot.git
+cd novabank-banking-ai-chatbot
 docker compose -f compose.local.yaml up -d --build
 ```
 
-Compose builds the web app, starts the bank and isolated Agent, and downloads the models into a Docker volume. The first run needs internet access and roughly 7 GB for model weights in addition to the images. Allow time for the downloads and first CPU inference. Python, Node.js and a host Ollama install are unnecessary for this path.
+Docker builds the web app and starts Bank, Agent and Ollama. The first run needs internet access and roughly 7 GB for model weights in addition to the images. Model weights and bank data are stored in separate Docker volumes. Docker is the only runtime you need to install for this path.
 
 1. Open <http://127.0.0.1:8080> and sign in as `alice` with password `Alice@2026`.
 2. On the verification screen, open the demo inbox and enter the sign-in code in the form.
 3. In **Assistant**, ask **What is my account balance?**
 
-Use `docker compose -f compose.local.yaml logs models` to check download progress. Once running, [the readiness endpoint](http://127.0.0.1:8080/api/ready) should show `ready` and `llm_provider: ollama`. Stop with `docker compose -f compose.local.yaml down`. Both bank data and downloaded models persist. See [.env.example](.env.example) for the port and model overrides.
+Check model downloads with `docker compose -f compose.local.yaml logs models`. [Agent readiness](http://127.0.0.1:8080/api/ready) should show `"status": "ready"` and `"llm_provider": "ollama"`. Stop with `docker compose -f compose.local.yaml down`. After a pull, run `up -d --build` again with the same Compose file to rebuild using the existing volumes.
 
-For a shared browser URL, one operator can run the same model stack on a team server with HTTPS and a reviewer network allowlist. Reviewers only need the URL, a browser and access to that network. See [deployment and troubleshooting](docs/release/DEPLOYMENT.md), including the optional licensed Prompt Guard runtime for reading untrusted sources.
+## Configuration files
 
-### Native Windows development
+| How you run | Template | Where to save your values |
+| --- | --- | --- |
+| Docker on your computer | [.env.example](.env.example) | Root `.env`, optional for port or model overrides |
+| Shared HTTPS demo | [.env.hosted.example](.env.hosted.example) | Root `.env.hosted`, passed with `docker compose --env-file .env.hosted` |
+| Native Windows launcher | [backend/.env.example](backend/.env.example) | `backend/.env`, created by `-Setup` if absent |
+| Optional research adapter | [research/.env.example](research/.env.example) | `research/.env`, supplied explicitly to the adapter |
 
-With Python, Node.js and Ollama installed, pull `qwen2.5:7b` and `nomic-embed-text:latest`, then use the existing launcher:
+With the shared HTTPS setup, one operator provisions the stack on a Linux server. Reviewers open the URL from an allowed network and use the same sign-in and Assistant steps. The [deployment guide](docs/release/DEPLOYMENT.md) covers DNS, secrets, troubleshooting and the optional licensed Prompt Guard runtime.
+
+## Native Windows development
+
+With Python, Node.js and Ollama installed, pull the models and run the Windows launcher:
 
 ```powershell
+ollama pull qwen2.5:7b
+ollama pull nomic-embed-text:latest
+ollama pull llama3.2:3b
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Setup -Mode ollama
 # On later runs:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-demo.ps1 -Mode ollama
 ```
 
-Open http://127.0.0.1:8080. The launcher builds the frontend and starts the bank plus isolated agent (:8093). Ctrl+C stops both. `-Mode mock` uses explicitly labeled deterministic responses without a model. The command does not install dependencies or pull models. See [deployment and configuration](docs/release/DEPLOYMENT.md).
+Open <http://127.0.0.1:8080>. `-Setup` installs the app dependencies and creates `backend/.env` when needed. The launcher builds the frontend and runs Bank and Agent together. Ctrl+C stops both. For labeled offline responses, use `-Mode mock` and skip the Ollama steps.
 
 Other synthetic logins include `bob / Bob@2026`, `charlie / Charlie@2026`, `support / Support@2026`, `operations / Operations@2026`, `auditor / Auditor@2026` and `admin / Admin@2026`. Staff logins always require email MFA or configured TOTP. Transfers always require OTP. Enter codes in the authentication form.
 
-Public demo credentials require a restricted review environment. The supplied Compose/Caddy configuration includes an access gateway. Do not use real banking credentials or PII.
+Use fictional data and keep hosted review on the configured reviewer network. Keep populated environment files and keys private.
 
 ## Capabilities
 
@@ -58,7 +76,7 @@ npm run test:components
 npm run test:e2e
 ```
 
-CI runs these checks and a container smoke test with a real model. To verify a fresh demo with the default model, run `python scripts/smoke-agent.py --balance`.
+CI runs these checks and a container smoke test with a real model. To verify the default model on a fresh demo, run `python scripts/smoke-agent.py --balance` from the repository root while the app is running on port 8080.
 
 Measured research: 1,790 observations, zero execution errors, balanced sandbox journals. Defended utility Qwen99% / Llama90%, ASR0 within this controlled corpus. Read [method and limitations](docs/release/PI_RESULTS.md) before interpreting those numbers.
 
@@ -68,4 +86,4 @@ Measured research: 1,790 observations, zero execution errors, balanced sandbox j
 
 `scripts/backup.py` creates encrypted consistent snapshots and restores only to new paths, including per-DB MFA keys. Keep the backup encryption key separately. [Operator guide](docs/release/ADMIN_GUIDE.md) explains settings, reconciliation and research.
 
-Historic milestones remain in `docs/`. Use `docs/release/STATUS.md` for the release record.
+See the [release dossier](docs/release/README.md) for requirements, architecture, security results and demo materials.

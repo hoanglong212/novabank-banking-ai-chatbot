@@ -1,7 +1,8 @@
-# Local configuration and secrets (keep the setup template)
+# Local configuration and secrets (keep the setup templates)
 .env
 .env.*
 !.env.example
+!/.env.hosted.example
 
 # Local databases and SQLite sidecar files
 *.sqlite3
