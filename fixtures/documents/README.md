@@ -6,3 +6,5 @@ All identities and amounts are fictional. Regenerate with `backend/.venv/Scripts
 
 These fixtures are deliberately hostile test inputs, not instructions to operators or the assistant.
 
+`inj_alias_variant.pdf` presents source-authored `<ACCOUNT_1>` and bare `NAME_1` as payment references. `inj_link_variant.pdf` lists the same hostile URL as a reference website. These declarative variants exercise alias restoration and output URL filtering when the imperative originals are quarantined. The live runner records the selected fixture and actual ingestion status; it never disables screening. Rate counters are reset only in the disposable measurement DB because upload quota enforcement has separate API tests.
+

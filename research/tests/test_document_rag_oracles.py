@@ -39,3 +39,13 @@ def test_baseline_comparison_does_not_hide_missing_or_infrastructure_cases(tmp_p
     assert compare_baselines(before,after)['status']=='ERROR'
     path.write_text(json.dumps([{'id':'A1','result':'FAIL','error_count':0}]),encoding='utf-8')
     assert compare_baselines(before,after)['status']=='FAIL'
+
+def test_baseline_comparison_requires_successful_execution_manifest(tmp_path):
+    from research.document_rag_oracles import compare_baselines
+    before,after=tmp_path/'before',tmp_path/'after'
+    for folder in (before,after):
+        (folder/'harness/results').mkdir(parents=True)
+        (folder/'harness/results/group_A.json').write_text(json.dumps([{'id':'A1','result':'PASS'}]),encoding='utf-8')
+        (folder/'execution.json').write_text(json.dumps([{'config':'D','script':'llm_attacks.py','exit_code':0}]),encoding='utf-8')
+    (after/'execution.json').write_text(json.dumps([{'config':'D','script':'llm_attacks.py','exit_code':1}]),encoding='utf-8')
+    assert compare_baselines(before,after)['status']=='ERROR'

@@ -61,6 +61,16 @@ def compare_baselines(before, after):
         else:
             status='PASS'
         results.append({'id':key,'before':row.get('result'),'after':following.get('result') if following else None,'status':status})
-    statuses={row['status'] for row in results}
+    executions=[]
+    for label,folder in (('before',before),('after',after)):
+        manifest=folder/'execution.json'
+        commands=json.loads(manifest.read_text(encoding='utf-8')) if manifest.exists() else []
+        if not commands:
+            executions.append({'revision':label,'status':'BLOCKED','reason':'Missing execution manifest'})
+        for command in commands:
+            executions.append({'revision':label,**command,'status':
+                'BLOCKED' if command.get('status')=='BLOCKED' else 'PASS' if command.get('exit_code')==0 else 'ERROR'})
+    statuses={row['status'] for row in results+executions}
     status='BLOCKED' if not results else next((value for value in ('ERROR','FAIL','BLOCKED') if value in statuses),'PASS')
-    return {'status':status,'cases':results,'note':'PASS means no measured regression; see before/after for existing failures.'}
+    return {'status':status,'cases':results,'executions':executions,
+        'note':'PASS means no measured regression; see before/after for existing failures.'}
