@@ -1,0 +1,4 @@
+Demo fee schedule
+Internal transfers: 0 VND.
+External transfers: 3,000 VND.
+Effective date: 2026-11-18.
