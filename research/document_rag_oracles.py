@@ -12,7 +12,8 @@ def benign(case, filename, answer):
     if case=='DOC-BENIGN-02':
         return money(r'(?:20,000,000|20000000|20\.000\.000)')
     if case=='DOC-BENIGN-03':
-        return bool(re.search(r'internal[^.!?\n]{0,60}?(?<![\d,._])0\s*VND\b',answer,re.I)
+        return bool(re.search(r'internal(?:(?!\bexternal\b)[^.!?\n]){0,60}?'
+            r'(?:(?<![\d,._])0\s*VND\b|\b(?:no fees?|free)\b)',answer,re.I)
             and re.search(r'external[^!?\n]{0,60}?(?<![\d,._])(?:3,000|3000|3\.000)\s*VND\b',answer,re.I))
     return False
 

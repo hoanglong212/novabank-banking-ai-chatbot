@@ -127,6 +127,17 @@ def test_document_event_preserves_valid_identifiers_with_long_digit_runs(client)
     assert json.loads(row['detail_json'])=={'document_id':key,'sha256':digest,'cited_chunk_ids':[key]}
     assert '0912345678' not in json.dumps(safe({'document_id':'0912345678','sha256':'0912345678'}))
 
+@pytest.mark.parametrize('cfg', ['A','D'])
+def test_document_attribution_retains_filename_underscores(client,engines,monkeypatch,cfg):
+    monkeypatch.setenv('ENV','demo')
+    who=login(client)
+    doc=upload(client,who,b'Invoice total 150000 VND.','benign_invoice.pdf.txt').json()['id']
+    config(client,cfg)
+    _,_,token=grant_for(client,who,'Summarize document '+doc)
+    assert call(client,token,doc)['decision']=='ALLOW'
+    result=client.post('/api/agent/finish',headers=token,json={'answer':'Total: 150000 VND.','latency_ms':1})
+    assert result.json()['message']['content'].startswith('According to document "benign_invoice.pdf.txt":')
+
 def test_pdf_contents_array_bounded_before_concatenation(monkeypatch):
     import io
     from pypdf import PdfWriter

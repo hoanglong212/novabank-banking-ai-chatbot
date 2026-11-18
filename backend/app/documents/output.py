@@ -53,6 +53,6 @@ def attribute(conn, db, run, answer):
     if not evidence:
         return 'I could not verify an answer from this document. Select a ready document and try again.'
     # Filename is displayed as plain text, not a link or Markdown instruction.
-    name = re.sub(r'[\[\]<>*_`#]|(?:https?://|www\.)\S+', '', evidence[0]['filename_display'], flags=re.I)
+    name = re.sub(r'[\[\]<>*`#]|(?:https?://|www\.)\S+', '', evidence[0]['filename_display'], flags=re.I)
     return 'According to document "' + name + '":\n' + answer
 

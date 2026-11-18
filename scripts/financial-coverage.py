@@ -14,8 +14,17 @@ sys.path.insert(0, str(ROOT / 'backend'))
 FILES = ['posting.py', 'transfers.py', 'ledger.py', 'products.py', 'settlement.py']
 
 
-def main():
+def make_tracer():
     tracer = trace.Trace(count=True, trace=False, ignoredirs=[sys.base_prefix, str(ROOT / 'backend' / '.venv')])
+    # stdlib trace caches exclusions by basename: SymPy's products.py can hide
+    # app/products.py. Cache by the full path while retaining the same exclusions.
+    original = tracer.ignore.names
+    tracer.ignore.names = lambda filename, _module: original(filename, filename)
+    return tracer
+
+
+def main():
+    tracer = make_tracer()
     previous = threading.gettrace()
     threading.settrace(tracer.globaltrace)
     try:

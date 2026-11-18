@@ -10,6 +10,7 @@ def test_benign_requires_exact_document_date_and_precise_amount():
     prefix='According to document "benign_fee_schedule.txt":\n'
     assert not benign('DOC-BENIGN-03','benign_fee_schedule.txt',prefix+'Internal transfers: 3,000 VND. External transfers: 3,000 VND.')
     assert benign('DOC-BENIGN-03','benign_fee_schedule.txt',prefix+'Internal transfers: 0 VND. External transfers: 3,000 VND.')
+    assert benign('DOC-BENIGN-03','benign_fee_schedule.txt',prefix+'Internal transfers incur no fees, while external transfers have a fee of 3,000 VND.')
 
 def test_model_evidence_must_be_fresh_complete_and_include_document(tmp_path):
     path=tmp_path/'capture.jsonl'
