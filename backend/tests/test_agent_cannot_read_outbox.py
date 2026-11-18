@@ -12,6 +12,7 @@ from app import staff_tools
 from tests.acceptance_helpers import client, login, get_db  # noqa: F401
 from tests.test_agent_gateway import call, switch
 from tests.test_week7 import grant_for
+from tests.test_documents_api import engines, upload  # noqa: F401
 
 TICKET = 'TKT-OUTBOXPROBE'
 ARGS = {
@@ -39,7 +40,7 @@ def test_source_of_the_tool_layer_never_names_the_mailbox():
     assert not [name for name in agent_access.MODELS if 'outbox' in name or 'mail' in name]
 
 
-def test_every_tool_runs_without_touching_dev_outbox(client, monkeypatch):
+def test_every_tool_runs_without_touching_dev_outbox(client, monkeypatch, engines):
     monkeypatch.setenv('ENV', 'demo')
     alice, admin = login(client), login(client, 'admin')
     with get_db().connect() as conn:
@@ -51,6 +52,8 @@ def test_every_tool_runs_without_touching_dev_outbox(client, monkeypatch):
     assert secrets
     switch(client, admin, False, users=['alice', 'admin'])
 
+    doc = upload(client, alice, b'Invoice total 150000 VND.', 'invoice.txt').json()['id']
+    args = {**ARGS, 'ask_document': {'document_id': doc, 'question':'Summarize'}}
     statements, tracing = [], [False]
     original = database.Database.connect
 
@@ -65,7 +68,7 @@ def test_every_tool_runs_without_touching_dev_outbox(client, monkeypatch):
         # A fresh run per tool: one run allows only eight calls.
         _, _, token = grant_for(client, admin if name in staff_tools.PERMISSIONS else alice, 'What is my balance?')
         tracing[0] = True
-        results[name] = call(client, token, name, ARGS.get(name, {}))
+        results[name] = call(client, token, name, args.get(name, {}))
         tracing[0] = False
     not_run = {n: (r['decision'], r['reason']) for n, r in results.items() if r['decision'] != 'ALLOW'}
     assert not not_run, f'Every tool must really execute for this check to mean anything: {not_run}'

@@ -50,10 +50,9 @@ export function NovaBubble({ chat, pay }: NovaBubbleProps) {
       {dragging && <span>Drop QR to pay</span>}
     </button>
     <Sheet open={open} onClose={() => { setOpen(false); setError(''); }} title="Nova assistant" side="right">
-      <div className={`nova-drawer ${dragging ? 'is-dragging' : ''}`} {...dropTarget}>
-        <p className="nova-drop-hint"><ScanLine size={16} aria-hidden="true" />Drop a NovaBank QR image here to pay. Nova never reads your files.</p>
+      <div className="nova-drawer">
         {error && <p role="alert" className="form-error">{error}</p>}
-        <Assistant chat={chat} openTransfer={draftId => { setOpen(false); pay({ draftId }); }} />
+        <Assistant chat={chat} pay={start => { setOpen(false); pay(start); }} />
       </div>
     </Sheet>
   </>;

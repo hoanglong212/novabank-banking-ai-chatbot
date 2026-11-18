@@ -163,6 +163,8 @@ class Database:
             initialize_customer_limits(conn, now())
             from .transfer_source import initialize as initialize_transfer_sources
             initialize_transfer_sources(conn, now())
+            from .documents.repository import initialize as initialize_documents
+            initialize_documents(conn, now())
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())

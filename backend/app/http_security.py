@@ -35,7 +35,9 @@ class HttpSecurity:
         supplied = dict(scope.get('headers', [])).get(b'x-request-id', b'').decode('ascii', errors='replace')
         started = time.perf_counter(); request_id = supplied if re.fullmatch(r'[A-Za-z0-9._:-]{1,80}', supplied) else uuid.uuid4().hex; status = 500
         max_bytes = 4 * 1024 * 1024
-        if scope['method'] in ('POST', 'PUT', 'PATCH'):
+        # Documents authenticate before consuming their bounded 5 MiB multipart stream.
+        document_upload = scope['method'] == 'POST' and scope.get('path', '').rstrip('/') == '/api/documents'
+        if scope['method'] in ('POST', 'PUT', 'PATCH') and not document_upload:
             parts, total = [], 0
             while True:
                 message = await receive()

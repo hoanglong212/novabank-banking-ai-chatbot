@@ -12,7 +12,7 @@ export async function responseFor(path: string, user?: DemoUser, options: Reques
   const headers = new Headers(options.headers);
   const token = user ? await sessionToken(user) : null;
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (options.body) headers.set('Content-Type', 'application/json');
+  if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   let response = await fetch(PREFIX + path, { ...options, headers });
   if (user) {
     assertSession(user);

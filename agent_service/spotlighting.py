@@ -10,6 +10,7 @@ import secrets
 # every string: IDs, amounts, schema enums and bank-generated approval text carry
 # structured meanings that must remain intact.
 FIELD_TRUST = {
+    'ask_document': frozenset(('text', 'answer', 'filename_display')),
     'get_recent_transactions': frozenset(('description', 'counterparty_name')),
     'get_transaction_status': frozenset(('description', 'counterparty_name')),
     'get_accounts': frozenset(('nickname',)),

@@ -26,6 +26,14 @@
   },
   "rules": [
     {
+      "id": "document-owner-read",
+      "priority": 0,
+      "when": {
+        "tool": "ask_document"
+      },
+      "then": "allow"
+    },
+    {
       "id": "A-lab-control",
       "priority": 100,
       "when": {},

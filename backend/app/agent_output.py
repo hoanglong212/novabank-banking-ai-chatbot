@@ -80,7 +80,8 @@ def filtered_answer(conn, db, run, answer):
     from .security_events import output
     from .agent.agent_access import vault_for
     # Check the actual text that will leave the bank, including restored aliases.
-    filtered = _filtered_answer(conn, db, run, vault_for(db, run).restore(answer))
+    from .documents.output import restore
+    filtered = _filtered_answer(conn, db, run, restore(conn, db, run, answer, vault_for(db, run)))
     output(conn, run, answer, filtered)
     return filtered
 
@@ -136,6 +137,9 @@ def _filtered_answer(conn, db, run, answer):
         answer = cite_retrieved_sources(conn, run, answer)
     from .agent.disclosure import filter_answer
     answer = filter_answer(conn, run['owner_id'], intent, answer, verified_balance=verified_balance, run_id=run['id'])
+    if intent.get('tool') == 'ask_document':
+        from .documents.output import attribute
+        answer = attribute(conn, db, run, answer)
     return answer
 
 

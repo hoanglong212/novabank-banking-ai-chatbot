@@ -55,6 +55,7 @@ def _fingerprint(conn):
     columns = {
         'users': 'id,name,email,role,status,auth_version,created_at',
         'accounts': 'id,owner_id,holder_name,balance_vnd,status',
+        'transfers': 'id,owner_id,from_account,to_account,amount_vnd,status,created_at',
         'account_labels': '*', 'beneficiaries': '*', 'transactions': '*',
         'ledger_accounts': '*', 'ledger_entries': '*', 'cards': '*',
         'card_transactions': '*', 'bills': '*', 'savings': '*', 'savings_events': '*',
@@ -109,6 +110,9 @@ def _activity(conn, user, index, rng):
     from app.banking_schema import ensure_products
     ensure_products(conn, user.id, START)
     accounts = [row[0] for row in conn.execute('SELECT id FROM accounts WHERE owner_id=? ORDER BY id', (user.id,))]
+    # Preserve two empty reserve accounts for zero-balance boundary tests.
+    if index == 49:
+        accounts = accounts[:1]
     primary = accounts[0]
     for month_index, month in enumerate(MONTHS):
         for account_number, account in enumerate(accounts):
@@ -194,6 +198,10 @@ def seed(target, seed=20261115):
                 _activity(conn, user, index, rng)
         with transaction(db) as conn:
             _services(conn, owners)
+            conn.execute("""INSERT INTO transfers
+                (id,owner_id,from_account,to_bank,to_account,to_name,internal,amount_vnd,content,status,created_at)
+                VALUES ('TR-SYN-PENDING','alice','ACC-ALICE-001','NovaBank','ACC-BOB-001','SYNTHETIC RECIPIENT',1,1000,
+                'Synthetic pending draft; no ledger posting','PENDING_OTP',?)""", (START,))
         reconciled = reconcile(db)
         if not reconciled['balanced']:
             raise RuntimeError('Synthetic seed ledger failed reconciliation; target preserved for diagnosis.')

@@ -7,6 +7,7 @@ behaviour changes here.
 """
 from tests.acceptance_helpers import client, get_db, login  # noqa: F401
 from tests.test_week7 import grant_for
+from tests.test_documents_api import engines, upload  # noqa: F401
 
 STAMP = '2026-10-30T09:00:00+00:00'
 # (table, column) -> marker; every value is text a party other than bank logic can write.
@@ -75,7 +76,7 @@ def marked_fields(value, found, key=None):
                 found.add((key, column))
 
 
-def test_every_third_party_text_field_in_read_results_is_in_field_trust(client, monkeypatch):
+def test_every_third_party_text_field_in_read_results_is_in_field_trust(client, monkeypatch, engines):
     from app.agent import agent_access, provenance
     with get_db().connect() as conn:
         plant(conn)
@@ -94,11 +95,16 @@ def test_every_third_party_text_field_in_read_results_is_in_field_trust(client, 
     monkeypatch.setattr(agent_access.provenance, 'observe', observe)
     reads = sorted(name for name in agent_access.MODELS if not name.startswith(('prepare_', 'propose_', 'request_')))
     sessions = {'alice': login(client, 'alice'), 'admin': login(client, 'admin')}
+    doc = upload(client, sessions['alice'], b'ftdoccontent third party text', 'ftdocname.txt').json()['id']
+    MARKERS[('doc_chunks', 'text')] = 'ftdoccontent'
+    MARKERS[('documents', 'filename_display')] = 'ftdocname'
+    arguments = {**ARGUMENTS, 'ask_document': {'document_id': doc, 'question': 'Summarize'}}
+    prompts = {**PROMPTS, 'ask_document': 'Summarize document ' + doc}
     decisions = {}
     for name in reads:
         who = sessions['admin' if name in STAFF_READS else 'alice']
-        _, _, token = grant_for(client, who, PROMPTS.get(name, 'Show me ' + name), 'baseline')
-        response = client.post('/api/agent/tools', headers=token, json={'name': name, 'arguments': ARGUMENTS.get(name, {})})
+        _, _, token = grant_for(client, who, prompts.get(name, 'Show me ' + name), 'baseline')
+        response = client.post('/api/agent/tools', headers=token, json={'name': name, 'arguments': arguments.get(name, {})})
         decisions[name] = (response.status_code, response.json().get('decision'), response.json().get('reason'))
     assert {name: d for name, d in decisions.items() if d[:2] != (200, 'ALLOW')} == {}, 'every read tool must be exercised'
     assert set(raw) == set(reads)

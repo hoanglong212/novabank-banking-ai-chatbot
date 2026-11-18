@@ -1329,5 +1329,53 @@
       "customer"
     ],
     "scope": "own"
+  },
+  {
+    "method": "GET",
+    "path": "/api/documents",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own documents only; foreign UUID returns 404"
+  },
+  {
+    "method": "POST",
+    "path": "/api/documents",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own documents only; foreign UUID returns 404"
+  },
+  {
+    "method": "GET",
+    "path": "/api/documents/{document_id}",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own documents only; foreign UUID returns 404"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/documents/{document_id}",
+    "roles": [
+      "customer",
+      "support",
+      "operations",
+      "auditor",
+      "admin"
+    ],
+    "scope": "own documents only; foreign UUID returns 404"
   }
 ]

@@ -51,6 +51,7 @@ SAMPLES = {
 }
 # Explicit inventory: additions without a reviewed test fail rather than silently skip.
 BODYLESS = {
+    ('DELETE','/api/documents/{document_id}'),
     ('DELETE','/api/customer/beneficiaries/{beneficiary_id}'),
     ('PATCH','/api/transactions/{transaction_id}/category'), ('DELETE','/api/savings-goals/{goal_id}'),
     ('PATCH','/api/bills/{bill_id}/saved'), ('POST','/api/admin/reconcile'), ('POST','/api/admin/knowledge-index'),
@@ -87,6 +88,13 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
     monkeypatch.setattr(routes_research.subprocess, 'Popen', lambda *a,**k: pytest.fail('SEC-04 allowed a research launch'))
     fields = route.dependant.body_params
     before = protected()
+    if method == 'POST' and path == '/api/documents':
+        from tests.test_documents_api import upload
+        response = upload(client, who, b'Invoice total 150000 VND.', 'invoice.txt', data=EXTRAS)
+        assert response.status_code == 201 and response.json()['status'] == 'ready'
+        assert client.get('/api/documents',headers=login(client,'bob')).json()['items'] == []
+        assert protected() == before
+        return
     if fields:
         assert len(fields)==1
         model = fields[0].field_info.annotation
@@ -130,7 +138,11 @@ def test_SEC_04_each_write_endpoint_rejects_or_ignores_server_owned_extras(clien
         assert (method,path) in BODYLESS, 'Unreviewed bodyless write route'
         # These routes take parameters from path/query, never from an extra JSON body.
         params={}
-        if '{beneficiary_id}' in path:
+        if '{document_id}' in path:
+            from tests.test_documents_api import upload
+            doc=upload(client,who,b'Invoice text','invoice.txt').json()['id']
+            path=path.replace('{document_id}',doc)
+        elif '{beneficiary_id}' in path:
             path=path.replace('{beneficiary_id}',beneficiary(client,who)['id'])
         elif '{transaction_id}' in path:
             path=path.replace('{transaction_id}','TX-1001');params={'category':'food'}

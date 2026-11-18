@@ -4,7 +4,7 @@ import type { DemoUser } from '../../types';
 import { initials } from '../../format';
 import { navigate } from '../../router';
 
-export type Tab = 'home' | 'activity' | 'qr' | 'assistant' | 'profile' | 'notifications' | 'admin' | 'explore' | 'support';
+export type Tab = 'home' | 'activity' | 'qr' | 'assistant' | 'profile' | 'notifications' | 'admin' | 'explore' | 'support' | 'documents';
 
 // On phones customers get five tabs with QR raised in the centre; Explore and Alerts move into Home.
 const ITEMS: { id: Tab; label: string; icon: typeof House; desktopOnly?: boolean; center?: boolean }[] = [

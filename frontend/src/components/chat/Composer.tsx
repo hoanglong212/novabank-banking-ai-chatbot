@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, type ReactNode, type RefObject } from 'react';
 
 import { ShieldAlert, X, Send, Shield } from 'lucide-react';
 
@@ -18,6 +18,7 @@ interface ComposerProps {
   sendMessage: () => void;
   stopResponse?: () => void;
   pickSuggestion: (text: string) => void;
+  attachmentActions?: ReactNode;
 }
 
 export function Composer({
@@ -32,6 +33,7 @@ export function Composer({
   sendMessage,
   stopResponse,
   pickSuggestion,
+  attachmentActions,
 }: ComposerProps) {
   const staff = !!user?.role && user.role !== 'customer';
   // Grow with the text up to the CSS max-height, and shrink back after sending.
@@ -65,6 +67,7 @@ export function Composer({
         </button>)}
       </div>}
       <div className="composer">
+        {attachmentActions}
         <textarea
           id="message-input"
           ref={textareaRef}
