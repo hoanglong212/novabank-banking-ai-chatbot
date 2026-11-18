@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from ..security_events import emit
 
 FIELD_TRUST = {
+    'ask_document': ('text', 'answer', 'filename_display'),
     'get_recent_transactions': ('description', 'counterparty_name'),
     'get_transaction_status': ('description', 'counterparty_name'),
     'get_accounts': ('nickname',), 'get_beneficiaries': ('nickname', 'holder_name'),

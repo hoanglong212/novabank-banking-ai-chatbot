@@ -99,11 +99,15 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
             raise HTTPException(409, 'Run is already finished.')
         # Gateway off (lab): the model's answer is stored as written, without the output filter.
         answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else vault.restore(payload.answer)
+        document_run = conn.execute("SELECT 1 FROM agent_calls WHERE run_id=? AND name='ask_document'", (run['id'],)).fetchone()
+        if document_run and not agent_access.layer_enabled(run, 'output_filter'):
+            from .documents.output import attribute
+            answer = attribute(conn, db, run, answer)
         from .risk.cases import finish as finish_risk_case
         finish_risk_case(conn, run['id'])
         conn.execute('''UPDATE agent_runs SET status=?,completed_at=?,latency_ms=?,input_tokens=?,output_tokens=?,
             response_source='agent_service',answer=?,termination_reason=?,bound_request_json='{}',vault_json='{}' WHERE id=?''',
-            (payload.status, now(), payload.latency_ms, payload.input_tokens, payload.output_tokens, agent_access.trace_safe(answer, vault), payload.termination_reason, run['id']))
+            (payload.status, now(), payload.latency_ms, payload.input_tokens, payload.output_tokens, '[document answer stored only in conversation]' if document_run else agent_access.trace_safe(answer, vault), payload.termination_reason, run['id']))
         import uuid
         message = {'id': str(uuid.uuid4()), 'conversation_id': run['conversation_id'], 'role': 'assistant', 'content': answer, 'created_at': now()}
         conn.execute('INSERT INTO messages VALUES (:id,:conversation_id,:role,:content,:created_at)', message)

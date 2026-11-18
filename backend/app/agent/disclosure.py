@@ -38,6 +38,8 @@ BARE_FINANCIAL_NUMBER = re.compile(r'\b(?:balance|balances|debt|owe|owed|owing|p
 def financial_classes(intent):
     """Consent is field-specific; a card-status read is not a debt disclosure."""
     text = fold(intent['text'])
+    if intent.get('tool') == 'ask_document':
+        return {'document_content'}
     if STATUS_ONLY.search(text):
         return set()
     card = bool(CARD.search(text))

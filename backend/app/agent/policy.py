@@ -109,6 +109,19 @@ def layer_enabled(run, name):
         raise HTTPException(503, 'POLICY_UNAVAILABLE')
 
 
+def document_read(config, role):
+    """Catch-all proposal rules cannot authorize a newly introduced document read."""
+    try:
+        rules = load(config)['rules']
+        facts = {'tool': 'ask_document', 'role': role}
+        for rule in sorted(rules, key=lambda r: r['priority']):
+            if rule['when'].get('tool') == 'ask_document' and _matches(rule['when'], facts):
+                return {'action': rule['then'], 'rule_id': rule['id']}
+        return {'action': 'deny', 'rule_id': 'NO_MATCHING_POLICY'}
+    except (OSError, ValueError, KeyError, TypeError):
+        return {'action': 'deny', 'rule_id': 'POLICY_UNAVAILABLE'}
+
+
 def initialize(conn, stamp):
     if conn.execute('SELECT 1 FROM schema_migrations WHERE version=14').fetchone():
         return

@@ -85,6 +85,9 @@ def _filtered_answer(conn, db, run, answer):
         answer = cite_retrieved_sources(conn, run, answer)
     from .agent.disclosure import filter_answer
     answer = filter_answer(conn, run['owner_id'], intent, answer, verified_balance=verified_balance, run_id=run['id'])
+    if intent.get('tool') == 'ask_document':
+        from .documents.output import attribute
+        answer = attribute(conn, db, run, answer)
     return answer
 
 
