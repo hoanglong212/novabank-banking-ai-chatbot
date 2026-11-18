@@ -62,6 +62,38 @@ def test_selected_document_disambiguates_a_transfer_limit_question():
     assert request.tool == 'ask_document'
     assert request.arguments == {'document_id': identifier, 'question': question}
 
+
+def test_summary_reads_the_short_document_in_order_without_a_query_embedding(client, engines, monkeypatch):
+    import asyncio
+    from app.documents import service
+    from app.documents.repository import Repository
+
+    who = login(client)
+    text = ('Transfer fees and limits.\n' * 90 + 'Savings and loan terms.\n' * 40).encode()
+    doc = upload(client, who, text, 'fee-schedule.txt').json()
+    assert doc['status'] == 'ready'
+    original = Repository(get_db(), 'alice').chunks(doc['id'])
+    assert len(original) == 5
+
+    async def unnecessary_embedding(_):
+        raise AssertionError('A whole-document summary does not need a query embedding.')
+
+    monkeypatch.setattr(service, 'embed', unnecessary_embedding)
+    _, passages = asyncio.run(service.retrieve(get_db(), 'alice', doc['id'], 'Summarize this document.'))
+    assert [p['id'] for p in passages] == [p['id'] for p in original]
+
+
+def test_summary_keeps_the_complete_overview_before_an_unfinished_continuation():
+    from app.documents.reader import validate
+
+    overview = 'The document covers transfer fees, card fees, and savings.'
+    source = [{'id': 'S1', 'text': 'Transfer fees, card fees, savings.'}]
+    response = {'found': True, 'answer': overview + ' The transfer fee is 999,999 VND and',
+                'cited_chunk_ids': ['S1']}
+    assert validate(json.dumps(response), source, summary=True)['answer'] == overview
+    with pytest.raises(ValueError, match='Unsupported amount'):
+        validate(json.dumps(response), source)
+
 @pytest.mark.parametrize('cfg',list('ABCD'))
 def test_main_answer_cannot_restore_unrelated_vault_alias(client,engines,monkeypatch,cfg):
     monkeypatch.setenv('ENV','demo')

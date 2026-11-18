@@ -2,6 +2,7 @@
 import json
 import re
 from fastapi import HTTPException
+from .binding import MAX_SUMMARY_PASSAGES, summary_requested
 from .repository import Repository
 from ..auth_crypto import decrypt_secret
 from ..guard import BARE_TOKEN
@@ -41,22 +42,28 @@ def cited_document(conn, db, run):
             doc = Repository(db, run['owner_id']).get(evidence.get('document_id'), ready=True)
         except HTTPException:
             continue
-        chunks = [c for c in Repository(db, run['owner_id']).chunks(doc['id'])
-                  if c['id'] in evidence.get('cited_chunk_ids', [])]
-        if chunks:
-            return doc, chunks
+        chunks = Repository(db, run['owner_id']).chunks(doc['id'])
+        if any(c['id'] in evidence.get('cited_chunk_ids', []) for c in chunks):
+            return doc, len(chunks)
     return None
 
 
 def attribute(conn, db, run, answer):
     evidence = cited_document(conn, db, run)
     if not evidence:
-        failure = conn.execute("SELECT reason FROM agent_calls WHERE run_id=? AND name='ask_document' "
+        failure = conn.execute("SELECT reason,decision,result_json FROM agent_calls WHERE run_id=? AND name='ask_document' "
                                "ORDER BY ordinal DESC LIMIT 1", (run['id'],)).fetchone()
         if failure and failure[0] in ('DOCUMENT_READER_UNAVAILABLE', 'DOCUMENT_RETRIEVAL_UNAVAILABLE'):
             return 'The document is indexed, but the reader could not finish this question. Try again or ask about one section at a time.'
+        if failure and failure[1] == 'ALLOW' and json.loads(failure[2]).get('found') is False:
+            return 'I read the selected document, but could not verify an answer from its text. Try asking about a specific section.'
         return 'I could not verify an answer from this document. Select a ready document and try again.'
     # Filename is displayed as plain text, not a link or Markdown instruction.
     name = re.sub(r'[\[\]<>*`#]|(?:https?://|www\.)\S+', '', evidence[0]['filename_display'], flags=re.I)
-    return 'According to document "' + name + '":\n' + answer
+    caveat = ''
+    if evidence[1] > MAX_SUMMARY_PASSAGES:
+        intent = json.loads(decrypt_secret(db, run['bound_request_json']))
+        if summary_requested((intent.get('arguments') or {}).get('question', '')):
+            caveat = '\n\nThis overview is based on selected passages from across the document.'
+    return 'According to document "' + name + '":\n' + answer + caveat
 
