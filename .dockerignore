@@ -22,6 +22,11 @@
 !frontend/*.ts
 !frontend/src/
 !frontend/src/**
+!frontend/scripts/
+!frontend/scripts/prepare-ocr.mjs
+!frontend/public/
+!frontend/public/**
+frontend/public/ocr/runtime/
 **/__pycache__
 **/*.pyc
 **/node_modules

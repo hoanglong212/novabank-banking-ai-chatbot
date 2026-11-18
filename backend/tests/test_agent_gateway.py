@@ -15,8 +15,9 @@ def call(client, token, name, args):
     return client.post('/api/agent/tools', headers=token, json={'name': name, 'arguments': args}).json()
 
 
-def test_gateway_cannot_be_switched_off_outside_a_lab_environment(client, monkeypatch):
-    monkeypatch.delenv('ENV', raising=False)
+@pytest.mark.parametrize('environment', ['', 'review'])
+def test_gateway_cannot_be_switched_off_outside_a_lab_environment(client, monkeypatch, environment):
+    monkeypatch.setenv('ENV', environment)
     admin = login(client, 'admin')
     assert switch(client, admin, False).status_code == 403
     assert client.get('/api/admin/agent-gateway', headers=admin).json()['gateway'] == 'on'

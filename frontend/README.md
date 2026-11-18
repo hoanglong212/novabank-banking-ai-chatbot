@@ -1,51 +1,51 @@
 # Frontend maintenance guide
 
-Run commands from this directory:
+Follow the [Docker quick start](../README.md#quick-start-with-docker) to try the full app and Agent. For frontend development, first start the app on port 8080 using Docker or the [Windows launcher](../README.md#native-windows-development). Then run these commands from `frontend/`:
 
-```powershell
+```sh
+npm ci
 npm run dev
-npm run build
-npm run test:components
 ```
 
-`npm run test:e2e` builds the app and runs Playwright against the real backend. Each test starts its own server on port 8092 with a fresh database under `.local/e2e`; keep that port free. The fixture uses the existing backend virtual environment or `NOVABANK_PYTHON`. Browser dependencies must already be available.
+Open the URL printed by Vite, normally <http://127.0.0.1:5173>. Vite forwards `/api` to `http://127.0.0.1:8080` by default. Set `NOVABANK_DEV_API_TARGET` to your loopback origin if you change that port.
 
-Import `test` and `expect` from `tests/e2e/fixtures.ts` in browser specs. Keep one worker: the local inbox helpers read the current test database from `.local/e2e/latest.json`. Each test must arrange its own transactions and accounts; it cannot rely on another test's balances, login sessions, MFA settings, or rate-limit budget. Server logs are retained in each test's output directory.
+## Use the shared database
+
+If the team already has a hosted NovaBank demo, copy [the frontend environment template](.env.example) to `frontend/.env.shared.local` and set the team's HTTPS origin:
+
+```dotenv
+NOVABANK_DEV_API_TARGET=https://review.example.com
+```
+
+Run `npm run dev:shared` and sign in. This command requires the hosted HTTPS target and stops before listening if the URL is absent or points to loopback. Vite forwards API requests to that server, so actions use the team's DB and Agent. Your machine needs access to the review network.
+
+For disposable data, start the workstation stack and use `npm run dev`. The shared mode file is loaded only by `dev:shared`.
 
 ## Where to make changes
 
 | Location | Responsibility |
 | --- | --- |
-| `src/App.tsx` | Page layout and wiring components to the controller |
-| `src/hooks/useBankingChat.ts` | Session initialization, user/conversation selection, request coordination, drafts, panels, and focus/scroll effects |
-| `src/components/layout/Sidebar.tsx` | Branding, conversation history, profile and mobile navigation |
-| `src/components/layout/Topbar.tsx` | Title, model status, customer selector and panel toggles |
-| `src/components/chat/Welcome.tsx` | Welcome screen and suggestion cards |
-| `src/components/chat/MessageThread.tsx` | Message history and typing state |
-| `src/components/chat/messageFormatting.tsx` | Safe inline emphasis and displayed timestamps |
-| `src/components/chat/Composer.tsx` | Input, send button, errors and quick suggestions |
-| `src/components/chat/suggestions.tsx` | Shared suggestion content for welcome cards and quick chips |
-| `src/components/insights/TestingInsights.tsx` | Insights panel layout and gateway/model summary |
-| `src/components/insights/ToolActivity.tsx` | Recent tool decisions |
-| `src/components/insights/PolicyTest.tsx` | Dry-run controls and permission results |
-| `src/api.ts` / `src/types.ts` | HTTP boundary and API data contracts |
+| [src/App.tsx](src/App.tsx) | Page layout and feature wiring |
+| [src/hooks/useSession.ts](src/hooks/useSession.ts), [src/sessionStore.ts](src/sessionStore.ts) | Sign-in and session state |
+| [src/hooks/useBankingChat.ts](src/hooks/useBankingChat.ts) | Conversations and Agent requests |
+| [src/components/app/NavBar.tsx](src/components/app/NavBar.tsx) | Main navigation |
+| [src/components/chat/](src/components/chat/) | Assistant, composer, history, approvals and Agent activity |
+| [src/components/explore/](src/components/explore/) | Banking services and product screens |
+| [src/components/admin/](src/components/admin/) | Admin dashboard, settings and operations |
+| [src/api.ts](src/api.ts), [src/types.ts](src/types.ts) | HTTP client and API types |
 
-Components receive typed values and callbacks. Keep network requests and cross-component state in the controller instead of duplicating them in presentation components. The controller stays mounted when panels close, so their form state is retained. User switching continues to reset identity-sensitive state centrally.
+Keep network requests and shared state in the existing hooks. Pass typed values and callbacks to presentation components.
 
-## Styling
-
-`src/index.css` imports the files under `src/styles/` in cascade order:
-
-1. `base.css`: fonts, Tailwind directives, design tokens, resets and shared primitives.
-2. `sidebar.css`: navigation and profile.
-3. `layout.css`: main area and top bar.
-4. `chat.css`: welcome cards, messages, composer and suggestions.
-5. `insights.css`: inspector, activity and permission form.
-6. `interactions.css`: animation, dropdown enhancement and interaction states.
-7. `responsive.css`: viewport overrides and reduced-motion rules.
-
-Change shared colors in `base.css`. Preserve import order: mobile and reduced-motion rules intentionally override earlier declarations. The class names and DOM structure are also used by the live identity regression script.
+[src/index.css](src/index.css) defines the global cascade order. Shared tokens live in [src/styles/base.css](src/styles/base.css). Keep the import order so layout and reduced-motion overrides apply as intended.
 
 ## Checks
 
-The production build checks application TypeScript. `test:components` bundles server-render checks with the esbuild toolchain already installed by Vite. It covers escaped message content, emphasis, selected navigation, disabled controls, permission outcomes, recent activity order and empty-draft state. It does not replace browser tests of clicks, keyboard input or asynchronous user switching.
+```sh
+npm run build
+npm run test:components
+npm run test:e2e
+```
+
+`npm run test:e2e` builds the app and runs Playwright against a test backend on port 8092. Prepare the backend virtual environment and Playwright Chromium first. Set `NOVABANK_PYTHON` to use a different Python interpreter.
+
+Import `test` and `expect` from [tests/e2e/fixtures.ts](tests/e2e/fixtures.ts). The inbox helpers use the fresh test database identified by `.local/e2e/latest.json`. Keep one worker so tests use the correct database. Server logs are kept in the test output directory.

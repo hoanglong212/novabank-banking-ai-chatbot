@@ -55,8 +55,9 @@ def test_outbox_requires_sign_in_and_lists_only_own_mail(client, monkeypatch):
     assert client.get('/api/dev/outbox/' + bob_mail[0]['id'], headers=bob).status_code == 200
 
 
-def test_sign_in_code_is_readable_only_with_its_challenge(client, monkeypatch):
-    monkeypatch.setenv('ENV', 'demo')
+@pytest.mark.parametrize('environment', ['demo', 'review'])
+def test_sign_in_code_is_readable_only_with_its_challenge(client, monkeypatch, environment):
+    monkeypatch.setenv('ENV', environment)
     alice, bob = login_challenge(client), login_challenge(client, 'bob', 'Bob@2026')
     mail = client.post('/api/dev/outbox/challenge', json={'challenge_id': alice})
     assert mail.status_code == 200 and mail.json()['kind'] == 'LOGIN_OTP' and len(mail.json()['code']) == 6
