@@ -1,0 +1,18 @@
+# Add to either stack when the licensed weights are already available on the Docker host.
+services:
+  bank:
+    build:
+      target: prompt-guard
+    environment:
+      PROMPT_GUARD_MODEL_PATH: /models/prompt-guard
+      PROMPT_GUARD_TIMEOUT_SECONDS: "45"
+      OMP_NUM_THREADS: "2"
+      HF_HUB_OFFLINE: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    volumes:
+      - type: bind
+        source: ${PROMPT_GUARD_MODEL_DIR:?Set the absolute path to the licensed Prompt Guard 2 model directory}
+        target: /models/prompt-guard
+        read_only: true
+        bind:
+          create_host_path: false

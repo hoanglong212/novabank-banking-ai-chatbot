@@ -28,6 +28,6 @@ async def readiness():
             if not isinstance(data, dict) or not isinstance(data.get('details'), dict):
                 raise ValueError('Invalid model metadata')
     except (httpx.HTTPError, ValueError, TypeError):
-        result.update(status='not_ready', detail=f'Start Ollama and run: ollama pull {model}')
+        result.update(status='not_ready', detail=f'The configured Ollama server or model {model} is unavailable.')
         return JSONResponse(result, status_code=503)
     return JSONResponse(result)

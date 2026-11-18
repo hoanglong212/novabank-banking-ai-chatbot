@@ -1,4 +1,4 @@
-"""Explicit demo-only simulated mailbox. Never enabled by default.
+"""Simulated mailbox for developer demos and restricted hosted review.
 
 Signed-in users read only their own mail. Before sign-in, a sign-in code is readable only with the
 challenge_id the login form holds. Verification and reset links have no session or challenge to bind
@@ -16,7 +16,7 @@ router = APIRouter(prefix='/api/dev', dependencies=[])
 
 
 def demo_only():
-    if setting('ENV') != 'demo':
+    if setting('ENV') not in ('demo', 'review'):
         raise HTTPException(404, 'Not found')
 
 
@@ -61,7 +61,7 @@ def challenge_limit(request: Request, db=Depends(get_db)):
         raise HTTPException(429, 'Too many inbox requests. Please try again in 15 minutes.', headers={'Retry-After': '900'})
 
 
-# POST keeps the challenge out of URLs and access logs. demo_only runs first, so outside ENV=demo nothing is counted.
+# POST keeps the challenge out of URLs and access logs. The environment gate runs before rate limiting.
 @router.post('/outbox/challenge', dependencies=[Depends(demo_only), Depends(challenge_limit)])
 def challenge_mail(payload: ChallengeInput, db=Depends(get_db)):
     with db.connect() as conn:

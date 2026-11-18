@@ -5,7 +5,7 @@ RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     LLM_PROVIDER=mock GATEWAY_MODE=local \
     FRONTEND_DIST=/app/frontend/dist DB_PATH=/data/novabank_demo.sqlite3
@@ -24,3 +24,12 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready', timeout=8)"
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Opt-in runtime for the separately licensed Prompt Guard weights.
+FROM runtime AS prompt-guard
+USER root
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 'torch>=2.6,<3' \
+    && pip install --no-cache-dir 'transformers>=5,<6'
+USER demo
+
+FROM runtime AS default

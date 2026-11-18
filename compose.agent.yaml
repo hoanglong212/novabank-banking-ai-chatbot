@@ -1,0 +1,63 @@
+# Shared by the workstation and hosted review stacks.
+services:
+  bank:
+    build: .
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      GUARD_MODEL: ${GUARD_MODEL:-qwen2.5:7b}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text:latest}
+      QUARANTINED_LLM_MODEL: ${QUARANTINED_LLM_MODEL:-llama3.2:3b}
+      AGENT_SERVICE_URL: http://agent:8093
+      BANK_REQUIRE_AGENT: "true"
+    depends_on:
+      agent: {condition: service_healthy}
+      models: {condition: service_completed_successfully}
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+
+  agent:
+    build: {context: ., dockerfile: Dockerfile.agent}
+    environment:
+      BANKING_API_URL: http://bank:8000
+      OLLAMA_URL: http://ollama:11434
+    depends_on:
+      models: {condition: service_completed_successfully}
+    read_only: true
+    tmpfs: [/tmp]
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+    volumes: [ollama-models:/root/.ollama]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+
+  models:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      GUARD_MODEL: ${GUARD_MODEL:-qwen2.5:7b}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text:latest}
+      QUARANTINED_LLM_MODEL: ${QUARANTINED_LLM_MODEL:-llama3.2:3b}
+    entrypoint: ["/bin/sh", "/bootstrap-models.sh"]
+    volumes: [./deploy/bootstrap-models.sh:/bootstrap-models.sh:ro]
+    depends_on:
+      ollama: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]

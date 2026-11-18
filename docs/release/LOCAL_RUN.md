@@ -1,4 +1,6 @@
-# Bản local đang chạy
+# Ghi chú về bản local ngày 01/11/2026
+
+Nếu mới clone repo, dùng [Docker quick start](../../README.md#quick-start-with-docker). Những đường dẫn `.local/local-deploy/` bên dưới thuộc phiên demo trên máy đã chuẩn bị sẵn.
 
 Khởi chạy ngày 01/11/2026 theo yêu cầu người dùng.
 
