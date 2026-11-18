@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ImagePlus, QrCode, ShieldCheck, Upload, LoaderCircle } from 'lucide-react';
 import type { DemoUser, TransferStart } from '../../types';
-import { vnd } from '../../format';
 import { Feedback, Field, send, useOperation } from '../explore/shared';
 import { Sheet } from '../ui/Sheet';
 import { QrCamera } from './QrCamera';
 import { ReceiveQr } from './ReceiveQr';
 import { ImageTransfer } from './ImageTransfer';
 import { readQrFile } from './qrReader';
-import { QrSafetyNotice, type DecodedQr, type QrTransferStart } from './QrSafetyNotice';
+import type { DecodedQr, QrTransferStart } from './QrSafetyNotice';
+import { QrReviewSheet } from './QrReviewSheet';
 import '../../styles/qr-pay.css';
 
 type Decoded = DecodedQr;
@@ -52,8 +52,6 @@ export function QrStudio({ user, pay }: { user: DemoUser; pay: (start: TransferS
     <Sheet open={panel === 'text'} onClose={() => setPanel(null)} title="Dán nội dung mã QR"><form className="service-form" onSubmit={event => { event.preventDefault(); void readPayload(String(new FormData(event.currentTarget).get('payload'))); }}>
       <p className="qr-sheet-intro">Dán nội dung mã NovaBank để xem thông tin người nhận.</p><Feedback state={op} /><Field label="QR text"><textarea name="payload" rows={4} maxLength={4000} required placeholder="NBQR1:…" /></Field><button className="primary-button" disabled={op.busy}>{op.busy ? 'Đang đọc…' : 'Đọc mã QR'}</button>
     </form></Sheet>
-    <Sheet open={!!decoded} onClose={() => setDecoded(null)} title="Thông tin mã QR">{decoded && <div className="qr-decoded"><span className="qr-decoded-icon"><QrCode size={29} /></span><h3>{decoded.account_name || 'Người nhận'}</h3><p className="qr-sheet-intro">Kiểm tra thông tin trước khi mở bản nháp chuyển tiền.</p>
-      <QrSafetyNotice data={decoded} />
-      <dl className="detail-list"><div><dt>Ngân hàng</dt><dd>{decoded.bank}</dd></div><div><dt>Tài khoản</dt><dd>{decoded.account_no}</dd></div><div><dt>Số tiền</dt><dd>{decoded.amount_vnd ? vnd(decoded.amount_vnd) : 'Nhập ở bước tiếp theo'}</dd></div>{decoded.add_info && <div><dt>Nội dung</dt><dd>{decoded.add_info}</dd></div>}</dl><button className="primary-button" onClick={() => review(toTransfer(decoded))}>Kiểm tra chuyển tiền<ArrowUpRight size={17} /></button></div>}</Sheet>
+    <QrReviewSheet decoded={decoded} onClose={() => setDecoded(null)} onReview={value => review(toTransfer(value))} />
   </div>;
 }

@@ -22,12 +22,14 @@ const reasons: Record<string, string> = {
   UNSUPPORTED_FILE: 'Choose a text-based PDF, TXT or Markdown file.',
 };
 
-export function Documents({ user, ask }: { user: DemoUser; ask: (text: string) => void }) {
+export function Documents({ user, ask, embedded, initialFile }: {
+  user: DemoUser; ask: (text: string) => void; embedded?: boolean; initialFile?: File | null;
+}) {
   const [items, setItems] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(initialFile ?? null);
   const [removing, setRemoving] = useState<Document | null>(null);
   const [revision, setRevision] = useState(0);
   const [questions, setQuestions] = useState<Record<string, string>>({});
@@ -66,14 +68,15 @@ export function Documents({ user, ask }: { user: DemoUser; ask: (text: string) =
     } catch { setError('Could not remove this document. Please try again.'); }
     finally { setBusy(false); }
   }
-  return <div className="page service-stack">
-    <ServiceHeading eyebrow="YOUR RECORDS" title="My documents">Upload a document, then ask Nova about its contents.</ServiceHeading>
+  return <div className={embedded ? 'service-stack' : 'page service-stack'}>
+    {!embedded && <ServiceHeading eyebrow="YOUR RECORDS" title="My documents">Upload a document, then ask Nova about its contents.</ServiceHeading>}
     <section className="card service-section">
       <h3>Upload a document</h3>
       <p className="muted">Text-based PDF, TXT or Markdown · Up to 5 MB and 50 pages · 20 documents</p>
       <div className="service-form">
         <Field label="Choose a document"><input ref={input} type="file" accept=".pdf,.txt,.md" disabled={busy}
           onChange={event => setFile(event.target.files?.[0] ?? null)} /></Field>
+        {file && file === initialFile && <p className="preserve-lines">{file.name}</p>}
         <button className="primary-button" disabled={!file || busy} onClick={() => void upload()}><Upload size={18} aria-hidden="true" />{busy && !removing ? 'Checking document…' : 'Upload document'}</button>
       </div>
       {busy && !removing && <p role="status">Your document is being checked. This may take a moment.</p>}

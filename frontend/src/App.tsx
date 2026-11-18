@@ -125,7 +125,7 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
         {tab === 'support' && <div className="page"><h1 className="page-title">Support</h1><Support user={user} /></div>}
         {tab === 'documents' && <Documents user={user} ask={ask} />}
         {tab === 'profile' && <Profile user={user} profile={profile} logout={logout} />}
-        {tab === 'assistant' && <Assistant chat={chat} openTransfer={draftId => setTransfer({ draftId })} />}
+        {tab === 'assistant' && <Assistant chat={chat} pay={setTransfer} />}
         </>}
       </main>
       {customer && tab !== 'assistant' && !approvalMatch && <NovaBubble chat={chat} pay={setTransfer} />}

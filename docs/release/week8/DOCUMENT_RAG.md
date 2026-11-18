@@ -8,7 +8,7 @@ PDF, TXT, Markdown và tên file là dữ liệu do người dùng cung cấp, k
 
 Bank API sở hữu upload, SQLite, trích xuất, screening, embedding và cosine retrieval. Agent chỉ gọi tool đọc `ask_document(document_id, question)` qua gateway hiện có; không có DB, khóa hay tool ghi mới. Migration 21 thêm documents/doc_chunks; mọi truy vấn dữ liệu nằm trong Repository và lọc owner từ session.
 
-Giao diện “My documents” mở từ Assistant, dùng lại Field, card, Sheet, button và theme hiện có. Chọn file, upload, xem trạng thái, đặt câu hỏi hoặc xóa. CSS và design tokens không đổi.
+Trong Assistant, nút kẹp giấy mở “My documents” ngay cạnh ô chat. Có thể chọn file hoặc kéo PDF, TXT hay Markdown vào vùng chat, rồi bấm Upload document. Tài liệu Ready có thể được dùng để hỏi trong cuộc trò chuyện hiện tại. Nút ảnh QR và thao tác thả ảnh dùng bộ đọc QR hiện có, mở thông tin để kiểm tra trước khi sang màn chuyển tiền. Giao diện dùng lại Field, card, Sheet và button hiện có.
 
 ## 3. Cơ chế
 

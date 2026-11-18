@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { ImagePlus, Paperclip, ShieldCheck } from 'lucide-react';
 
 import type { useBankingChat } from '../../hooks/useBankingChat';
+import type { TransferStart } from '../../types';
 import { Topbar } from '../layout/Topbar';
 import { ToolActivity } from '../insights/ToolActivity';
-import { navigate } from '../../router';
+import { Documents } from '../explore/Documents';
+import { decodeQrImage, toTransfer } from '../qr/QrStudio';
+import { QrReviewSheet } from '../qr/QrReviewSheet';
+import type { DecodedQr } from '../qr/QrSafetyNotice';
 import { Sheet } from '../ui/Sheet';
 import { Composer } from './Composer';
 import { ConversationList } from './ConversationList';
@@ -13,8 +17,15 @@ import { Welcome } from './Welcome';
 import { AgentActivity } from './AgentActivity';
 
 // One chat column; history and the security log open as drawers instead of permanent side panels.
-export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useBankingChat>; openTransfer: (draftId: string) => void }) {
-  const [panel, setPanel] = useState<'history' | 'log' | null>(null);
+export function Assistant({ chat, pay }: { chat: ReturnType<typeof useBankingChat>; pay: (start: TransferStart) => void }) {
+  const [panel, setPanel] = useState<'history' | 'log' | 'documents' | null>(null);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [decodedQr, setDecodedQr] = useState<DecodedQr | null>(null);
+  const [readingQr, setReadingQr] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const qrInput = useRef<HTMLInputElement>(null);
+  const canPay = !chat.user.role || chat.user.role === 'customer';
+  const openTransfer = (draftId: string) => pay({ draftId });
   const innerRef = useRef<HTMLDivElement>(null);
   const hasMessages = useRef(false);
   hasMessages.current = chat.messages.length > 0;
@@ -33,6 +44,42 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
     return () => { observer.disconnect(); scroller.removeEventListener('scroll', onScroll); };
   }, [chat.scrollerRef]);
 
+  function openDocuments(file: File | null) {
+    setDocumentFile(file);
+    setPanel('documents');
+  }
+
+  async function readQr(file?: File) {
+    if (!file || !canPay || chat.busy || readingQr) return;
+    setReadingQr(true);
+    chat.setError(null);
+    try {
+      setDecodedQr(await decodeQrImage(chat.user, file));
+    } catch (err) {
+      chat.setError(err instanceof Error ? err.message : 'Could not read the QR image.');
+    } finally {
+      setReadingQr(false);
+    }
+  }
+
+  function drop(event: DragEvent<HTMLElement>) {
+    if (!event.dataTransfer.types.includes('Files')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setDragging(false);
+    if (chat.busy || readingQr) return;
+    const [file] = event.dataTransfer.files;
+    if (!file || event.dataTransfer.files.length !== 1) {
+      chat.setError('Drop one file at a time.');
+    } else if (/\.(pdf|txt|md)$/i.test(file.name)) {
+      openDocuments(file);
+    } else if (canPay && ['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      void readQr(file);
+    } else {
+      chat.setError(canPay ? 'Choose a PDF, TXT, Markdown or NovaBank QR image.' : 'Choose a PDF, TXT or Markdown file.');
+    }
+  }
+
   return (
     <div className="assistant">
       <Topbar
@@ -44,8 +91,17 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
         startConversation={chat.startConversation}
         safeguards={chat.health?.agent_mode === 'service' ? (chat.defenseProfile === 'defended' ? 'Defended' : 'Baseline') : undefined}
       />
-      <button className="link-button" onClick={() => navigate('/documents')}>My documents</button>
-      <section className="chat-column" aria-label="Chat with Nova">
+      <section className="chat-column" aria-label="Chat with Nova" onDrop={drop}
+        onDragOver={event => {
+          if (!event.dataTransfer.types.includes('Files')) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = chat.busy || readingQr ? 'none' : 'copy';
+          setDragging(!chat.busy && !readingQr);
+        }}
+        onDragLeave={event => {
+          const next = event.relatedTarget;
+          if (!(next instanceof Node && event.currentTarget.contains(next))) setDragging(false);
+        }}>
         <div className="messages-scroller" ref={chat.scrollerRef}>
           <div className="messages-inner" ref={innerRef}>
             {chat.user.role && chat.user.role !== 'customer' && <p className="staff-note"><ShieldCheck size={16} aria-hidden="true" />{chat.user.role === 'admin' ? 'Admin assistant · reports, ticket replies, and account, customer and settings changes. Nothing runs until you approve it here.' : chat.user.role === 'support' ? 'Support assistant · reads tickets and drafts replies or status changes. Nothing is sent until you approve it here.' : 'Staff assistant · read-only reports within your role. No payment or account changes.'}</p>}
@@ -55,6 +111,8 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
               <MessageThread messages={chat.messages} busy={chat.busy} openTransfer={openTransfer} />
             )}
             {chat.busy && chat.progress && <p role="status" className="muted small">{chat.progress}</p>}
+            {readingQr && <p role="status" className="muted small">Reading QR image…</p>}
+            {dragging && <p role="status" className="muted small">{canPay ? 'Drop a document or QR image here.' : 'Drop a document here.'}</p>}
             {chat.active && (!chat.user.role || chat.user.role === 'customer' || chat.user.role === 'admin' || chat.user.role === 'support') && <AgentActivity user={chat.user} conversationId={chat.active} revision={chat.messages.length} openTransfer={openTransfer} />}
             <div ref={chat.endRef} />
           </div>
@@ -71,9 +129,34 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
           sendMessage={chat.sendMessage}
           stopResponse={chat.stopResponse}
           pickSuggestion={chat.pickSuggestion}
+          attachmentActions={<>
+            <button type="button" className="icon-button" title="Attach document" aria-label="Attach document"
+              disabled={chat.busy || readingQr} onClick={() => openDocuments(null)}><Paperclip size={18} aria-hidden="true" /></button>
+            {canPay && <>
+              <button type="button" className="icon-button" title="Upload QR image" aria-label="Upload QR image"
+                disabled={chat.busy || readingQr} onClick={() => qrInput.current?.click()}><ImagePlus size={18} aria-hidden="true" /></button>
+              <input ref={qrInput} tabIndex={-1} className="qr-file-input" type="file" accept="image/png,image/jpeg,image/webp"
+                aria-label="Choose a QR image" disabled={chat.busy || readingQr}
+                onChange={event => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = '';
+                  void readQr(file);
+                }} />
+            </>}
+          </>}
         />
       </section>
 
+      <Sheet open={panel === 'documents'} onClose={() => setPanel(null)} title="My documents" side="right">
+        <Documents user={chat.user} embedded initialFile={documentFile} ask={text => {
+          setPanel(null);
+          void chat.sendMessage(text);
+        }} />
+      </Sheet>
+      <QrReviewSheet decoded={decodedQr} onClose={() => setDecodedQr(null)} onReview={value => {
+        setDecodedQr(null);
+        pay(toTransfer(value));
+      }} />
       <Sheet open={panel === 'history'} onClose={() => setPanel(null)} title="Conversations" side="right">
         <ConversationList
           busy={chat.busy}
