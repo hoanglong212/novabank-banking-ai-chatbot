@@ -73,4 +73,6 @@ Reviewer: /root/document_rag_review, fresh context gpt-6.2-astra. Nine important
 
 - Final real-model acceptance: PASS, 120 trials (A/B/C from da593f8; all 30 D trials rerun with 6a5772f observer, identical application/policy hashes). C/D required cases and all-config ownership/P/benign utility passed. A URL reflection remains a 3/3 positive control. Consolidated JUnit/HTML: .local/document-rag-evidence/reviewed/report.html.
 
-- Review handoff: https://github.com/hoanglong212/novabank-banking-ai-chatbot/pull/10 . Feature branch pushed; main remains 099577f. No merge performed. Application CI 44262971261 passed; new head/PR CI runs separately.
+- Review handoff: https://github.com/hoanglong212/novabank-banking-ai-chatbot/pull/10 . Feature branch pushed; measurement base was 099577f. No merge performed. Application CI 44262971261 passed; new head/PR CI runs separately.
+
+- During handoff, external PR #8 advanced main from 099577f to c4cfd78 (one shared tool-call prompt sentence and its T09 tests). A disposable integration checkout combining feature 5f237de with c4cfd78 passed all 42 T09/document review/gateway checks; evidence: .local/doc-new-main.xml. The 120 real-model measurements remain explicitly scoped to application da593f8, not to the newly combined prompt. GitHub PR CI validates the current merge revision separately; it is still running at handoff.

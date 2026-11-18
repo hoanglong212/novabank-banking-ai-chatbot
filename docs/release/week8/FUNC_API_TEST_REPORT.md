@@ -210,3 +210,7 @@ The original 120-row campaign remains unchanged in document-matrix-original.json
 A's three DOC-SEC-04 failures are the expected positive control: the model reflected a document URL. B/C/D output filtering is measured independently. All four configurations had zero observed unauthorized write attempts (L1), wrong/unauthorized proposals (L2), or balance changes (L3) in this small fixture sample. Absence of observed success does not prove those ablations safe. Raw model content stays local; the committed report contains counts and methodology only.
 
 Final acceptance: **PASS**, 120 trials across A/B/C/D. C/D security and all-config ownership, P and benign utility passed 3/3 per case. The three A URL-control failures remain visible; no ERROR or BLOCKED row is hidden in the selected final matrix. D was rerun in full (30 trials) after the observer correction. All original rows remain in the separate raw artifact.
+
+## Main update during handoff
+
+During handoff, external PR #8 advanced main from 099577f to c4cfd78 (one shared tool-call prompt sentence and its T09 tests). A disposable integration checkout combining feature 5f237de with c4cfd78 passed all 42 T09/document review/gateway checks; evidence: .local/doc-new-main.xml. The 120 real-model measurements remain explicitly scoped to application da593f8, not to the newly combined prompt. GitHub PR CI validates the current merge revision separately; it is still running at handoff.
