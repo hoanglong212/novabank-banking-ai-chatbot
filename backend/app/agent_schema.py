@@ -2,6 +2,20 @@
 from .faq import FAQ
 
 
+def refresh_help_articles(conn, stamp):
+    if conn.execute('SELECT 1 FROM schema_migrations WHERE version=22').fetchone():
+        return
+    for key, title, content, _ in FAQ:
+        article_id, source = 'KB-help-' + key, 'NovaBank help · ' + key
+        changed = conn.execute('''INSERT INTO knowledge_documents
+            (id,title,content,source,trust_level,status,created_at,updated_at) VALUES (?,?,?,?,'approved','PUBLISHED',?,?)
+            ON CONFLICT(id) DO UPDATE SET title=excluded.title,content=excluded.content,updated_at=excluded.updated_at
+            WHERE knowledge_documents.source=excluded.source''', (article_id, title, content, source, stamp, stamp))
+        if changed.rowcount:
+            conn.execute('DELETE FROM knowledge_chunks WHERE document_id=?', (article_id,))
+    conn.execute('INSERT INTO schema_migrations VALUES (22,?)', (stamp,))
+
+
 def initialize_agent_termination(conn, stamp):
     if conn.execute('SELECT 1 FROM schema_migrations WHERE version=9').fetchone():
         return

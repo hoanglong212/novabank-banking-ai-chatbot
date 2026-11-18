@@ -10,6 +10,7 @@ from ..identity import transaction
 from ..security_events import emit
 from ..agent.source_screen import classify as screen
 from ..config import setting, provider
+from .binding import MAX_SUMMARY_PASSAGES, summary_requested
 from .repository import Repository
 from .extract import extract, filename, Rejected
 from .privacy import prepare, register
@@ -96,6 +97,13 @@ async def retrieve(db, owner, key, question, vault=None):
     if not rows:
         raise HTTPException(404, 'DOCUMENT_UNAVAILABLE')
     vault = register([doc['filename_display'], *[row['text'] for row in rows]], vault)
+    if summary_requested(question):
+        if len(rows) > MAX_SUMMARY_PASSAGES:
+            # Include the first and last passages and preserve document order.
+            rows = [rows[i * (len(rows) - 1) // (MAX_SUMMARY_PASSAGES - 1)]
+                    for i in range(MAX_SUMMARY_PASSAGES)]
+        repo.get(key, ready=True)
+        return doc, [{'id': row['id'], 'text': row['text']} for row in rows]
     try:
         model, vectors = await embed([prepare(question, vault)])
         if not valid_vectors(vectors, 1):

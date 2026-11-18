@@ -13,11 +13,12 @@ test('week8 bank review shows frozen sources and warns about a new recipient', a
   await page.goto('/approvals/' + proposal.result.approval_id);
   await expect(page.getByRole('heading', { name: 'Review your transfer', exact: true })).toBeVisible();
   await expect(page.getByRole('note')).toContainText('New recipient');
+  await page.getByText('Bank review checks', { exact: true }).click();
   await expect(page.getByLabel('Bank review checks')).toContainText('From your confirmed message');
   await expect(page.getByLabel('Bank review checks')).toContainText('Medium');
   await page.evaluate(async () => { await document.fonts.ready; await Promise.all(document.getAnimations().filter(a => a.effect?.getComputedTiming().iterations !== Infinity).map(a => a.finished)); });
   await page.screenshot({ path: info.outputPath('week8-bank-review.png'), fullPage: true, animations: 'disabled' });
-  await page.getByRole('button', { name: 'Approve proposal', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue to verification', exact: true }).click();
   await expect(page).toHaveURL(/\/transfer\/TRF-[^/]+\/otp$/);
   await expect(page.getByRole('dialog', { name: 'Transfer money', exact: true })).toBeVisible();
 });

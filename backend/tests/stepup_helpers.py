@@ -38,3 +38,4 @@ def verify_new_payee(client, who, transfer_id):
     proof = client.post('/api/transfers/' + transfer_id + '/step-up', headers=who, json={'code': totp(secret, timestamp() // 30)})
     assert proof.status_code == 200, proof.text
     assert proof.json()['verified'] is True
+    client.post('/api/auth/pin', headers=who, json={'password': 'Alice@2026', 'pin': '482916'}).raise_for_status()

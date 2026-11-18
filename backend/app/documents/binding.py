@@ -3,15 +3,26 @@ import re
 from ..faq import fold
 
 ID = re.compile(r'\b[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b', re.I)
+SELECTION = re.compile(r'^\s*Document\s+' + ID.pattern + r'\s*:\s*', re.I)
+MAX_SUMMARY_PASSAGES = 6
+
+
+def summary_requested(text):
+    return bool(re.fullmatch(
+        r'(?:please\s+)?(?:summari[sz]e|(?:give me|provide|write)\s+(?:a\s+)?summary of)'
+        r'\s+(?:(?:this|the|my|that)\s+)?(?:uploaded\s+)?(?:document|file|pdf)[.!?]*',
+        fold(text).strip()))
 
 
 def requested(text):
-    return bool(re.search(r'\b(?:document|documents|uploaded|invoice|contract|tai lieu|hop dong|hoa don|sao ke)\b', fold(text)))
+    return summary_requested(text) or bool(re.search(
+        r'\b(?:document|documents|uploaded|invoice|contract|tai lieu|hop dong|hoa don|sao ke)\b', fold(text)))
 
 
 def arguments(text):
     ids = ID.findall(text)
-    return {'question': text[:1000], **({'document_id': ids[0].lower()} if len(set(ids)) == 1 else {})}
+    question = SELECTION.sub('', text, count=1)
+    return {'question': (question or text)[:1000], **({'document_id': ids[0].lower()} if len(set(ids)) == 1 else {})}
 
 
 def resolve(db, owner, intent):

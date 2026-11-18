@@ -57,10 +57,30 @@ async def run_events(authorization, context):
     try:
         async with asyncio.timeout(min(context['timeout_seconds'], 120)):
             async with httpx.AsyncClient(timeout=httpx.Timeout(100, connect=5)) as client:
+                hint = context.get('bound_hint', {})
+                allowed = {tool['function']['name'] for tool in context['tools']}
+                if (context.get('provider') == 'ollama' and context.get('config') == 'D' and defended
+                        and context.get('gateway') == 'on' and hint.get('tool') == 'ask_document'
+                        and 'ask_document' in allowed):
+                    # The bank already selected the owner's document. Use its isolated,
+                    # cited answer without asking the planning model to rewrite it.
+                    yield event('tool', {'name': 'ask_document', 'status': 'running'})
+                    response = await client.post(BANKING_URL + '/api/agent/tools', headers={'Authorization': authorization},
+                        json={'name': 'ask_document', 'arguments': hint['arguments']})
+                    response.raise_for_status()
+                    result = response.json()
+                    if result.get('completion'):
+                        yield event('complete', result['completion'])
+                        return
+                    yield event('tool', {'name': 'ask_document', 'status': result['decision'].lower(), 'reason': result['reason']})
+                    answer = result['result'].get('answer', '') if result['decision'] == 'ALLOW' else ''
+                    response = await client.post(BANKING_URL + '/api/agent/finish', headers={'Authorization': authorization},
+                        json={'answer': answer, 'latency_ms': int((time.perf_counter() - started) * 1000)})
+                    response.raise_for_status()
+                    yield event('complete', response.json())
+                    return
                 if context.get('provider') == 'mock':
-                    hint = context.get('bound_hint', {})
                     name = {'create_transfer': 'prepare_transfer', 'create_support_ticket': 'prepare_support_ticket', 'search_banking_faq': 'search_knowledge'}.get(hint.get('tool'), hint.get('tool'))
-                    allowed = {t['function']['name'] for t in context['tools']}
                     if name in allowed:
                         yield event('tool', {'name': name, 'status': 'running'})
                         response = await client.post(BANKING_URL + '/api/agent/tools', headers={'Authorization': authorization}, json={'name': name, 'arguments': hint.get('arguments', {})})

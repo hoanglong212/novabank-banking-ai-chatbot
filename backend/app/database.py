@@ -165,6 +165,8 @@ class Database:
             initialize_transfer_sources(conn, now())
             from .documents.repository import initialize as initialize_documents
             initialize_documents(conn, now())
+            from .agent_schema import refresh_help_articles
+            refresh_help_articles(conn, now())
 
     def create_conversation(self, owner_id: str, title: str):
         result = dict(id=str(uuid.uuid4()), owner_id=owner_id, title=title, created_at=now(), updated_at=now())

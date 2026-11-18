@@ -3,6 +3,7 @@ import hashlib
 import json
 import re
 from ..guard import Pseudonymizer, redact_secrets, BARE_TOKEN
+from .binding import MAX_SUMMARY_PASSAGES
 
 ALIAS = re.compile(r'<?\b(?:EMAIL|PHONE|NATIONAL_ID|ACCOUNT|NAME)_\d+\b>?', re.I)
 LABELED_NAME = re.compile(r'(?im)(?:borrower|full name|name|ho ten|họ tên|ten|tên)\s*:\s*([^\n\r:;]{3,80})')
@@ -69,7 +70,7 @@ def audit(value):
                 result[key] = value[key]
         for key in ('cited_chunk_ids', 'chunk_ids'):
             if isinstance(value.get(key), list):
-                result[key] = [v for v in value[key][:4] if isinstance(v, str) and identifier.fullmatch(v)]
+                result[key] = [v for v in value[key][:MAX_SUMMARY_PASSAGES] if isinstance(v, str) and identifier.fullmatch(v)]
         if type(value.get('found')) is bool:
             result['found'] = value['found']
     return result

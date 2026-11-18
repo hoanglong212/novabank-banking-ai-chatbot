@@ -18,7 +18,7 @@ export function AgentActivity({ user, conversationId, revision, openTransfer }: 
   async function decide(id: string, approve: boolean) {
     await op.run(async () => { const result = await send<{ message: string; draft_id?: string; action?: ActionDraft }>(user, '/agent/approvals/' + id, { approve }); approvals.reload(); op.setMessage(result.message); if (result.draft_id) openTransfer(result.draft_id); if (result.action) setDraft(result.action); });
   }
-  const labels: Record<string, string> = { prepare_transfer: 'Transfer proposal', prepare_bill_payment: 'Bill payment proposal', prepare_support_ticket: 'Support ticket proposal', request_card_freeze: 'Card freeze proposal', propose_account_status: 'Account status change', propose_customer_update: 'Customer access change', propose_settings_change: 'Bank settings change', propose_reconciliation: 'Ledger reconciliation', propose_ticket_reply: 'Ticket reply draft', propose_ticket_status: 'Ticket status change' };
+  const labels: Record<string, string> = { prepare_transfer: 'Transfer ready for review', prepare_bill_payment: 'Bill payment proposal', prepare_support_ticket: 'Support ticket proposal', request_card_freeze: 'Card freeze proposal', propose_account_status: 'Account status change', propose_customer_update: 'Customer access change', propose_settings_change: 'Bank settings change', propose_reconciliation: 'Ledger reconciliation', propose_ticket_reply: 'Ticket reply draft', propose_ticket_status: 'Ticket status change' };
   const icons: Record<string, typeof Send> = { prepare_transfer: Send, prepare_bill_payment: ReceiptText, prepare_support_ticket: LifeBuoy, request_card_freeze: Snowflake, propose_account_status: Snowflake, propose_settings_change: SlidersHorizontal, propose_customer_update: UserCog, propose_reconciliation: Scale, propose_ticket_reply: LifeBuoy, propose_ticket_status: LifeBuoy };
   const pending = approvals.data?.items.filter(a => a.status === 'PENDING') ?? [];
   return <div className="service-stack agent-review"><Feedback state={op} />{approvals.error && <Loading state={approvals} />}
@@ -26,6 +26,17 @@ export function AgentActivity({ user, conversationId, revision, openTransfer }: 
       const Icon = icons[a.name] ?? ShieldCheck;
       const expired = a.expires_at * 1000 < Date.now();
       const { amount_vnd: amount, ...rest } = a.arguments;
+      if (a.name === 'prepare_transfer') return <section className="card proposal-card" key={a.id} aria-label={labels[a.name]}>
+        <header className="proposal-head"><span className="proposal-icon" aria-hidden="true"><Send size={20} /></span>
+          <div><h3>{labels[a.name]}</h3><small>{String(rest.to_bank || 'NovaBank')} · {String(rest.to_account)}</small></div>
+        </header>
+        <p className="proposal-amount">{vnd(Number(amount))}</p>
+        {expired && <p role="status" className="muted">This review expired.</p>}
+        <div className="inline-actions">
+          <button className="primary-button" disabled={op.busy || expired} onClick={() => navigate('/approvals/' + encodeURIComponent(a.id))}>Review transfer</button>
+          <button className="secondary-button" disabled={op.busy} onClick={() => void decide(a.id, false)}>Decline</button>
+        </div>
+      </section>;
       return <section className="card proposal-card" key={a.id} aria-label={labels[a.name] ?? 'Action proposal'}>
         <header className="proposal-head">
           <span className="proposal-icon" aria-hidden="true"><Icon size={20} /></span>
@@ -37,7 +48,7 @@ export function AgentActivity({ user, conversationId, revision, openTransfer }: 
         <dl className="proposal-details">{Object.entries(rest).map(([k, v]) => <div key={k} className={k === 'body' ? 'is-body' : undefined}><dt>{k.replaceAll('_', ' ')}</dt><dd>{String(v)}</dd></div>)}</dl>
         <p className="proposal-note"><ShieldCheck size={15} aria-hidden="true" />{a.name.startsWith('propose_') ? a.name === 'propose_ticket_reply' ? 'Approving sends this reply to the customer under your name. Read it first.' : 'Approving applies this change immediately under your name.' : 'Approving a payment opens a separate OTP confirmation. It does not move money by itself.'}</p>
         <div className="inline-actions">
-          <button className="primary-button" disabled={op.busy || expired} onClick={() => a.name === 'prepare_transfer' ? navigate('/approvals/' + encodeURIComponent(a.id)) : void decide(a.id, true)}>Review and approve</button>
+          <button className="primary-button" disabled={op.busy || expired} onClick={() => void decide(a.id, true)}>Review and approve</button>
           <button className="secondary-button" disabled={op.busy} onClick={() => void decide(a.id, false)}>Decline</button>
         </div>
       </section>;

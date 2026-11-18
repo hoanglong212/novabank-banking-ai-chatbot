@@ -163,7 +163,14 @@ def approvals(conversation_id: str = Query(max_length=64), user=Depends(approval
 
 @router.post('/agent/approvals/{approval_id}')
 async def approve(approval_id: str, payload: ApprovalInput, user=Depends(approval_user), db=Depends(get_db)):
-    return await agent_access.approve(db, user, approval_id, payload.approve)
+    result = await agent_access.approve(db, user, approval_id, payload.approve)
+    if result.get('draft_id'):
+        from .transfer_chat import conversation_for
+        with db.connect() as conn:
+            origin = conversation_for(conn, user.id, result['draft_id'])
+        if origin:
+            result['conversation_id'] = origin
+    return result
 
 
 @router.get('/agent/approvals/{approval_id}')
@@ -202,6 +209,27 @@ async def stream(conversation_id: str, payload: StreamInput, request: Request, u
         async def rejected():
             yield sse('complete', {'message': answer, 'response_source': 'input_guard', 'tool_events': db.list_events(conversation_id)[-12:]})
         return StreamingResponse(rejected(), media_type='text/event-stream')
+    from .faq import exact_question
+    from .transfer_chat import followup
+    article = exact_question(payload.content)
+    bank_answer = None
+    source = 'bank_transfer_status'
+    with db.connect() as conn:
+        if article:
+            approved = conn.execute('SELECT content FROM knowledge_documents WHERE id=? AND source=? '
+                "AND trust_level='approved' AND status='PUBLISHED'",
+                ('KB-help-' + article, 'NovaBank help · ' + article)).fetchone()
+            bank_answer = approved[0] if approved else None
+            source = 'application_template'
+        elif user.role == 'customer':
+            bank_answer = followup(conn, user.id, conversation_id, payload.content)
+    if bank_answer:
+        db.append_message(conversation_id, 'user', verdict.text)
+        answer = db.append_message(conversation_id, 'assistant', bank_answer)
+        async def verified_answer():
+            yield sse('complete', {'message': answer, 'response_source': source,
+                                   'tool_events': db.list_events(conversation_id)[-12:]})
+        return StreamingResponse(verified_answer(), media_type='text/event-stream', headers={'Cache-Control': 'no-store'})
     grant = agent_access.create_run(db, user, conversation_id, payload.content, payload.profile)
     db.append_message(conversation_id, 'user', verdict.text)
     async def events():

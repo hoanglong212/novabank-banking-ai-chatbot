@@ -91,6 +91,30 @@ def test_proof_expires_and_is_not_valid_for_another_session(client, monkeypatch)
             transfer_stepup.require_stepup(conn, user, transfer)
 
 
+def test_first_payment_sets_pin_after_authenticator_and_next_payment_uses_pin(client, monkeypatch):
+    who = login(client)
+    secret, clock = enable(client, who, monkeypatch)
+    _, transfer = draft(who)
+    url = '/api/transfers/' + transfer['id']
+    proof = client.post(url + '/step-up', headers=who, json={'code': totp(secret, clock // 30)})
+    assert proof.json()['verified'] is True
+    assert proof.json()['pin_setup_required'] is True
+    assert client.post(url + '/otp', headers=who).json()['detail'] == 'PIN_REQUIRED'
+
+    client.post('/api/auth/pin', headers=who, json={'password': 'Alice@2026', 'pin': '482916'}).raise_for_status()
+    assert client.get(url + '/step-up', headers=who).json()['pin_setup_required'] is False
+    assert client.post(url + '/otp', headers=who).json()['otp_method'] == 'email'
+    with get_db().connect() as conn:
+        otp = conn.execute('SELECT secret_text FROM dev_outbox WHERE challenge_id=? ORDER BY rowid DESC LIMIT 1',
+                           ('transfer:' + transfer['id'],)).fetchone()[0]
+    assert client.post(url + '/confirm', headers=who, json={'otp': otp}).json()['status'] == 'COMPLETED'
+
+    _, second = draft(who)
+    url = '/api/transfers/' + second['id']
+    assert client.post(url + '/otp', headers=who).json()['otp_method'] == 'pin'
+    assert client.post(url + '/confirm', headers=who, json={'otp': '482916'}).json()['status'] == 'COMPLETED'
+
+
 def test_wrong_owner_and_agent_token_cannot_verify_and_attempts_are_bounded(client, monkeypatch):
     who, bob = login(client), login(client, 'bob')
     secret, clock = enable(client, who, monkeypatch)
@@ -167,6 +191,7 @@ def test_direct_confirm_cannot_bypass_stepup_even_with_valid_bank_token_and_totp
         assert conn.execute('SELECT COUNT(*) FROM transfer_token_uses').fetchone()[0] == 0
     verify = client.post('/api/transfers/' + transfer['id'] + '/step-up', headers=who, json={'code': totp(secret, clock // 30)})
     assert verify.status_code == 200, verify.text
+    client.post('/api/auth/pin', headers=who, json={'password': 'Alice@2026', 'pin': '482916'}).raise_for_status()
     otp_reply = client.post('/api/transfers/' + transfer['id'] + '/otp', headers=who)
     assert otp_reply.status_code == 200 and otp_reply.json()['otp_method'] == 'email'
     with get_db().connect() as conn:

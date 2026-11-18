@@ -86,13 +86,17 @@ def status(conn, user, transfer):
     security.active_session(conn, user.session_id, user.id, user.auth_version, stamp)
     if transfer.get('owner_id') != user.id:
         raise TransferError('TRANSFER_NOT_FOUND')
-    required = transfer['status'] == 'PENDING_OTP' and new_recipient(conn, transfer)
+    is_new = new_recipient(conn, transfer)
+    prior_proof = conn.execute('SELECT 1 FROM transfer_stepups WHERE transfer_id=? AND verified_at IS NOT NULL',
+                              (transfer['id'],)).fetchone()
+    required = transfer['status'] == 'PENDING_OTP' and (is_new or bool(prior_proof))
     factor_hash = _factor(conn, user.id)
     proof = conn.execute('SELECT * FROM transfer_stepups WHERE transfer_id=? AND session_id=?', (transfer['id'], user.session_id)).fetchone()
     verified = bool(required and factor_hash and proof and proof['user_id'] == user.id
         and proof['auth_version'] == user.auth_version and proof['fingerprint'] == fingerprint(transfer)
         and proof['factor_hash'] == factor_hash and proof['verified_at'] is not None and proof['expires_at'] > stamp)
-    return {'required': required, 'new_recipient': required, 'totp_enabled': bool(factor_hash),
+    return {'required': required, 'new_recipient': is_new, 'totp_enabled': bool(factor_hash),
+        'pin_setup_required': required and not mfa_settings.has_pin(conn, user.id),
         'enrollment_required': required and not factor_hash, 'verified': verified,
         'expires_in': max(0, proof['expires_at'] - stamp) if verified else 0,
         'confirmation_method': 'email' if verified else None,
@@ -104,7 +108,7 @@ def status(conn, user, transfer):
 def require_stepup(conn, user, transfer):
     state = status(conn, user, transfer)
     if not state['required']:
-        return
+        return state
     if state['enrollment_required']:
         raise TransferError('AUTHENTICATOR_ENROLLMENT_REQUIRED')
     if not state['verified']:
@@ -112,11 +116,21 @@ def require_stepup(conn, user, transfer):
     remaining = security.lock_remaining(conn, user.id, security.timestamp())
     if remaining:
         raise security.locked(remaining)
+    return state
 
 
 def email_confirmation_required(conn, user, transfer):
     state = status(conn, user, transfer)
     return state['required'] and state['verified']
+
+
+def confirmation_method(conn, user, transfer):
+    state = require_stepup(conn, user, transfer)
+    if state['required']:
+        if state['pin_setup_required']:
+            raise TransferError('PIN_REQUIRED')
+        return 'stepup_email'
+    return 'pin' if mfa_settings.has_pin(conn, user.id) else mfa_settings.transaction_factor(conn, user.id)
 
 
 def describe(db, user, transfer_id):

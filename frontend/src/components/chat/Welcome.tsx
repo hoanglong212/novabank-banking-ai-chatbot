@@ -23,7 +23,7 @@ export function Welcome({ user, busy, pickSuggestion }: WelcomeProps) {
         <span className="assistant-avatar assistant-avatar-lg" aria-hidden="true"><Sparkles size={28} /></span>
         <div>
           <h1>Hi{user ? ` ${user.name.split(' ')[0]}` : ''}, how can I help?</h1>
-          <p>Check balances and payments, make a VietQR code, prepare a transfer or ask any banking question.</p>
+          <p>Check your accounts, prepare a transfer or ask a question about an uploaded document.</p>
         </div>
       </section>
       <ul className="welcome-promises">

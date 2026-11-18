@@ -25,6 +25,75 @@ def test_reader_rejects_bare_alias_absent_from_source():
     with pytest.raises(ValueError):
         validate(raw,[{'id':'one','text':'Invoice total 150,000 VND.'}])
 
+
+def test_reader_accepts_cited_vietnamese_fees_rates_and_dates():
+    from app.documents.reader import validate
+    chunks = [{'id': 'one', 'text': 'Phí 3.300 VND/giao dịch. Lãi 5,5%/năm. Hiệu lực 01/11/2026.'}]
+    result = {'found': True, 'answer': 'Phí 3.300 VND, lãi 5,5%, hiệu lực 01/11/2026.',
+              'cited_chunk_ids': ['one'], 'amounts': ['3,300 VND', '5.5%'], 'dates': ['2026-11-01']}
+    assert validate(json.dumps(result), chunks)['found']
+    with pytest.raises(ValueError, match='Unsupported amount'):
+        validate(json.dumps({**result, 'amounts': ['33,000 VND']}), chunks)
+    with pytest.raises(ValueError, match='Unsupported amount'):
+        validate(json.dumps({**result, 'answer': 'The fee is 33,000 VND.', 'amounts': []}), chunks)
+    with pytest.raises(ValueError, match='Unsupported date'):
+        validate(json.dumps({**result, 'dates': ['2026-11-02']}), chunks)
+    assert validate(json.dumps({**result, 'amounts': [''], 'dates': ['']}), chunks)['found']
+
+
+def test_document_help_works_before_any_document_is_uploaded(client):
+    who = login(client)
+    conversation = client.post('/api/conversations', headers=who, json={'title': 'Document help'}).json()['id']
+    reply = client.post('/api/conversations/' + conversation + '/stream', headers=who,
+                        json={'content': 'How do I ask Nova about an uploaded file?'})
+    assert reply.status_code == 200
+    assert 'application_template' in reply.text and 'paperclip' in reply.text and '5 MB' in reply.text
+    with get_db().connect() as conn:
+        policy = conn.execute("SELECT content FROM knowledge_documents WHERE id='KB-payments'").fetchone()[0]
+        faq = conn.execute("SELECT content FROM knowledge_documents WHERE id='KB-help-payments'").fetchone()[0]
+    assert '200,000,000 VND daily limit' in policy and 'fresh authenticator code' in faq
+
+
+def test_selected_document_disambiguates_a_transfer_limit_question():
+    from app.banking_workflow import bind_request
+    identifier = 'd4ae2174-2ec6-4041-9ba6-7afe8c2c942f'
+    question = 'What is the per-transfer limit for a new recipient?'
+    request = bind_request([{'role': 'user', 'content': f'Document {identifier}: {question}'}])
+    assert request.tool == 'ask_document'
+    assert request.arguments == {'document_id': identifier, 'question': question}
+
+
+def test_summary_reads_the_short_document_in_order_without_a_query_embedding(client, engines, monkeypatch):
+    import asyncio
+    from app.documents import service
+    from app.documents.repository import Repository
+
+    who = login(client)
+    text = ('Transfer fees and limits.\n' * 90 + 'Savings and loan terms.\n' * 40).encode()
+    doc = upload(client, who, text, 'fee-schedule.txt').json()
+    assert doc['status'] == 'ready'
+    original = Repository(get_db(), 'alice').chunks(doc['id'])
+    assert len(original) == 5
+
+    async def unnecessary_embedding(_):
+        raise AssertionError('A whole-document summary does not need a query embedding.')
+
+    monkeypatch.setattr(service, 'embed', unnecessary_embedding)
+    _, passages = asyncio.run(service.retrieve(get_db(), 'alice', doc['id'], 'Summarize this document.'))
+    assert [p['id'] for p in passages] == [p['id'] for p in original]
+
+
+def test_summary_keeps_the_complete_overview_before_an_unfinished_continuation():
+    from app.documents.reader import validate
+
+    overview = 'The document covers transfer fees, card fees, and savings.'
+    source = [{'id': 'S1', 'text': 'Transfer fees, card fees, savings.'}]
+    response = {'found': True, 'answer': overview + ' The transfer fee is 999,999 VND and',
+                'cited_chunk_ids': ['S1']}
+    assert validate(json.dumps(response), source, summary=True)['answer'] == overview
+    with pytest.raises(ValueError, match='Unsupported amount'):
+        validate(json.dumps(response), source)
+
 @pytest.mark.parametrize('cfg',list('ABCD'))
 def test_main_answer_cannot_restore_unrelated_vault_alias(client,engines,monkeypatch,cfg):
     monkeypatch.setenv('ENV','demo')
@@ -138,22 +207,20 @@ def test_document_attribution_retains_filename_underscores(client,engines,monkey
     result=client.post('/api/agent/finish',headers=token,json={'answer':'Total: 150000 VND.','latency_ms':1})
     assert result.json()['message']['content'].startswith('According to document "benign_invoice.pdf.txt":')
 
-def test_document_question_uses_file_citations_without_weakening_knowledge_checks(client,engines,monkeypatch):
-    from tests.agent_acceptance_helpers import exercise, calls
+def test_document_question_returns_the_isolated_answer_with_file_citations(client,engines,monkeypatch):
+    from tests.agent_acceptance_helpers import exercise
     monkeypatch.setenv('ENV','demo')
     who=login(client)
     doc=upload(client,who,b'Total: 150000 VND.','invoice.txt').json()['id']
     config(client,'D')
     _,_,token=grant_for(client,who,'What is the total in document '+doc)
-    payloads,_,events=exercise(client,monkeypatch,token,[
-        calls(('ask_document',{'document_id':doc,'question':'What is the total?'})),
-        {'content':'Total: 150000 VND. [KB-invented]'}])
-    prompt=payloads[0]['messages'][0]['content']
-    assert 'Cite knowledge IDs such as [KB-savings].' not in prompt
-    assert 'filename_display' in prompt
+    payloads, requests, events = exercise(client, monkeypatch, token, [])
+    assert payloads == []
+    assert requests[0] == ('/api/agent/tools', {'name': 'ask_document', 'arguments':
+        {'document_id': doc, 'question': 'What is the total in document ' + doc}})
     completion=json.loads(next(e.split('data: ',1)[1] for e in events if e.startswith('event: complete')))
-    assert '150000 VND' not in completion['message']['content']
-    assert 'could not verify the cited source' in completion['message']['content']
+    assert 'According to document "invoice.txt":' in completion['message']['content']
+    assert '150000 VND' in completion['message']['content']
 
 def test_pdf_contents_array_bounded_before_concatenation(monkeypatch):
     import io

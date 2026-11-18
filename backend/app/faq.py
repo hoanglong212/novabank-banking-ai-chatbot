@@ -3,19 +3,53 @@ import re
 import unicodedata
 
 FAQ = [
-    ('account', 'Opening an account', 'Check your bank\'s official channels for its account-opening process. NovaBank is fictional and cannot open real accounts.', ['mo tai khoan', 'open account', 'open an account', 'dang ky tai khoan']),
-    ('card', 'Blocked card', 'If your card is blocked, contact the issuing bank through its official helpline or visit a branch for verification. This demo cannot unlock real cards.', ['the bi khoa', 'khoa the', 'atm', 'card blocked', 'blocked card']),
-    ('vietqr', 'VietQR', 'VietQR presents payment or transfer details in a QR code. Always verify the recipient, amount, and bank in your official banking app before approving a transfer.', ['vietqr', 'qr', 'ma qr', 'quet ma']),
-    ('transfer', 'Bank transfers', 'Check the recipient, limits, and transaction status in your official banking app. Fees and limits depend on your bank and account type.', ['chuyen tien', 'chuyen khoan', 'transfer', 'han muc', 'phi chuyen', 'fees', 'limits']),
-    ('fraud', 'Fraud prevention', 'Never share passwords, OTPs, PINs, or recovery codes with a chatbot or strangers. If you suspect fraud, contact your bank through its official channels.', ['lua dao', 'otp', 'pin', 'bao mat', 'mat tien', 'fraud', 'scam', 'security']),
-    ('hours', 'Opening hours', 'Opening hours vary by bank and branch. Check your bank\'s official website for current hours.', ['gio lam viec', 'chi nhanh', 'branch', 'working hours', 'opening hours']),
-    ('transaction', 'Delayed transactions', 'If a transfer has not arrived, save its reference number, check its status in your banking app, and contact official support. This app only contains simulated transactions.', ['giao dich loi', 'chua nhan', 'pending', 'giao dich', 'cham tien', 'delayed', 'not arrived']),
+    ('payments', 'How do I confirm a transfer from Assistant?',
+     'Ask Nova to prepare a transfer with the amount and recipient account. Open Review transfer, check the details, '
+     'then continue to bank verification. A new recipient requires a fresh authenticator code and a separate email code. '
+     'Set your transaction PIN during this flow if you do not have one. Transfers to verified recipients use your PIN once it is set. '
+     'The bank displays the final fee and debit before confirmation.',
+     ['confirm a transfer', 'review transfer', 'new recipient', 'transfer verification', 'chuyen khoan', 'xem lai chuyen tien']),
+    ('transaction', 'Where can I check a transfer or download a receipt?',
+     'Open Activity and select the transaction to see its status and reference. Download the receipt after completion. '
+     'For a transfer prepared in Assistant, its bank status appears in the conversation. Ask “Did the transfer go through?” there, '
+     'or use the TX reference to check a specific transaction. A pending interbank transfer is still processing.',
+     ['transfer status', 'track transfer', 'receipt', 'pending', 'giao dich', 'bien lai']),
+    ('documents', 'How do I ask Nova about an uploaded file?',
+     'In Assistant, open the paperclip or drop one text-based PDF, TXT, or Markdown file into the chat. '
+     'Upload the file and wait for Ready, then choose Ask about document and enter a specific question. Nova cites the selected file. '
+     'PDFs need selectable text. Files are limited to 5 MB and 50 pages.',
+     ['uploaded file', 'pdf', 'documents', 'ask about document', 'rag', 'tai lieu']),
+    ('qr-demo', 'Can I read a QR image in Assistant?',
+     'Use Upload QR image or drop a PNG, JPEG, or WebP image in Assistant. Check the bank, account and amount in the preview '
+     'before continuing to the bank verification screen. NovaBank simulator QR codes work within this demo.',
+     ['qr image', 'upload qr', 'qr pay', 'ma qr', 'quet ma']),
+    ('security', 'When do I use my authenticator or transaction PIN?',
+     'Manage Authenticator and Transaction PIN in Profile, Security Center. The authenticator is used for sign-in when selected '
+     'and is required for payments to a new recipient. A transaction PIN confirms later transfers to verified recipients. '
+     'Enter codes or passwords only in the corresponding banking form.',
+     ['transaction pin', 'authenticator', 'verification code', 'pin', 'otp', 'bao mat']),
+    ('support', 'How do I get help with a transfer or my account?',
+     'Open Explore, Help and support, then select New support request. Include the TX reference and what you saw. '
+     'Track replies in the ticket. Keep passwords, codes and real banking information out of tickets and chat.',
+     ['support request', 'help with a transfer', 'contact support', 'ho tro']),
+    ('card', 'What can I do if my card is frozen?',
+     'Open Explore, Cards and choose the card. Check its status, then use Unfreeze and complete bank verification if appropriate. '
+     'If the card action is unavailable or you do not recognize recent activity, open a support request.',
+     ['frozen card', 'card blocked', 'blocked card', 'khoa the']),
+    ('vietqr', 'What should I check before paying a QR code?',
+     'VietQR presents payment or transfer details in a QR code. Always verify the recipient, amount, and bank in your official banking app before approving a transfer.',
+     ['vietqr', 'scan a qr']),
 ]
 
 
 def fold(s: str) -> str:
     s = s.lower().replace('đ', 'd')
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+
+
+def exact_question(query):
+    normalized = fold(query).strip().rstrip('?.!')
+    return next((key for key, title, _, _ in FAQ if normalized == fold(title).rstrip('?.!')), None)
 
 
 def search(query: str):

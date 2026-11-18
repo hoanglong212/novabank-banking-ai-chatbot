@@ -15,7 +15,7 @@ export interface ToolEvent {
 export interface SendResponse {
   message: ChatMessage;
   tool_events: ToolEvent[];
-  response_source: 'mock' | 'application_template' | 'application_fallback' | 'ollama_tool' | 'ollama_tool_bound' | 'langgraph' | 'input_guard' | 'agent_service';
+  response_source: 'mock' | 'application_template' | 'application_fallback' | 'ollama_tool' | 'ollama_tool_bound' | 'langgraph' | 'input_guard' | 'agent_service' | 'bank_transfer_status';
 }
 export interface Health { status: string; llm_provider: string; gateway_mode: string; demo_only: boolean; agent_mode?: string }
 export interface Decision { decision: 'ALLOW' | 'DENY'; reason_code: string; executed: boolean }
@@ -66,6 +66,7 @@ export interface Bank { bin: string; code: string; shortName: string; name: stri
 export interface VietQR { bank: string; bin: string; account_no: string; account_name: string; amount_vnd: number | null; add_info: string; image: string; payload: string }
 // Codes are delivered to the simulated mailbox, never returned with a draft.
 export interface Transfer {
+  conversation_id?: string;
   source_origin?: 'manual' | 'qr' | 'ocr';
   id: string; from_account: string; to_bank: string; to_account: string; to_name: string; amount_vnd: number;
   content: string; status: 'PENDING_OTP' | 'PENDING' | 'COMPLETED' | 'FAILED'; otp_expires_at?: string; transaction_id?: string | null; fee_vnd?: number;

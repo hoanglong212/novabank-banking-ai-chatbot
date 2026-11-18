@@ -29,7 +29,7 @@ test('Customer cannot open the staff assistant page', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('403');
 });
 
-test('Approval deep link reloads the server proposal and opens separate OTP', async ({ page }) => {
+test('Assistant transfer review opens bank verification and reports the result in chat', async ({ page }, info) => {
   await demoLogin(page, 'alice');
   const access = await page.evaluate(() => JSON.parse(sessionStorage.getItem('novabank-session')!).token);
   const headers = { Authorization: 'Bearer ' + access };
@@ -40,13 +40,23 @@ test('Approval deep link reloads the server proposal and opens separate OTP', as
   const result = await (await page.request.post('/api/agent/tools', { headers: delegated,
     data: { name: 'prepare_transfer', arguments: { to_account: 'ACC-BOB-001', amount_vnd: 10000 } } })).json();
   expect(result.decision).toBe('ALLOW');
+  await page.request.post('/api/conversations', { headers, data: { title: 'Another conversation' } });
   await page.goto('/approvals/' + result.result.approval_id);
   await page.reload();
   await expect(page.getByText('ACC-BOB-001', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Approve proposal', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Review your transfer', exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath('assistant-transfer-review.png'), animations: 'disabled' });
+  await page.getByRole('button', { name: 'Continue to verification', exact: true }).click();
   await expect(page).toHaveURL(/\/transfer\/TRF-[^/]+\/otp$/);
+  await page.reload();
   // Either the PIN field or, for an account without one, the create-PIN step; neither is pre-filled.
   await expect(page.getByLabel('Transaction PIN', { exact: true }).or(page.getByLabel('New 6-digit PIN', { exact: true }))).toHaveValue('');
+  await enterTransactionPin(page, 'alice');
+  await page.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Transfer successful', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page).toHaveURL(/\/assistant$/);
+  await expect(page.getByRole('log', { name: 'Conversation messages' })).toContainText('Transfer successful');
 });
 
 test('New conversation stays selected when an earlier history request finishes', async ({ page }) => {

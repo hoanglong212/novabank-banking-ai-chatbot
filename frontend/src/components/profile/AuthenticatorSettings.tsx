@@ -12,7 +12,7 @@ export function AuthenticatorSettings({ user, status, changed }: {
   return <>
     <p><strong>{status.totp_enabled ? 'Authenticator enabled' : 'Email codes enabled'}</strong></p>
     <p className="muted small">{status.totp_enabled
-      ? 'Sign-ins, transfers and payments use a code from your authenticator app. Email codes remain available for sign-in if you cannot use the app.'
+      ? 'Use your authenticator for sign-in and to verify new recipients. Your transaction PIN confirms transfers to verified recipients once set. Email codes remain available for sign-in.'
       : 'Every sign-in needs a code from the local demo inbox. Add an authenticator app for another way to verify.'}</p>
     <button className="secondary-button" onClick={() => setAction(status.totp_enabled ? 'disable' : 'setup')}>
       {status.totp_enabled ? 'Disable authenticator' : 'Set up authenticator'}

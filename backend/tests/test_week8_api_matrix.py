@@ -60,6 +60,7 @@ def owned(client, monkeypatch):
     stepup = client.post('/api/transfers/' + transfer_id + '/step-up', headers=alice, json={'code': totp(secret, int(time.time()) // 30)})
     assert stepup.status_code == 200, stepup.text
     assert stepup.json()['required'] and stepup.json()['verified'], stepup.text
+    client.post('/api/auth/pin', headers=alice, json={'password': 'Alice@2026', 'pin': '482916'}).raise_for_status()
     assert client.post('/api/transfers/' + transfer_id + '/otp', headers=alice).status_code == 200
     code = transfer_code({'id': transfer_id})
     completed = client.post('/api/transfers/' + transfer_id + '/confirm', headers={**alice, 'Idempotency-Key': 'c5-fixture-once'}, json={'otp': code})

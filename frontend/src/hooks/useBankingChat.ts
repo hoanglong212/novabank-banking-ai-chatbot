@@ -14,6 +14,7 @@ export function useBankingChat(user: DemoUser, enabled = true) {
   }, [user]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [events, setEvents] = useState<ToolEvent[]>([]);
+  const [historyRevision, setHistoryRevision] = useState(0);
   const [health, setHealth] = useState<Health | null>(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -100,7 +101,7 @@ export function useBankingChat(user: DemoUser, enabled = true) {
     return () => {
       cancelled = true;
     };
-  }, [user, active]);
+  }, [user, active, historyRevision]);
 
   useEffect(() => {
     if (messages.length === 0 && !busy) {
@@ -209,6 +210,7 @@ export function useBankingChat(user: DemoUser, enabled = true) {
     scrollerRef,
     textareaRef,
     startConversation,
+    reloadMessages: () => setHistoryRevision(n => n + 1),
     deleteConversation,
     sendMessage,
     stopResponse,

@@ -155,6 +155,14 @@ def bind_request(messages: list[dict]) -> BankingRequest:
     question = messages[-1]['content'].strip()
     text = fold(question)
     history = [m['content'] for m in messages[:-1] if m['role'] == 'user'][-12:]
+    from .faq import exact_question
+    if exact_question(question):
+        return BankingRequest('search_banking_faq', {'query': question})
+    from .documents.binding import SELECTION, arguments as document_arguments, requested as document_requested
+    if SELECTION.match(question):
+        # A customer-selected source wins over matching words in a finance
+        # question. An explicit document read always has read-only capabilities.
+        return BankingRequest('ask_document', document_arguments(question))
     limit = re.search(r'\b(?:transfer limit|han muc chuyen tien)\b', text)
     if limit:
         value = amount_in(text[limit.end():])
@@ -191,7 +199,6 @@ def bind_request(messages: list[dict]) -> BankingRequest:
             and not re.search(r'\b(?:do not|don.t|dont|never|khong|dung)\b.{0,30}\b(?:transfer|send|chuyen|prepare|make)\b', action_text))):
         return transfer_request(question, action_text)
 
-    from .documents.binding import requested as document_requested, arguments as document_arguments
     if document_requested(question):
         return BankingRequest('ask_document', document_arguments(question))
     ids = re.findall(r'\bTX-[A-Z0-9-]+\b', question, re.I)

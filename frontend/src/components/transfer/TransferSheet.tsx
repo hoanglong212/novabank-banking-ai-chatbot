@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { CheckCircle2, KeyRound } from 'lucide-react';
+import { CheckCircle2, Clock3, KeyRound, TriangleAlert } from 'lucide-react';
 import { PinForm } from '../profile/TransactionPin';
 
 import { api, newKey, request } from '../../api';
@@ -9,6 +9,7 @@ import { BankPicker } from '../qr/BankPicker';
 import { Sheet } from '../ui/Sheet';
 import { ReceiptButton } from '../activity/ReceiptButton';
 import { TransferStepUpGate } from './TransferStepUp';
+import { TransferOverview } from './TransferOverview';
 import { openInbox } from '../dev/Outbox';
 
 const NOVABANK: Bank = { bin: 'NovaBank', code: 'NOVA', shortName: 'NovaBank', name: 'Internal transfer · instant', logo: '' };
@@ -23,7 +24,7 @@ const ERRORS: Record<string, string> = {
   OTP_INVALID: 'Wrong code. Check it and try again.',
   PIN_REQUIRED: 'Create your transaction PIN before making transfers.',
   PIN_LOCKED: 'Too many wrong PINs. Try again in 15 minutes.',
-  OTP_EXPIRED: 'The OTP has expired. Tap “Resend OTP”.',
+  OTP_EXPIRED: 'The verification code has expired. Request a new email code if this draft is still open.',
   OTP_LOCKED: 'Too many wrong OTPs. This transfer was cancelled.',
   ALREADY_PROCESSED: 'This transfer was already completed or cancelled.',
   DAILY_LIMIT_EXCEEDED: 'This transfer exceeds your daily limit.',
@@ -45,21 +46,23 @@ interface TransferSheetProps {
   start: TransferStart | null;
   onClose: () => void;
   onDone: () => void;
+  onOrigin?: (value: { draftId: string; conversationId: string }) => void;
   step?: string;
   onNavigate?: (id: string, step: string) => void;
 }
 
 // Sheet renders its children only while open, so every opening starts a fresh flow.
-export function TransferSheet({ user, start, onClose, onDone, step, onNavigate }: TransferSheetProps) {
+export function TransferSheet({ user, start, onClose, onDone, onOrigin, step, onNavigate }: TransferSheetProps) {
   return (
-    <Sheet open={start !== null} onClose={onClose} title="Transfer money">
-      {start && <TransferFlow key={(start.draftId ?? 'new') + (step ?? '')} user={user} start={start} onClose={onClose} onDone={onDone} step={step} onNavigate={onNavigate} />}
+    <Sheet open={start !== null} onClose={() => { if (start) onClose(); }} title="Transfer money">
+      {start && <TransferFlow key={(start.draftId ?? 'new') + (step ?? '')} user={user} start={start} onClose={onClose} onDone={onDone}
+        onOrigin={onOrigin} step={step} onNavigate={onNavigate} />}
     </Sheet>
   );
 }
 
-// form -> review + OTP (simulated SMS) -> receipt, as in Vietnamese banking apps.
-function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: TransferSheetProps & { start: TransferStart }) {
+// The bank verifies a reviewed draft and supplies the receipt.
+function TransferFlow({ user, start, onClose, onDone, onOrigin, step, onNavigate }: TransferSheetProps & { start: TransferStart }) {
   const [banks, setBanks] = useState<Bank[]>([NOVABANK]);
   const [bank, setBank] = useState(start.to_bank ?? 'NovaBank');
   const [account, setAccount] = useState(start.to_account ?? '');
@@ -73,19 +76,24 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
   const internal = bank === 'NovaBank';
   const validAccount = internal ? /^ACC-[A-Z0-9-]{3,30}$/.test(account) : /^\d{6,19}$/.test(account);
 
-  const otpRequested = useRef(false);
   const submitting = useRef(false);
   const confirmationKey = useRef<string | null>(null);
 
   useEffect(() => {
-    api.banks(user).then(list => setBanks([NOVABANK, ...list.filter(b => b.shortName !== 'NovaBank')])).catch(() => { /* NovaBank transfers still work */ });
-    // A draft prepared by Nova: fetch it with a fresh OTP and go straight to review.
-    // Once only: StrictMode's second run would issue a second OTP and race the first.
-    if (start.draftId && !otpRequested.current) {
-      otpRequested.current = true;
-      request<Transfer>('/transfers/' + encodeURIComponent(start.draftId), user).then(setTransfer).catch(err => setError(explain(err)));
+    let active = true;
+    if (start.draftId) {
+      request<Transfer>('/transfers/' + encodeURIComponent(start.draftId), user).then(result => {
+        if (!active) return;
+        setTransfer(result);
+        if (result.conversation_id) onOrigin?.({ draftId: result.id, conversationId: result.conversation_id });
+      }).catch(err => { if (active) setError(explain(err)); });
+    } else {
+      api.banks(user).then(list => {
+        if (active) setBanks([NOVABANK, ...list.filter(b => b.shortName !== 'NovaBank')]);
+      }).catch(() => { /* NovaBank transfers still work */ });
     }
-  }, [user, start.draftId]);
+    return () => { active = false; };
+  }, [user, start.draftId, onOrigin]);
 
   useEffect(() => {
     if (transfer?.status !== 'PENDING') return;
@@ -134,10 +142,15 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
   }
 
   if (transfer && transfer.status !== 'PENDING_OTP') {
+    const completed = transfer.status === 'COMPLETED';
+    const pending = transfer.status === 'PENDING';
+    const StatusIcon = completed ? CheckCircle2 : pending ? Clock3 : TriangleAlert;
     return (
       <div className="tx-detail">
-        <span className="tx-icon tx-icon-lg in"><CheckCircle2 size={30} aria-hidden="true" /></span>
-        <strong>{transfer.status === 'COMPLETED' ? 'Transfer successful' : transfer.status === 'PENDING' ? 'Transfer pending' : 'Transfer failed — money refunded'}</strong>
+        <div className="transfer-receipt-status" role="status">
+          <span className={`tx-icon tx-icon-lg ${completed ? 'in' : 'out'}`}><StatusIcon size={30} aria-hidden="true" /></span>
+          <h3>{completed ? 'Transfer successful' : pending ? 'Transfer pending' : transfer.transaction_id ? 'Transfer failed — money refunded' : 'Transfer failed'}</h3>
+        </div>
         {transfer.status === 'PENDING' && <p className="muted" role="status">The simulated receiving bank is processing this transfer. This view updates automatically.</p>}
         <strong className="tx-detail-amount">-{vnd(transfer.amount_vnd)}</strong>
         <dl className="detail-list">
@@ -158,18 +171,13 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
     return (
       // A div, not a form: the create-PIN step renders its own form and forms must not nest.
       <div className="qr-form">
-        <dl className="detail-list">
-          <div><dt>From</dt><dd>{transfer.from_account}</dd></div>
-          <div><dt>To</dt><dd>{transfer.to_name || 'Name not verified (other bank)'}</dd></div>
-          <div><dt>Bank</dt><dd>{transfer.to_bank} · {transfer.to_account}</dd></div>
-          <div><dt>Amount</dt><dd>{vnd(transfer.amount_vnd)}</dd></div>
-          <div><dt>Fee</dt><dd>{transfer.fee_vnd ? vnd(transfer.fee_vnd) : 'Free'}</dd></div>
-          <div><dt>Total debit</dt><dd>{vnd(transfer.amount_vnd + (transfer.fee_vnd ?? 0))}</dd></div>
-          <div><dt>Content</dt><dd>{transfer.content}</dd></div>
-        </dl>
+        <TransferOverview amount={transfer.amount_vnd} from={transfer.from_account} to={transfer.to_account}
+          bank={transfer.to_bank} recipient={transfer.to_name} fee={transfer.fee_vnd ?? 0} memo={transfer.content} />
         <TransferStepUpGate user={user} transfer={transfer} step={step} onTransfer={result => { setTransfer(result); setOtp(''); }}>
-        {({ emailConfirmation }) => <>
-        {transfer.otp_method === 'email' && !emailConfirmation && step !== 'review'
+        {({ emailConfirmation }) => step === 'review'
+          ? <button className="primary-button" type="button" onClick={() => onNavigate?.(transfer.id, 'otp')}>Continue to verification</button>
+          : <>
+        {transfer.otp_method === 'email' && !emailConfirmation
           // No PIN yet: create one here; the server then accepts it for this same draft.
           ? <div className="pin-first"><p className="otp-hint"><KeyRound size={18} aria-hidden="true" /><span><strong>Create your transaction PIN.</strong> You will use these 6 digits to confirm this and every future payment.</span></p>
             <PinForm user={user} submitLabel="Save PIN and continue" done={() => setTransfer({ ...transfer, otp_method: 'pin' })} /></div>
@@ -179,7 +187,7 @@ function TransferFlow({ user, start, onClose, onDone, step, onNavigate }: Transf
             ? <>Open your <strong>authenticator app</strong> and enter the current 6-digit NovaBank code.</>
             : <>Enter your <strong>6-digit transaction PIN</strong>.</>} Never share it, not even with Nova.</span></p>}
         {error && <div className="form-error" role="alert">{error}</div>}
-        {step === 'review' ? <button className="primary-button" type="button" onClick={() => onNavigate?.(transfer.id, 'otp')}>Continue to verification</button> : (transfer.otp_method !== 'email' || emailConfirmation) && <form className="qr-form" onSubmit={confirm} noValidate>
+        {(transfer.otp_method !== 'email' || emailConfirmation) && <form className="qr-form" onSubmit={confirm} noValidate>
         <label className="field">
           <span>{emailConfirmation ? 'Transfer email code' : transfer.otp_method === 'totp' ? 'Authenticator code' : 'Transaction PIN'}</span>
           <input className="otp-input" type={transfer.otp_method === 'pin' ? 'password' : 'text'} inputMode="numeric" autoComplete={transfer.otp_method === 'pin' ? 'off' : 'one-time-code'} maxLength={6} value={otp} placeholder="••••••"
