@@ -9,6 +9,24 @@ FALSE_DONE = re.compile(
     r"(?i)\b(?:(?:has|have) been (?:successfully )?(?:processed|sent|paid|transferred|submitted|created|executed|made)"
     r"|processed successfully|(?:is|was) now (?:complete|completed|successful|paid|sent)"
     r"|I(?: have|'ve)? (?:successfully |just )?(?:sent|paid|transferred|processed|created|submitted|executed|completed)\b)")
+# A sentence about a transfer, transaction or ticket (EN/VI) that states its status. On a turn with no proposal and no
+# status read, the bank knows nothing was prepared or completed, so such a sentence is replaced by NOT_DONE.
+# shortcut: spotting "a sentence about status" is lexical; a paraphrase avoiding these words passes. Upgrade to
+# server-rendered status (no model prose on these topics) if adversarial_eval finds one.
+STATUS_SUBJECT = re.compile(r'(?i)\b(?:transfer|payment|transaction|ticket|money|funds|refund)s?\b|\d[\d.,]*\s*(?:VND|₫|đ)\b'
+                            r'|\b(?:chuyển|giao dịch|thanh toán|phiếu|tiền|hoàn tiền)\b')
+STATUS_CLAIM = re.compile(
+    r"(?i)\b(?:has|have|had) been\b|\b(?:was|were) (?:successfully |already )?(?:\w+ed|sent|paid|done|made)\b"
+    r"|\b(?:is|are) (?:now|being|already)\b|\bconfirmed\b|\bsuccessful(?:ly)?\b|\bwent through\b|\bon (?:its|the) way\b"
+    r"|\bI(?:'ve| have)? (?:successfully |just |already )?(?:sent|paid|transferred|processed|created|submitted|executed|completed|confirmed|approved|made|filed|opened)\b"
+    r"|\b(?:đã|đang được|vừa)\b|\bthành công\b|\bhoàn tất\b|\bxác nhận\b")
+STATUS_READS = ('get_transaction_status', 'get_recent_transactions', 'get_support_tickets')
+
+
+def claims_status(answer):
+    return any(STATUS_SUBJECT.search(s) and STATUS_CLAIM.search(s) for s in re.split(r'(?<=[.!?])\s+|\n', answer))
+
+
 NOT_DONE = ('Nothing has been sent, paid or changed. I cannot complete payments, transfers or tickets from chat. '
             'Put the whole request in one message with the amount and recipient, and I will prepare '
             'a draft for you to review and confirm with an OTP. You can also use the Transfer screen.')
@@ -64,7 +82,7 @@ def _filtered_answer(conn, db, run, answer):
         answer = 'No action has been prepared or completed. Please use the banking screens or provide a specific request with the required details.'
     elif re.search(r'(?i)\b(?:send|provide|give|enter)\b.{0,40}\b(?:otp|pin|password|verification code)\b', answer):
         answer = 'Never share passwords, PINs or verification codes in chat. Use only the bank confirmation screen for codes.'
-    elif FALSE_DONE.search(answer):
+    elif FALSE_DONE.search(answer) or (intent['tool'] not in STATUS_READS and claims_status(answer)):
         answer = NOT_DONE
     elif intent['tool'] in ('get_cards', 'get_savings'):
         answer, verified_balance = product_financial_answer(conn, run, intent)

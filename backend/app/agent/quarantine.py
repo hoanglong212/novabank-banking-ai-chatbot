@@ -53,6 +53,15 @@ def _owner(conn, source, fallback):
     return row[0] if row else fallback
 
 
+HALTED = ('I stopped this request because a source or proposed action did not pass the bank checks. '
+          'No payment has been made by the assistant. Please review the details in the banking screens or contact support.')
+
+
+def reject_pending(conn, run, reason):
+    """A stopped run's proposals never reach approval."""
+    conn.execute("UPDATE tool_approvals SET status='REJECTED',response_json=? WHERE run_id=? AND status='PENDING'", (json.dumps({'reason': reason}), run['id']))
+
+
 def halt(conn, run, sources, reason, rule_id):
     for source in sources:
         conn.execute('''INSERT INTO quarantined_sources VALUES (?,?,?,?,?,NULL)
@@ -63,11 +72,10 @@ def halt(conn, run, sources, reason, rule_id):
         return None
     from ..risk.cases import finish
     finish(conn, run['id'])
-    conn.execute("UPDATE tool_approvals SET status='REJECTED',response_json=? WHERE run_id=? AND status='PENDING'", (json.dumps({'reason': reason}), run['id']))
+    reject_pending(conn, run, reason)
     emit(conn, 'run_halted', run_id=run['id'], event_id='halt:' + run['id'], reason=reason, rule_id=rule_id, source_ids=sources)
     conn.execute("UPDATE agent_runs SET status='CANCELLED',completed_at=?,termination_reason='ANOMALOUS_SEQUENCE',bound_request_json='{}',vault_json='{}' WHERE id=?", (now(), run['id']))
-    text = ('I stopped this request because a source or proposed action did not pass the bank checks. '
-            'No payment has been made by the assistant. Please review the details in the banking screens or contact support.')
+    text = HALTED
     message = {'id': uuid.uuid4().hex, 'conversation_id': run['conversation_id'], 'role': 'assistant', 'content': text, 'created_at': now()}
     conn.execute('INSERT INTO messages VALUES (:id,:conversation_id,:role,:content,:created_at)', message)
     conn.execute('UPDATE conversations SET updated_at=? WHERE id=?', (message['created_at'], run['conversation_id']))
