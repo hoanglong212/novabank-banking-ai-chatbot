@@ -58,6 +58,10 @@ def transfer_status(transfer_id: str, user: DemoPrincipal = Depends(customer_use
         with get_db().connect() as conn:
             draft = transfers._own_transfer(conn, transfer_id, user)
             result = with_token(draft)
+            from ...transfer_chat import conversation_for
+            conversation = conversation_for(conn, user.id, transfer_id)
+            if conversation:
+                result['conversation_id'] = conversation
             if draft['transaction_id']:
                 row = conn.execute('SELECT balance_after_vnd FROM transaction_details WHERE transaction_id=?', (draft['transaction_id'],)).fetchone()
                 if row:

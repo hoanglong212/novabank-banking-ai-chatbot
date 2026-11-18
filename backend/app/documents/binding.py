@@ -3,6 +3,7 @@ import re
 from ..faq import fold
 
 ID = re.compile(r'\b[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b', re.I)
+SELECTION = re.compile(r'^\s*Document\s+' + ID.pattern + r'\s*:\s*', re.I)
 
 
 def requested(text):
@@ -11,7 +12,8 @@ def requested(text):
 
 def arguments(text):
     ids = ID.findall(text)
-    return {'question': text[:1000], **({'document_id': ids[0].lower()} if len(set(ids)) == 1 else {})}
+    question = SELECTION.sub('', text, count=1)
+    return {'question': (question or text)[:1000], **({'document_id': ids[0].lower()} if len(set(ids)) == 1 else {})}
 
 
 def resolve(db, owner, intent):

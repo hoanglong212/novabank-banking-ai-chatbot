@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, request } from '../../api';
 import type { DemoUser, Transfer } from '../../types';
 import { FactorForm } from '../profile/AuthenticatorSettings';
+import { PinForm } from '../profile/TransactionPin';
 
 interface StepUpState {
   required: boolean; new_recipient: boolean; totp_enabled: boolean; enrollment_required: boolean;
-  verified: boolean; expires_in: number; confirmation_method: 'email' | null; message: string;
+  verified: boolean; pin_setup_required: boolean; expires_in: number; confirmation_method: 'email' | null; message: string;
 }
 const message = (error: unknown) => {
   const text = (error as Error).message;
@@ -25,6 +26,7 @@ export function TransferStepUpGate({ user, transfer, step, onTransfer, children 
   const [revision, setRevision] = useState(0);
   const [enrolled, setEnrolled] = useState(false);
   const mounted = useRef(true);
+  const autoRequested = useRef(false);
   const endpoint = '/transfers/' + encodeURIComponent(transfer.id) + '/step-up';
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
@@ -49,7 +51,7 @@ export function TransferStepUpGate({ user, transfer, step, onTransfer, children 
     } catch (err) { if (mounted.current) { setError(message(err)); setCode(''); } }
     finally { if (mounted.current) setBusy(false); }
   }
-  async function requestCode() {
+  const requestCode = useCallback(async () => {
     if (busy) return;
     setBusy(true); setError('');
     try {
@@ -57,7 +59,12 @@ export function TransferStepUpGate({ user, transfer, step, onTransfer, children 
       if (mounted.current) onTransfer(result);
     } catch (err) { if (mounted.current) setError(message(err)); }
     finally { if (mounted.current) setBusy(false); }
-  }
+  }, [busy, onTransfer, transfer.id, user]);
+  useEffect(() => {
+    if (step === 'review' || !state || state.required || transfer.otp_method || autoRequested.current) return;
+    autoRequested.current = true;
+    void requestCode();
+  }, [step, state, transfer.otp_method, requestCode]);
   const origin = (transfer as Transfer & { source_origin?: string }).source_origin;
   const provenance = origin === 'qr' || origin === 'ocr'
     ? <p className="muted small">These payment details came from {origin === 'qr' ? 'a QR code' : 'an uploaded image'}. Check the recipient and amount independently.</p> : null;
@@ -66,7 +73,11 @@ export function TransferStepUpGate({ user, transfer, step, onTransfer, children 
   if (!state) return <>{provenance}{error
     ? <div role="alert" className="form-error">{error} <button type="button" className="link-button" onClick={() => setRevision(n => n + 1)}>Try recipient verification again</button></div>
     : <p role="status" className="muted">Checking recipient verification…</p>}</>;
-  if (!state.required) return <>{provenance}{children({ emailConfirmation: false })}</>;
+  if (!state.required) return <>{provenance}{transfer.otp_method
+    ? children({ emailConfirmation: false })
+    : error ? <><p role="alert" className="form-error">{error}</p><button type="button" className="primary-button"
+      disabled={busy} onClick={() => void requestCode()}>Retry bank verification</button></>
+      : <p role="status" className="muted">Preparing bank verification…</p>}</>;
   if (state.enrollment_required) return <section aria-label="Set up verification for this recipient">
     {provenance}{warning}<h3>Set up your authenticator</h3>
     <p className="muted">A transaction PIN cannot replace authenticator verification for a new recipient. No money has moved.</p>
@@ -81,10 +92,22 @@ export function TransferStepUpGate({ user, transfer, step, onTransfer, children 
       <button className="primary-button" disabled={busy || code.length !== 6}>{busy ? 'Verifying…' : 'Verify new recipient'}</button>
     </form>
   </section>;
+  if (state.pin_setup_required) return <section className="qr-form" aria-label="Create your transaction PIN">
+    {provenance}
+    <h3>Create your transaction PIN</h3>
+    <p className="muted">Authenticator verified. Set a 6-digit PIN for future transfers to verified recipients. You will confirm this payment with the separate email code.</p>
+    <PinForm user={user} submitLabel="Save PIN and continue" done={() => setRevision(n => n + 1)} />
+  </section>;
   if (transfer.otp_method !== 'email') return <section aria-label="Request transfer confirmation code">
     {provenance}<p role="status">Authenticator verification passed for this transfer. No money has moved.</p>
     {error && <p role="alert" className="form-error">{error}</p>}
     <button type="button" className="primary-button" disabled={busy} onClick={() => void requestCode()}>{busy ? 'Requesting code…' : 'Request transfer verification code'}</button>
   </section>;
-  return <>{provenance}{children({ emailConfirmation: true })}</>;
+  return <>{provenance}
+    {error && <p role="alert" className="form-error">{error}</p>}
+    {children({ emailConfirmation: true })}
+    <button type="button" className="link-button" disabled={busy} onClick={() => void requestCode()}>
+      {busy ? 'Sending a new code…' : 'Resend email code'}
+    </button>
+  </>;
 }

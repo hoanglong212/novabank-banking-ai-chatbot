@@ -57,7 +57,14 @@ async def search(db, query, limit=4):
             JOIN knowledge_documents d ON d.id=c.document_id WHERE d.status='PUBLISHED' AND d.trust_level='approved' ''')]
         documents = [dict(r) for r in conn.execute("SELECT * FROM knowledge_documents WHERE status='PUBLISHED' AND trust_level='approved'")]
     mode, scored = 'keyword_fallback', []
-    if rows:
+    from .faq import exact_question, fold
+    article = exact_question(query)
+    if article:
+        scored = [(1.0, doc['id'], doc['title'], doc['content'], doc['source']) for doc in documents
+                  if doc['id'] == 'KB-help-' + article]
+        if scored:
+            documents = []
+    if rows and not scored:
         try:
             model, vectors = await embed([query]); vector = vectors[0]
             norm = math.sqrt(sum(x*x for x in vector)) or 1
@@ -73,12 +80,16 @@ async def search(db, query, limit=4):
                 mode = 'vector'
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
             pass
-    if not scored:
-        words = set(re.findall(r'\w{3,}', query.lower()))
-        for doc in documents:
-            score = len(words & set(re.findall(r'\w{3,}', (doc['title'] + ' ' + doc['content']).lower())))
-            if score:
-                scored.append((score, doc['id'], doc['title'], doc['content'][:1400], doc['source']))
+    indexed_ids = {item[1] for item in scored}
+    words = set(re.findall(r'\w{3,}', fold(query)))
+    for doc in documents:
+        if doc['id'] in indexed_ids:
+            continue
+        terms = set(re.findall(r'\w{3,}', fold(doc['title'] + ' ' + doc['content'])))
+        matched = len(words & terms)
+        if matched:
+            score = matched / len(words) if mode == 'vector' else matched
+            scored.append((score, doc['id'], doc['title'], doc['content'][:1400], doc['source']))
     scored.sort(key=lambda row: row[0], reverse=True)
     return {'retrieval_method': mode, 'sources': [dict(document_id=doc_id, title=title, text=text, source=source,
             trust_level='approved', score=round(score, 5), citation=doc_id) for score, doc_id, title, text, source in scored[:limit]],

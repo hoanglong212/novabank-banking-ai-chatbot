@@ -14,12 +14,16 @@ PIN_MAX_FAILURES = 5
 PIN_LOCK_SECONDS = 900
 
 
+def has_pin(conn, user_id):
+    return bool(conn.execute('SELECT 1 FROM transaction_pins WHERE user_id=?', (user_id,)).fetchone())
+
+
 def transaction_factor(conn, user_id):
     """'totp' (authenticator) > 'pin' (customer-chosen) > 'setup_required' (new account) > 'email' (API fallback)."""
     row = conn.execute('SELECT secret_encrypted FROM mfa_settings WHERE user_id=?', (user_id,)).fetchone()
     if row and row[0]:
         return 'totp'
-    if conn.execute('SELECT 1 FROM transaction_pins WHERE user_id=?', (user_id,)).fetchone():
+    if has_pin(conn, user_id):
         return 'pin'
     return 'setup_required' if conn.execute('SELECT 1 FROM totp_required WHERE user_id=?', (user_id,)).fetchone() else 'email'
 
@@ -93,7 +97,7 @@ def set_pin(db, user, password, pin):
 def status(db, user):
     with closing(db.connect()) as conn:
         row = conn.execute('SELECT secret_encrypted FROM mfa_settings WHERE user_id=?', (user.id,)).fetchone()
-        pin = bool(conn.execute('SELECT 1 FROM transaction_pins WHERE user_id=?', (user.id,)).fetchone())
+        pin = has_pin(conn, user.id)
         required = bool(conn.execute('SELECT 1 FROM totp_required WHERE user_id=?', (user.id,)).fetchone())
     totp = bool(row and row[0])
     return {'totp_enabled': totp, 'email_fallback': True, 'pin_set': pin, 'setup_required': required and not pin and not totp}

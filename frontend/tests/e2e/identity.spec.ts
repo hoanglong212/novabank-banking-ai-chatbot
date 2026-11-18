@@ -1,5 +1,5 @@
 import { test, expect, type Page } from './fixtures';
-import { authenticatorCode, completeEmailMfa, demoLogin, localMessage } from './auth-helpers';
+import { authenticatorCode, completeEmailMfa, createTransactionPin, demoLogin, localMessage } from './auth-helpers';
 
 const password = 'A long browser passphrase 2026!';
 const replacement = 'A different browser passphrase 2026!';
@@ -67,6 +67,7 @@ test('register, verify, recover and revoke previous sessions through the real UI
   await payer.getByRole('button', { name: 'Enable authenticator', exact: true }).click();
   await payer.getByLabel('New-recipient authenticator code', { exact: true }).fill(authenticatorCode(secret));
   await payer.getByRole('button', { name: 'Verify new recipient', exact: true }).click();
+  await createTransactionPin(payer, 'alice');
   await payer.getByRole('button', { name: 'Request transfer verification code', exact: true }).click();
   await payer.getByLabel('Transfer email code', { exact: true }).fill(localMessage('alice@novabank.test', 'TRANSFER_OTP').code);
   await payer.getByRole('button', { name: 'Confirm transfer', exact: true }).click();

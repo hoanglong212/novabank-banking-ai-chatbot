@@ -51,6 +51,10 @@ def cited_document(conn, db, run):
 def attribute(conn, db, run, answer):
     evidence = cited_document(conn, db, run)
     if not evidence:
+        failure = conn.execute("SELECT reason FROM agent_calls WHERE run_id=? AND name='ask_document' "
+                               "ORDER BY ordinal DESC LIMIT 1", (run['id'],)).fetchone()
+        if failure and failure[0] in ('DOCUMENT_READER_UNAVAILABLE', 'DOCUMENT_RETRIEVAL_UNAVAILABLE'):
+            return 'The document is indexed, but the reader could not finish this question. Try again or ask about one section at a time.'
         return 'I could not verify an answer from this document. Select a ready document and try again.'
     # Filename is displayed as plain text, not a link or Markdown instruction.
     name = re.sub(r'[\[\]<>*`#]|(?:https?://|www\.)\S+', '', evidence[0]['filename_display'], flags=re.I)

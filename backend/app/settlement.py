@@ -63,6 +63,8 @@ def process_due(db, force=False):
             conn.execute('UPDATE interbank_settlements SET status=?,processed_at=?,failure_reason=?,reversal_transaction_id=? WHERE transfer_id=?',
                          (status, stamp, 'SIMULATED_RECIPIENT_REJECTED' if failed else None, reversal, row['id']))
             audit(conn, row['owner_id'], 'INTERBANK_' + status, row['id'], 'REVERSED' if failed else 'SETTLED', stamp)
+            from .transfer_chat import record
+            record(conn, row, status, row['transaction_id'], stamp)
             if not failed:
                 from .transfer_stepup import remember_completed
                 remember_completed(conn, row['id'])

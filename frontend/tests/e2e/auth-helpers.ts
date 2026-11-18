@@ -52,6 +52,13 @@ export function authenticatorCode(secret: string, stepOffset = 0) {
 export const DEMO_PIN = '482916';
 const demoPassword = (username: string) => username.charAt(0).toUpperCase() + username.slice(1) + '@2026';
 
+export async function createTransactionPin(scope: Page | Locator, username: string) {
+  await scope.getByLabel('Current password', { exact: true }).fill(demoPassword(username));
+  await scope.getByLabel('New 6-digit PIN', { exact: true }).fill(DEMO_PIN);
+  await scope.getByLabel('Repeat PIN', { exact: true }).fill(DEMO_PIN);
+  await scope.getByRole('button', { name: 'Save PIN and continue', exact: true }).click();
+}
+
 /** Confirm with the transaction PIN, creating it first if this account has none yet (test order varies). */
 export async function enterTransactionPin(scope: Page | Locator, username: string) {
   const field = scope.getByLabel('Transaction PIN', { exact: true });
@@ -60,10 +67,7 @@ export async function enterTransactionPin(scope: Page | Locator, username: strin
   await expect(either).toBeVisible();
   // The create-PIN input is autocomplete="new-password"; read it from whichever input rendered.
   if (await either.getAttribute('autocomplete') === 'new-password') {
-    await scope.getByLabel('Current password', { exact: true }).fill(demoPassword(username));
-    await create.fill(DEMO_PIN);
-    await scope.getByLabel('Repeat PIN', { exact: true }).fill(DEMO_PIN);
-    await scope.getByRole('button', { name: 'Save PIN and continue', exact: true }).click();
+    await createTransactionPin(scope, username);
   }
   await field.fill(DEMO_PIN);
 }

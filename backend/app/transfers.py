@@ -15,7 +15,7 @@ from .auth import DemoPrincipal
 from .database import Database, now
 from .faq import fold
 from .posting import TransferError, VIETNAM, audit, post_transfer, validate_accounts
-from .mfa_settings import PIN_MARK, TOTP_MARK, transaction_factor, verify_factor
+from .mfa_settings import PIN_MARK, TOTP_MARK, transaction_factor, verify_pin, verify_totp
 from .security_events import transfer_event
 
 NOVABANK = {'novabank', 'nova', 'nvb'}
@@ -153,12 +153,11 @@ def issue_otp(db: Database, user: DemoPrincipal, transfer_id: str) -> tuple[dict
         from .risk.scorer import guard_otp
         guard_otp(conn, transfer_id)
         from . import transfer_stepup
-        transfer_stepup.require_stepup(conn, user, t)
-        new_payee_email = transfer_stepup.email_confirmation_required(conn, user, t)
+        factor = transfer_stepup.confirmation_method(conn, user, t)
         if _expires_at(t) <= stamp:
             _fail(conn, t, 'DRAFT_EXPIRED', stamp)
             error = TransferError('DRAFT_EXPIRED')
-        elif not new_payee_email and (factor := transaction_factor(conn, user.id)) in ('totp', 'pin'):
+        elif factor in ('totp', 'pin'):
             # The customer supplies the code (authenticator or own PIN): nothing is generated or mailed.
             otp, mark = None, TOTP_MARK if factor == 'totp' else PIN_MARK
             conn.execute('UPDATE transfers SET otp_hash=?,otp_expires_at=? WHERE id=?', (mark, _expires_at(t), transfer_id))
@@ -205,14 +204,21 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
         _fail(conn, t, 'DRAFT_EXPIRED', stamp)
         return TransferError('DRAFT_EXPIRED')
     from . import transfer_stepup
-    transfer_stepup.require_stepup(conn, user, t)
-    new_payee_email = transfer_stepup.email_confirmation_required(conn, user, t)
+    factor = transfer_stepup.confirmation_method(conn, user, t)
+    new_payee_email = factor == 'stepup_email'
     if not t['otp_hash']:
         return TransferError('OTP_REQUIRED')
     if t['otp_expires_at'] <= stamp:
         return TransferError('OTP_EXPIRED')
-    # Checked against the customer's current factor, so setting a PIN mid-payment works on this draft.
-    check = None if new_payee_email else verify_factor(conn, db, user.id, otp, datetime.fromisoformat(stamp).timestamp())
+    # Preserve existing TOTP challenges. A legacy email challenge for a known
+    # recipient can use the newly configured PIN, but new-payee email codes are separate.
+    seconds = int(datetime.fromisoformat(stamp).timestamp())
+    check = None
+    if not new_payee_email:
+        if t['otp_hash'] == TOTP_MARK:
+            check = 'ok' if verify_totp(conn, db, user.id, otp, seconds) else 'bad'
+        elif factor == 'pin':
+            check = verify_pin(conn, user.id, otp, seconds)
     if check == 'locked':
         audit(conn, user.id, 'OTP_REJECTED', transfer_id, 'PIN_LOCKED', stamp)
         return TransferError('PIN_LOCKED')
@@ -241,6 +247,8 @@ def _confirm_locked(conn, db: Database, user: DemoPrincipal, transfer_id: str, o
     else:
         transfer_stepup.remember_completed(conn, transfer_id)
     result = {**public({**t, 'status': 'COMPLETED', 'transaction_id': posted['transaction_id']}), **posted}
+    from .transfer_chat import record
+    record(conn, t, result['status'], posted['transaction_id'], stamp)
     if key is not None:
         conn.execute('INSERT INTO idempotency_keys VALUES (?,?,?,?,?)',
                      (user.id, key, transfer_id, json.dumps(result), stamp))

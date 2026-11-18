@@ -48,9 +48,9 @@ export function TransactionPinSettings({ user, status, changed }: { user: DemoUs
   const [open, setOpen] = useState(false);
   return <>
     <p><strong>{status.pin_set ? 'Transaction PIN set' : 'No transaction PIN yet'}</strong></p>
-    <p className="muted small">{status.totp_enabled
-      ? 'Your authenticator app confirms payments. The PIN is used if you turn the app off.'
-      : status.pin_set ? 'Transfers, bills, savings and card changes are confirmed with your PIN.' : 'You will be asked to create one at your first payment.'}</p>
+    <p className="muted small">{status.pin_set
+      ? 'Use your PIN for transfers to verified recipients. The bank also checks your authenticator when you pay a new recipient.'
+      : 'Set a 6-digit PIN to confirm future transfers to verified recipients.'}</p>
     <button className="secondary-button" onClick={() => setOpen(true)}><KeyRound size={16} aria-hidden="true" /> {status.pin_set ? 'Change PIN' : 'Create PIN'}</button>
     <Sheet open={open} onClose={() => setOpen(false)} title={status.pin_set ? 'Change transaction PIN' : 'Create transaction PIN'}>
       {open && <PinForm user={user} done={message => { setOpen(false); changed(message); }} />}

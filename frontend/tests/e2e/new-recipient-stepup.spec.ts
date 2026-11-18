@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { authenticatorCode, demoLogin, localMessage } from './auth-helpers';
+import { authenticatorCode, createTransactionPin, demoLogin, localMessage } from './auth-helpers';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -57,6 +57,8 @@ test('fresh TOTP login, recipient-bound step-up and separate email OTP protect a
     await customer.screenshot({ path: info.outputPath('02-recipient-stepup.png'), fullPage: true });
     await customer.getByLabel('New-recipient authenticator code', { exact: true }).fill(authenticatorCode(secret, 1));
     await customer.getByRole('button', { name: 'Verify new recipient', exact: true }).click();
+    await expect(customer.getByRole('heading', { name: 'Create your transaction PIN', exact: true })).toBeVisible();
+    await createTransactionPin(customer, 'alice');
     await expect(customer.getByRole('button', { name: 'Request transfer verification code', exact: true })).toBeVisible();
     await customer.screenshot({ path: info.outputPath('03-stepup-passed.png'), fullPage: true });
     expect((await (await customer.request.get('/api/me', { headers })).json()).accounts[0].balance_vnd).toBe(before);

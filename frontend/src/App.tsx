@@ -69,12 +69,16 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileError, setProfileError] = useState('');
   const [prefill, setPrefill] = useState<TransferStart>({});
+  const [transferReturn, setTransferReturn] = useState('/home');
+  const [transferOrigin, setTransferOrigin] = useState<{ draftId: string; conversationId: string } | null>(null);
   const transferMatch = path.match(/^\/transfer\/([A-Za-z0-9-]+)\/(review|otp|receipt)$/);
   const qrMatch = path.match(/^\/qr\/pay\/([A-Za-z0-9-]+)$/);
   const approvalMatch = path.match(/^\/approvals\/([A-Za-z0-9-]+)$/);
   const transfer = customer ? (path === '/transfer/new' ? prefill : transferMatch || qrMatch ? { draftId: (transferMatch || qrMatch)![1] } : null) : null;
+  const relatedChat = transferOrigin && transferOrigin.draftId === transfer?.draftId ? transferOrigin.conversationId : null;
   const setTransfer = (start: TransferStart) => {
     setPrefill(start);
+    setTransferReturn(path === '/assistant' ? '/assistant' : '/home');
     navigate(start.draftId ? '/transfer/' + encodeURIComponent(start.draftId) + '/review' : '/transfer/new');
   };
   // UI mirror of server RBAC (the API enforces it regardless): staff pages need the staff permission, not just the URL.
@@ -111,11 +115,17 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">Skip to content</a>
-      <NavBar tab={tab} setTab={setTab} user={user} logout={logout} />
+      <NavBar tab={approvalMatch || relatedChat || (transferMatch && transferReturn === '/assistant') ? 'assistant' : tab}
+        setTab={setTab} user={user} logout={logout} />
       {/* key restarts the enter animation on every tab change */}
       <main id="main" key={tab} className={`app-main ${tab === 'assistant' ? 'is-assistant' : ''}`}>
         {profileError && <div role="alert" className="form-error">Could not load account information. {profileError} <button className="link-button" onClick={() => setRefresh(n => n + 1)}>Try again</button></div>}
-        {denied ? <p role="alert" className="form-error">403 · Your role does not have access to this page.</p> : approvalMatch ? <ApprovalPage key={approvalMatch[1]} user={user} id={approvalMatch[1]} /> : <>
+        {denied ? <p role="alert" className="form-error">403 · Your role does not have access to this page.</p> : approvalMatch ? <ApprovalPage key={approvalMatch[1]} user={user} id={approvalMatch[1]}
+          openTransfer={(id, conversation) => {
+            setTransferReturn('/assistant');
+            if (conversation) setTransferOrigin({ draftId: id, conversationId: conversation });
+            navigate('/transfer/' + encodeURIComponent(id) + '/otp');
+          }} /> : <>
         {tab === 'home' && <Home user={user} profile={profile} profileError={profileError} revision={refresh} navigate={setTab} ask={ask} transfer={() => setTransfer({})} />}
         {tab === 'activity' && <Activity user={user} profile={profile} openTransaction={setTransactionId} />}
         {tab === 'notifications' && <Notifications user={user} openTransaction={setTransactionId} />}
@@ -131,7 +141,13 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
       {customer && tab !== 'assistant' && !approvalMatch && <NovaBubble chat={chat} pay={setTransfer} />}
       <TransferSheet user={user} start={transfer} step={transferMatch?.[2] ?? (qrMatch ? 'review' : 'new')}
         onNavigate={(id, step) => navigate('/transfer/' + encodeURIComponent(id) + '/' + step)}
-        onClose={() => navigate('/home')} onDone={() => setRefresh(n => n + 1)} />
+        onOrigin={setTransferOrigin}
+        onClose={() => {
+          if (relatedChat) chat.setActive(relatedChat);
+          navigate(relatedChat ? '/assistant' : transferReturn);
+          chat.reloadMessages();
+        }}
+        onDone={() => { setRefresh(n => n + 1); chat.reloadMessages(); }} />
       <TransactionDetails user={user} id={transactionId} onClose={() => setTransactionId(null)} ask={customer ? text => { setTransactionId(null); ask(text); } : undefined} />
     </div>
   );
