@@ -27,7 +27,7 @@ Một người đăng nhập cùng tài khoản từ hai máy sẽ thấy cùng 
 
 1. Chọn một máy chủ Linux, tên miền và mạng nhóm được phép. Làm theo [hướng dẫn HTTPS](DEPLOYMENT.md#chia-sẻ-qua-https) để chuẩn bị `.env.hosted`, key và volume.
 2. Với môi trường mới, dùng seed dữ liệu giả sẵn có. Nếu đã có bản hosted, giữ volume đang gắn vào `/data`. Mặc định là `novabank-demo_bank-data`. Nếu cần lấy dữ liệu từ một máy cũ, chọn một snapshot làm nguồn và phục hồi cả DB lẫn key MFA theo [quy trình backup](DEPLOYMENT.md#backup-và-restore) trước khi chuyển người dùng. Các bản SQLite riêng hiện tại có thể chứa cùng ID seed với lịch sử khác nhau, nên việc gộp chúng cần đối soát theo nghiệp vụ.
-3. Mở URL HTTPS để dùng chung. Thành viên đang sửa frontend có thể đặt `NOVABANK_DEV_API_TARGET` trong [cấu hình Vite](../../frontend/README.md#use-the-shared-database). Thay đổi schema hoặc backend chỉ có hiệu lực trên DB chung sau khi người vận hành cập nhật Bank trên máy chủ.
+3. Mở URL HTTPS để dùng chung. Thành viên đang sửa frontend đặt `NOVABANK_DEV_API_TARGET` trong `frontend/.env.shared.local` rồi chạy [`npm run dev:shared`](../../frontend/README.md#use-the-shared-database). Lệnh yêu cầu URL HTTPS của nhóm ngay khi khởi động. Thay đổi schema hoặc backend chỉ có hiệu lực trên DB chung sau khi người vận hành cập nhật Bank trên máy chủ.
 4. Dùng một tài khoản thử riêng cho mỗi người. `alice`, `bob` và `charlie` có sẵn cho demo nhanh. Với nhiều người hơn, đăng ký bằng địa chỉ thử nghiệm riêng. NovaBank mô phỏng email, nên người vận hành lấy link xác minh bằng `dev-outbox.py` trên máy chủ và chuyển riêng cho đúng chủ tài khoản:
 
    ```sh

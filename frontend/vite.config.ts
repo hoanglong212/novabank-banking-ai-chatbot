@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const target = loadEnv(mode, '.', 'NOVABANK_DEV_').NOVABANK_DEV_API_TARGET?.trim();
+  const shared = mode === 'shared';
+  const missingSharedTarget = 'Set NOVABANK_DEV_API_TARGET to the team HTTPS URL in frontend/.env.shared.local.';
   let apiProxy: string | { target: string; changeOrigin: boolean } = 'http://127.0.0.1:8080';
 
+  if (shared && !target) {
+    throw new Error(missingSharedTarget);
+  }
   if (target) {
     const invalid = 'NOVABANK_DEV_API_TARGET must be an HTTPS origin or an HTTP loopback origin.';
     let origin: URL;
@@ -13,7 +18,11 @@ export default defineConfig(({ mode }) => {
     } catch {
       throw new Error(invalid);
     }
-    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
+    const host = origin.hostname.replace(/\.$/, '');
+    const loopback = host === 'localhost' || /^127(?:\.\d{1,3}){3}$/.test(host) || host === '[::1]';
+    if (shared && (origin.protocol !== 'https:' || loopback)) {
+      throw new Error(missingSharedTarget);
+    }
     if ((origin.protocol !== 'https:' && !(origin.protocol === 'http:' && loopback)) ||
         origin.username || origin.password || origin.pathname !== '/' || origin.search || origin.hash) {
       throw new Error(invalid);

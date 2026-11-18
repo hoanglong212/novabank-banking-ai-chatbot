@@ -32,7 +32,7 @@ Check model downloads with `docker compose -f compose.local.yaml logs models`. [
 | --- | --- | --- |
 | Docker on your computer | [.env.example](.env.example) | Root `.env`, optional for port or model overrides |
 | Shared HTTPS demo | [.env.hosted.example](.env.hosted.example) | Root `.env.hosted`, passed with `docker compose --env-file .env.hosted` |
-| Local frontend using the shared server | [frontend/.env.example](frontend/.env.example) | `frontend/.env.local` with the team's API origin |
+| Local frontend using the shared server | [frontend/.env.example](frontend/.env.example) | `frontend/.env.shared.local` with the team's API origin. Start with `npm run dev:shared`. |
 | Native Windows launcher | [backend/.env.example](backend/.env.example) | `backend/.env`, created by `-Setup` if absent |
 | Optional research adapter | [research/.env.example](research/.env.example) | `research/.env`, supplied explicitly to the adapter |
 

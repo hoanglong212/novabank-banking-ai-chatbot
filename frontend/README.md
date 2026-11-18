@@ -11,13 +11,15 @@ Open the URL printed by Vite, normally <http://127.0.0.1:5173>. Vite forwards `/
 
 ## Use the shared database
 
-If the team already has a hosted NovaBank demo, copy [the frontend environment template](.env.example) to `frontend/.env.local` and set the team's HTTPS origin:
+If the team already has a hosted NovaBank demo, copy [the frontend environment template](.env.example) to `frontend/.env.shared.local` and set the team's HTTPS origin:
 
 ```dotenv
 NOVABANK_DEV_API_TARGET=https://review.example.com
 ```
 
-Restart `npm run dev` and sign in. Vite forwards API requests to that server, so actions use the team's data and Agent. Your machine needs access to the review network. The hosted Bank handles user permissions. For experiments that need disposable data, leave the target unset and run your local stack.
+Run `npm run dev:shared` and sign in. This command requires the hosted HTTPS target and stops before listening if the URL is absent or points to loopback. Vite forwards API requests to that server, so actions use the team's DB and Agent. Your machine needs access to the review network.
+
+For disposable data, start the workstation stack and use `npm run dev`. The shared mode file is loaded only by `dev:shared`.
 
 ## Where to make changes
 
