@@ -9,6 +9,53 @@ FALSE_DONE = re.compile(
     r"(?i)\b(?:(?:has|have) been (?:successfully )?(?:processed|sent|paid|transferred|submitted|created|executed|made)"
     r"|processed successfully|(?:is|was) now (?:complete|completed|successful|paid|sent)"
     r"|I(?: have|'ve)? (?:successfully |just )?(?:sent|paid|transferred|processed|created|submitted|executed|completed)\b)")
+# A sentence that states the status of ONE specific transfer, transaction or ticket (EN/VI). On a turn with no proposal
+# and no status read, the bank knows nothing was prepared or completed, so such a sentence is replaced by NOT_DONE.
+# Specific = the assistant speaks in the first person, the user's own item, or a concrete amount. Conditional or
+# general rules (if/once/when/unless/nếu/khi) are policy text, not claims.
+# shortcut: spotting "a sentence about status" is lexical; a paraphrase avoiding these words, or a claim wrapped in a
+# when/once clause, passes. Upgrade to server-rendered status (no model prose on these topics) if adversarial_eval finds one.
+STATUS_SPECIFIC = re.compile(r"\bI(?:'ve| have)?\b|(?i:\b(?:tôi|mình) đã\b|\byour (?:\w+ )?(?:transfer|payment|transaction|ticket|request|refund)s?\b"
+                             r"|\bcủa bạn\b|\d[\d.,]*\s*(?:VND|₫|đ)\b)")
+CONDITIONAL = re.compile(r'(?i)\b(?:if|once|when|unless|nếu|khi)\b')
+STATUS_SUBJECT = re.compile(r'(?i)\b(?:transfer|payment|transaction|ticket|money|funds|refund)s?\b|\d[\d.,]*\s*(?:VND|₫|đ)\b'
+                            r'|\b(?:chuyển|giao dịch|thanh toán|phiếu|tiền|hoàn tiền)\b')
+STATUS_CLAIM = re.compile(
+    r"(?i)\b(?:has|have|had) been\b|\b(?:was|were) (?:successfully |already )?(?:\w+ed|sent|paid|done|made)\b"
+    r"|\b(?:is|are) (?:now|being|already)\b|\bconfirmed\b|\bsuccessful(?:ly)?\b|\bwent through\b|\bon (?:its|the) way\b"
+    r"|\bI(?:'ve| have)? (?:successfully |just |already )?(?:sent|paid|transferred|processed|created|submitted|executed|completed|confirmed|approved|made|filed|opened)\b"
+    r"|\b(?:đã|đang được|vừa)\b|\bthành công\b|\bhoàn tất\b|\bxác nhận\b")
+STATUS_READS = ('get_transaction_status', 'get_recent_transactions', 'get_support_tickets')
+
+
+# Transaction topics (EN/VI, with or without diacritics). On a turn whose bound message never raised money, an answer may
+# not state the status of a transaction: one sentence with a topic word and a status word is replaced.
+# shortcut: a status sentence with no topic word ("Done, it went through.") or no status word passes, and a policy sentence
+# with both ("...that has been scanned...payment") is replaced; upgrade with a server-side classifier if either is abused.
+TOPIC = re.compile(r'(?i)\b(?:transfer\w*|payments?|pay|paid|transactions?|money|funds?|refund\w*|tickets?|support requests?)\b'
+                   r'|\b(?:chuyển|chuyển tiền|chuyển khoản|thanh toán|giao dịch|tiền|hoàn tiền|phiếu hỗ trợ)\b'
+                   r'|\b(?:chuyen tien|chuyen khoan|thanh toan|giao dich|hoan tien|phieu ho tro)\b')
+# The user raises a money topic in more words than an answer may (spending, bills, recipients...). "card" is left out on
+# purpose: "How do I change my card PIN?" must stay off-topic.
+USER_TOPIC = re.compile(TOPIC.pattern + r'|\b(?:spend\w*|spent|bills?|recipients?|beneficiar\w*|limits?|balances?|accounts?)\b'
+                        r'|\b(?:chi tiêu|chi tieu|hóa đơn|hoá đơn|hoa don|người nhận|nguoi nhan|hạn mức|han muc|số dư|so du|tài khoản|tai khoan)\b')
+
+
+def sentences(answer):
+    return re.split(r'(?<=[.!?])\s+|\n', answer)
+
+
+def opens_topic(user_text, answer):
+    # No STATUS_SPECIFIC and no conditional exemption here: the user never asked, so any status sentence is a claim.
+    return not USER_TOPIC.search(user_text) and any(
+        (TOPIC.search(s) or STATUS_SUBJECT.search(s)) and STATUS_CLAIM.search(s) for s in sentences(answer))
+
+
+def claims_status(answer):
+    return any(STATUS_SUBJECT.search(s) and STATUS_CLAIM.search(s) and STATUS_SPECIFIC.search(s) and not CONDITIONAL.search(s)
+               for s in sentences(answer))
+
+
 NOT_DONE = ('Nothing has been sent, paid or changed. I cannot complete payments, transfers or tickets from chat. '
             'Put the whole request in one message with the amount and recipient, and I will prepare '
             'a draft for you to review and confirm with an OTP. You can also use the Transfer screen.')
@@ -65,7 +112,7 @@ def _filtered_answer(conn, db, run, answer):
         answer = 'No action has been prepared or completed. Please use the banking screens or provide a specific request with the required details.'
     elif re.search(r'(?i)\b(?:send|provide|give|enter)\b.{0,40}\b(?:otp|pin|password|verification code)\b', answer):
         answer = 'Never share passwords, PINs or verification codes in chat. Use only the bank confirmation screen for codes.'
-    elif FALSE_DONE.search(answer):
+    elif FALSE_DONE.search(answer) or (intent['tool'] not in STATUS_READS and claims_status(answer)):
         answer = NOT_DONE
     elif intent['tool'] in ('get_cards', 'get_savings'):
         answer, verified_balance = product_financial_answer(conn, run, intent)
@@ -82,6 +129,10 @@ def _filtered_answer(conn, db, run, answer):
             verified_balance = True
         else:
             answer = 'I have not verified your current balance. Please check the dashboard or ask me to check again.'
+    elif (staff and staff[0] == 'customer' and intent['tool'] not in STATUS_READS
+          and opens_topic(intent.get('text', ''), answer)):
+        # After the server-rendered branches above, whose text never comes from the model.
+        answer = NOT_DONE
     elif not proposal:
         answer = cite_retrieved_sources(conn, run, answer)
     from .agent.disclosure import filter_answer

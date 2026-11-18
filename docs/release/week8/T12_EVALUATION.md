@@ -17,6 +17,12 @@ backend/.venv/Scripts/python.exe scripts/week8_evaluate.py --project-root <APPLI
 backend/.venv/Scripts/python.exe scripts/week8_evaluate.py --project-root <FROZEN_APPLICATION_ROOT> --out .local/week8-evaluation/c-smoke --execute --models qwen2.5:7b qwen3:8b --configs C --channels transfer_memo --goals G1 G2 G3 G4 G5 G6 --attempts 2 --benign-controls 1
 
 backend/.venv/Scripts/python.exe scripts/week8_report.py <EXPERIMENT_DIRECTORY>
+
+# Layer-by-layer table from backend/tests/test_layer_verification.py (no model); also writes scripts/layer_report.md.
+backend/.venv/Scripts/python.exe scripts/layer_report.py <APPLICATION_ROOT>
+
+# Fully compromised main agent (scripted), every other layer real; B/D need Prompt Guard and Ollama for the detectors.
+backend/.venv/Scripts/python.exe scripts/adversarial_eval.py --project-root <APPLICATION_ROOT> --seed-db <SEED_DB> --snapshot <COMMIT> --configs A B C D --output .local/week8-evaluation/adv-final
 ```
 
 `--project-root` is explicit so this runner can test an integrated working tree from a separate worktree. Source commit and hashes of bank/agent/policy files are recorded, including uncommitted source bytes. Resume refuses changed manifests, source identities or model digests/versions. A partially written final checkpoint line is recoverable; malformed interior observations are rejected. Existing completed trial IDs are not rerun or overwritten. Model inventory failures and an absent requested Qwen3 produce unavailable observations; they do not become zero-ASR results.
