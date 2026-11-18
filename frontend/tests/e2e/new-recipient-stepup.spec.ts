@@ -3,6 +3,7 @@ import { authenticatorCode, demoLogin, localMessage } from './auth-helpers';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pythonExecutable } from './python';
 
 test('fresh TOTP login, recipient-bound step-up and separate email OTP protect a new payee', async ({ page, browser }, info) => {
   test.setTimeout(120_000);
@@ -36,7 +37,7 @@ test('fresh TOTP login, recipient-bound step-up and separate email OTP protect a
     // Explicit fresh-payee fixture: never alter the active demonstration DB.
     const root = resolve('..');
     const db = JSON.parse(readFileSync(resolve(root, '.local/e2e/latest.json'), 'utf8')).db_path;
-    execFileSync(resolve(root, 'backend/.venv/Scripts/python.exe'), ['-c',
+    execFileSync(pythonExecutable(root), ['-c',
       'import pathlib,sqlite3,sys; p=pathlib.Path(sys.argv[1]).resolve(); root=pathlib.Path(sys.argv[2]).resolve(); assert p.is_relative_to(root/".local"/"e2e"); c=sqlite3.connect(p); exists=c.execute("SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'verified_payees\'").fetchone(); c.execute("DELETE FROM verified_payees WHERE owner_id=? AND to_account=?",("alice","ACC-CHARLIE-001")) if exists else None; c.commit(); assert c.execute("SELECT COUNT(*) FROM transfers WHERE owner_id=? AND to_account=? AND status=\'COMPLETED\'",("alice","ACC-CHARLIE-001")).fetchone()[0]==0', db, root]);
 
     await customer.getByRole('button', { name: 'Transfer', exact: true }).click();

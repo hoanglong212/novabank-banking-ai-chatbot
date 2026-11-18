@@ -1,7 +1,8 @@
 import { test as base, expect } from '@playwright/test';
 import { spawn } from 'node:child_process';
-import { existsSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pythonExecutable } from './python';
 
 export { expect };
 export type { Page, Locator } from '@playwright/test';
@@ -11,8 +12,7 @@ export type { Page, Locator } from '@playwright/test';
 export const test = base.extend<{ bankServer: void }>({
   bankServer: [async ({}, use, info) => {
     const root = resolve('..');
-    const localPython = resolve(root, process.platform === 'win32' ? 'backend/.venv/Scripts/python.exe' : 'backend/.venv/bin/python');
-    const python = process.env.NOVABANK_PYTHON || (existsSync(localPython) ? localPython : 'python');
+    const python = pythonExecutable(root);
     const health = 'http://127.0.0.1:8092/api/health';
     const occupied = await fetch(health).then(() => true, () => false);
     if (occupied) throw new Error('E2E port 8092 is already in use; refusing to use another server.');

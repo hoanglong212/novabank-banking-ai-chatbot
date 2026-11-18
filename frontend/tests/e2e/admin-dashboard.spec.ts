@@ -1,8 +1,9 @@
 import { test, expect, type Page } from './fixtures';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
 import { demoLogin, localMessage, transactionCode } from './auth-helpers';
+import { pythonExecutable } from './python';
 
 async function headers(page: Page) {
   return { Authorization: 'Bearer ' + await page.evaluate(() => JSON.parse(sessionStorage.getItem('novabank-session')!).token) };
@@ -21,8 +22,7 @@ function settlementFixture(pendingId?: string) {
   const root = resolve('..');
   const db = resolve(JSON.parse(readFileSync(resolve(root, '.local/e2e/latest.json'), 'utf8')).db_path);
   if (relative(resolve(root, '.local/e2e'), db).startsWith('..')) throw new Error('Expected disposable E2E database');
-  const venv = resolve(root, process.platform === 'win32' ? 'backend/.venv/Scripts/python.exe' : 'backend/.venv/bin/python');
-  const python = process.env.NOVABANK_PYTHON || (existsSync(venv) ? venv : 'python');
+  const python = pythonExecutable(root);
   // Keep only this fixture pending while the normal worker can continue processing other transfers.
   const code = pendingId
     ? "import sqlite3,sys; from datetime import datetime,timedelta,timezone; c=sqlite3.connect(sys.argv[2]); c.execute(\"UPDATE interbank_settlements SET due_at=? WHERE transfer_id=? AND status='PENDING'\", ((datetime.now(timezone.utc)+timedelta(days=1)).isoformat(),sys.argv[3])); c.commit(); c.close()"

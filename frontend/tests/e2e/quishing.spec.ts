@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { test, expect } from './quishing-fixture';
 import { demoLogin, enterTransactionPin } from './auth-helpers';
+import { pythonExecutable } from './python';
 
 test.use({ video: 'on' });
 
@@ -12,7 +13,7 @@ test('malicious signed QR image is blocked without opening its URL or drafting p
     account_name: 'BOB TRAN', add_info: 'https://evil.example/pay' })).toString('base64url');
   const payload = 'NBQR1:' + raw + '.' + createHmac('sha256', qrBank.signingKey).update('NBQR1:' + raw).digest('hex');
   const root = resolve('..');
-  const python = process.env.NOVABANK_PYTHON || resolve(root, 'backend/.venv/Scripts/python.exe');
+  const python = pythonExecutable(root);
   const image = execFileSync(python, ['-c', 'import sys; from app.local_qr import png; sys.stdout.buffer.write(png(sys.argv[1]))', payload], { cwd: resolve(root, 'backend') });
   const destinations: string[] = [], payments: string[] = [];
   page.on('request', request => {

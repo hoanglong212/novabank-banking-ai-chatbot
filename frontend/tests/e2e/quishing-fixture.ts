@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
+import { pythonExecutable } from './python';
 
 export { expect };
 
@@ -21,7 +22,7 @@ export const test = base.extend<{ qrBank: { url: string; signingKey: string } }>
       });
     });
     const root = resolve('..');
-    const python = process.env.NOVABANK_PYTHON || resolve(root, 'backend/.venv/Scripts/python.exe');
+    const python = pythonExecutable(root);
     const signingKey = randomBytes(32).toString('hex');
     const child = spawn(python, [resolve(root, 'scripts/run-e2e-server.py')], { cwd: root, windowsHide: true,
       env: { ...process.env, E2E_PORT: String(port), QR_SIGNING_KEY: signingKey } });
