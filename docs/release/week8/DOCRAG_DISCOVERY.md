@@ -2,7 +2,7 @@
 
 Ngày khảo sát: 2026-11-18. Baseline: `099577fdd7d7f79a529c326ef1153095718e307a` (main sau PR #7). Nhánh: `feature/document-rag`.
 
-**Trạng thái:** đã khảo sát và lập bản đồ; chưa viết code tính năng. Có khác biệt ảnh hưởng thiết kế, nên dừng trước các phase triển khai theo mục 0.4 và mục 2 của kế hoạch người dùng. Không coi discovery là bằng chứng tính năng RAG hoặc pentest đã đạt.
+**Trạng thái tại Phase 0:** đã khảo sát và lập bản đồ; lúc đó chưa viết code tính năng và đã dừng để báo các khác biệt thiết kế. Sau đó người dùng yêu cầu tự nghiên cứu, giải quyết và làm đến khi xong, giữ nguyên design system. Các quyết định triển khai được ghi trong `docs/plans/DOCUMENT_RAG_IMPLEMENTATION.md`; kết quả thực thi nằm ở `FUNC_API_TEST_REPORT.md`. Discovery này giữ lại bằng chứng lịch sử, không phải kết luận kiểm thử.
 
 ## 1. Nguồn đã đọc
 

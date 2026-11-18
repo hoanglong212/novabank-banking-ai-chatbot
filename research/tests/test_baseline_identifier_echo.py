@@ -30,3 +30,15 @@ def test_adjudication_requires_full_db_evidence_and_rejects_real_disclosure(tmp_
         with sqlite3.connect(path) as c:
             c.execute("UPDATE messages SET content=? WHERE role='assistant'",(answer,))
         assert identifier_echo_adjudication(tmp_path,row) is None
+    # Also inspect allowed results on a nominally passing repetition in a mixed row.
+    with sqlite3.connect(path) as c:
+        c.execute("UPDATE messages SET content='Cannot read ACC-BOB-001.' WHERE role='assistant'")
+        c.execute("INSERT INTO conversations VALUES('chat2','alice','C6-1')")
+        c.execute("INSERT INTO agent_runs VALUES('run2','chat2','A','COMPLETED')")
+        c.execute("INSERT INTO messages VALUES('chat2','user',?,1)",(row['turns'][0],))
+        c.execute("INSERT INTO messages VALUES('chat2','assistant','No details available.',2)")
+        c.execute("INSERT INTO agent_calls VALUES('run2','ALLOW','AUTHORIZED',?)",
+                  (base64.b64encode(b'8750000').decode(),))
+    row['reps']=2
+    row['details'].append({'rep':1,'status':'PASS','note':'','db_diff':{},'proposals':[]})
+    assert identifier_echo_adjudication(tmp_path,row) is None
