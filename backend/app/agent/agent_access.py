@@ -191,6 +191,8 @@ def permitted_tools(intent, role='customer'):
             if re.search(r'\bACC-[A-Za-z0-9-]+\b', intent['text'], re.I) and affirmative_action(intent['text'], r'freeze|unfreeze|lock|unlock|khoa|mo khoa'):
                 ticket_writes.add('propose_account_status')
             offered -= set(staff_tools.PROPOSALS) - ticket_writes
+        if intent['tool'] == 'ask_document':
+            offered -= set(staff_tools.PROPOSALS)
         return offered
     names = {name for name in MODELS if (name.startswith('get_') or name == 'search_knowledge') and name not in staff_tools.PERMISSIONS}
     from ..documents.binding import requested as document_requested
@@ -318,7 +320,7 @@ def create_run(db, user, conversation_id, content, profile):
         emit(conn, 'run_started', run_id=run_id, event_id='start:' + run_id)
     token = jwt.encode({'iss': auth.ISSUER, 'aud': AUDIENCE, 'sub': user.id, 'sid': user.session_id,
                         'ver': user.auth_version, 'run': run_id, 'scope': ['ai:read', 'ai:prepare'],
-                        'tools': sorted((set(MODELS) - set(staff_tools.PERMISSIONS) if user.role == 'customer' else set(MODELS)) if gateway == 'off' else permitted_tools(intent, user.role) if layers['intent_binding'] else set(MODELS) - set(staff_tools.PERMISSIONS) if user.role == 'customer' else staff_tools.allowed(user.role) | {'search_knowledge'}),
+                        'tools': sorted((set(MODELS) - set(staff_tools.PERMISSIONS) if user.role == 'customer' else set(MODELS)) if gateway == 'off' else permitted_tools(intent, user.role) if layers['intent_binding'] else set(MODELS) - set(staff_tools.PERMISSIONS) if user.role == 'customer' else staff_tools.allowed(user.role) | {'search_knowledge', 'ask_document'}),
                         'intent': intent_hash(intent), 'role': user.role,
                         'iat': seconds, 'exp': seconds + 180}, auth.SECRET, algorithm='HS256')
     return {'run_id': run_id, 'delegated_token': token, 'expires_in': 180, 'profile': profile}
@@ -461,8 +463,11 @@ async def execute_tool(db, user, run, name, arguments):
     off = run.get('gateway') == 'off'
     vault = vault_for(db, run)
     safe_arguments = trace_safe(private_text(vault, arguments), vault)
-    if name == 'ask_document':
-        from ..documents.privacy import audit as document_audit
+    from ..documents.privacy import audit as document_audit, audit_result, exposed, aliases
+    with closing(db.connect()) as conn:
+        document_context = name == 'ask_document' or exposed(conn, run)
+    document_aliases = set()
+    if document_context:
         safe_arguments = document_audit(arguments)
     with transaction(db) as conn:
         enabled(conn)
@@ -503,7 +508,11 @@ async def execute_tool(db, user, run, name, arguments):
             policy_ruling = policy.document_read(run['config'], user.role)
             if policy_ruling['action'] != 'allow':
                 raise policy.PolicyDenied(policy_ruling)
-            doc, chunks = await retrieve(db, user.id, args['document_id'], args['question'])
+            if layer_enabled(run, 'intent_binding'):
+                from ..documents.binding import selected
+                if args['document_id'] != selected(db, user.id, intent):
+                    raise HTTPException(403, 'DOCUMENT_SELECTION_MISMATCH')
+            doc, chunks = await retrieve(db, user.id, args['document_id'], args['question'], vault)
             result = {'document_id': doc['id'], 'filename_display': doc['filename_display'],
                       'found': True, 'chunks': chunks, 'cited_chunk_ids': [c['id'] for c in chunks]}
         elif name in staff_tools.READS:
@@ -577,10 +586,12 @@ async def execute_tool(db, user, run, name, arguments):
         from ..documents.privacy import prepare as private_document
         safe_result = {**result, 'filename_display': private_document(result['filename_display'], vault),
                        'chunks': [{'id': c['id'], 'text': private_document(c['text'], vault)} for c in result['chunks']]}
+        document_aliases = set().union(*(aliases(c['text']) for c in safe_result['chunks']))
         if layer_enabled(run, 'dual_llm'):
             from ..documents.reader import isolate
             isolated, isolation_rule = await isolate(vault.pseudonymize(args['question']), safe_result['chunks'])
             safe_result = {'document_id': result['document_id'], 'filename_display': safe_result['filename_display'], **isolated}
+            document_aliases &= aliases(isolated['answer'])
             if isolation_rule == 'DOCUMENT_READER_UNAVAILABLE':
                 decision, reason = 'DENY', isolation_rule
         from ..documents.repository import Repository
@@ -624,11 +635,11 @@ async def execute_tool(db, user, run, name, arguments):
     with transaction(db) as conn:
         active_run(conn, run)
         conn.execute('UPDATE agent_calls SET decision=?,reason=?,latency_ms=?,result_json=? WHERE id=?',
-                     (decision, str(reason), int((time.perf_counter() - start) * 1000), json.dumps(document_audit(safe_result) if name == 'ask_document' else trace_safe(safe_result, vault)), call_id))
+                     (decision, str(reason), int((time.perf_counter() - start) * 1000), json.dumps({**document_audit(safe_result), 'aliases': sorted(document_aliases)} if name == 'ask_document' else audit_result(safe_result) if document_context else trace_safe(safe_result, vault)), call_id))
         if name == 'ask_document':
             emit(conn, 'doc_retrieve', run_id=run['id'], tool=name, decision=decision,
-                 rule_id=policy_ruling['rule_id'] if policy_ruling else str(reason),
-                 detail=document_audit(safe_result))
+                 rule_id=policy_ruling['rule_id'] if decision == 'ALLOW' and policy_ruling else str(reason),
+                 reason=str(reason), detail={**document_audit(arguments), **document_audit(safe_result)})
         conn.execute('UPDATE agent_runs SET vault_json=? WHERE id=?', (encrypt_secret(db, json.dumps(vault.real)), run['id']))
         halt = run['profile'] == 'defended' and not off and blocking_denials(conn, run) >= 2
         ordinal = conn.execute('SELECT ordinal FROM agent_calls WHERE id=?', (call_id,)).fetchone()[0]

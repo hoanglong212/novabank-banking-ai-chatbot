@@ -60,7 +60,8 @@ def emit(conn, event, *, event_id=None, run_id=None, user_id=None, config=None,
 def output(conn, run, raw, filtered):
     if raw != filtered:
         digest = hashlib.sha256(json.dumps([raw, filtered], ensure_ascii=False).encode()).hexdigest()
-        document_run = conn.execute("SELECT 1 FROM agent_calls WHERE run_id=? AND name='ask_document'", (run['id'],)).fetchone()
+        from .documents.privacy import exposed
+        document_run = exposed(conn, run)
         emit(conn, 'output_filtered', event_id=f'output:{run["id"]}:{digest}', run_id=run['id'],
              detail={'sha256': digest} if document_run else {'raw': raw, 'filtered': filtered})
 

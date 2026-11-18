@@ -26,3 +26,13 @@ def resolve(db, owner, intent):
     if len(choices) != 1:
         raise HTTPException(400, 'Choose one ready document in My documents, then ask your question.')
     intent['arguments']['document_id'] = choices[0]['id']
+
+
+def selected(db, owner, intent):
+    if intent['tool'] == 'ask_document':
+        return intent['arguments'].get('document_id')
+    if not requested(intent['text']):
+        return None
+    read = {'tool': 'ask_document', 'text': intent['text'], 'arguments': arguments(intent['text'])}
+    resolve(db, owner, read)
+    return read['arguments'].get('document_id')

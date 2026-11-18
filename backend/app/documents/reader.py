@@ -7,6 +7,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field
 from ..config import provider, setting
 from ..agent.quarantined_llm import _unique
+from .privacy import aliases
 
 class DocumentAnswer(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
@@ -36,8 +37,7 @@ def validate(content, chunks):
         date.fromisoformat(item)
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', item) or item not in source:
             raise ValueError('Unsupported date')
-    tokens = r'<(?:ACCOUNT|NAME|EMAIL|PHONE|NATIONAL_ID)_\d+>'
-    if not set(re.findall(tokens,result['answer'])) <= set(re.findall(tokens,source)):
+    if not aliases(result['answer']) <= aliases(source):
         raise ValueError('Invented pseudonym')
     return result
 

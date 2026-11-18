@@ -20,6 +20,7 @@ def filename(value):
 
 
 @apply_configuration(zlib_maximum_output_length=2 * 1024 * 1024,
+                     array_based_stream_maximum_output_length=2 * 1024 * 1024,
                      lzw_maximum_output_length=2 * 1024 * 1024,
                      run_length_maximum_output_length=2 * 1024 * 1024,
                      stream_decoding_work_maximum_length=8 * 1024 * 1024,

@@ -3,6 +3,32 @@ import json
 import re
 from fastapi import HTTPException
 from .repository import Repository
+from ..auth_crypto import decrypt_secret
+from ..guard import BARE_TOKEN
+
+
+def is_read(conn, db, run):
+    return bool(conn.execute("SELECT 1 FROM agent_calls WHERE run_id=? AND name='ask_document'", (run['id'],)).fetchone()
+        or json.loads(decrypt_secret(db, run['bound_request_json'])).get('tool') == 'ask_document')
+
+
+def restore(conn, db, run, answer, vault):
+    if not is_read(conn, db, run):
+        return vault.restore(answer)
+    allowed = set()
+    for row in conn.execute("SELECT result_json FROM agent_calls WHERE run_id=? AND name='ask_document' AND decision='ALLOW'", (run['id'],)):
+        allowed.update(json.loads(row[0]).get('aliases', []))
+    intent = json.loads(decrypt_secret(db, run['bound_request_json']))
+    for alias, real in vault.real.items():
+        if re.search(r'(?<!\w)' + re.escape(real) + r'(?!\w)', intent.get('text',''), re.I):
+            allowed.add(alias.strip('<>'))
+    return BARE_TOKEN.sub(lambda m: vault.real.get('<'+m.group(1)+'>', '[unverified reference]')
+        if m.group(1) in allowed else '[unverified reference]', answer)
+
+
+def unfiltered_answer(conn, db, run, answer, vault):
+    answer = restore(conn, db, run, answer, vault)
+    return attribute(conn, db, run, answer) if is_read(conn, db, run) else answer
 
 def cited_document(conn, db, run):
     rows = conn.execute("""SELECT result_json FROM agent_calls

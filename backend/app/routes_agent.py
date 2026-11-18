@@ -15,6 +15,7 @@ from .guard import inspect_prompt
 from .identity import transaction
 from .identity_schemas import IdentityInput
 from .request_context import request_id
+from .documents.output import unfiltered_answer
 
 router = APIRouter(prefix='/api')
 
@@ -62,7 +63,7 @@ def preview(payload: PreviewInput, principal=Depends(delegated), db=Depends(get_
     user, run = principal
     with transaction(db) as conn:
         agent_access.active_run(conn, run)
-        answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else agent_access.vault_for(db, run).restore(payload.answer)
+        answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else unfiltered_answer(conn, db, run, payload.answer, agent_access.vault_for(db, run))
         return {'text': answer}
 
 
@@ -98,11 +99,9 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
         if not active or active[0] not in ('READY', 'RUNNING'):
             raise HTTPException(409, 'Run is already finished.')
         # Gateway off (lab): the model's answer is stored as written, without the output filter.
-        answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else vault.restore(payload.answer)
-        document_run = conn.execute("SELECT 1 FROM agent_calls WHERE run_id=? AND name='ask_document'", (run['id'],)).fetchone()
-        if document_run and not agent_access.layer_enabled(run, 'output_filter'):
-            from .documents.output import attribute
-            answer = attribute(conn, db, run, answer)
+        answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else unfiltered_answer(conn, db, run, payload.answer, vault)
+        from .documents.privacy import exposed
+        document_run = exposed(conn, run)
         from .risk.cases import finish as finish_risk_case
         finish_risk_case(conn, run['id'])
         conn.execute('''UPDATE agent_runs SET status=?,completed_at=?,latency_ms=?,input_tokens=?,output_tokens=?,

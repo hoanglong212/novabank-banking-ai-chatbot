@@ -12,7 +12,7 @@ from ..agent.source_screen import classify as screen
 from ..config import setting, provider
 from .repository import Repository
 from .extract import extract, filename, Rejected
-from .privacy import prepare
+from .privacy import prepare, register
 
 
 def event(db, owner, kind, key, digest, rule):
@@ -66,8 +66,9 @@ async def ingest(db, owner, data, original_name):
         return repo.get(key)
     # Screen the filename as well: filenames are another untrusted text surface.
     try:
+        vault = register([display, *chunks])
         for text in [display, *chunks]:
-            verdict = await screen(prepare(text))
+            verdict = await screen(prepare(text, vault))
             if verdict.get('method') == 'unavailable' or verdict.get('available') is False:
                 repo.finish(key, 'scan_failed', 'SOURCE_GUARD_UNAVAILABLE')
                 event(db, owner, 'doc_scan_failed', key, digest, 'SOURCE_GUARD_UNAVAILABLE')
@@ -76,7 +77,7 @@ async def ingest(db, owner, data, original_name):
                 repo.finish(key, 'quarantined', 'SOURCE_INJECTION')
                 event(db, owner, 'doc_quarantine', key, digest, 'SOURCE_INJECTION')
                 return repo.get(key)
-        model, vectors = await embed([prepare(text) for text in chunks])
+        model, vectors = await embed([prepare(text, vault) for text in chunks])
         if not valid_vectors(vectors, len(chunks)):
             raise ValueError('Invalid embeddings')
     except Exception:
@@ -88,14 +89,15 @@ async def ingest(db, owner, data, original_name):
     return repo.get(key)
 
 
-async def retrieve(db, owner, key, question):
+async def retrieve(db, owner, key, question, vault=None):
     repo = Repository(db, owner)
     doc = repo.get(key, ready=True)
     rows = repo.chunks(key)
     if not rows:
         raise HTTPException(404, 'DOCUMENT_UNAVAILABLE')
+    vault = register([doc['filename_display'], *[row['text'] for row in rows]], vault)
     try:
-        model, vectors = await embed([prepare(question)])
+        model, vectors = await embed([prepare(question, vault)])
         if not valid_vectors(vectors, 1):
             raise ValueError('Invalid query embedding')
         others = [json.loads(row['embedding']) for row in rows]
