@@ -8,6 +8,12 @@ FALSE_DONE = re.compile(
     r"(?i)\b(?:(?:has|have) been (?:successfully )?(?:processed|sent|paid|transferred|submitted|created|executed|made)"
     r"|processed successfully|(?:is|was) now (?:complete|completed|successful|paid|sent)"
     r"|I(?: have|'ve)? (?:successfully |just )?(?:sent|paid|transferred|processed|created|submitted|executed|completed)\b)")
+# Documents can describe completed payments. Only the assistant claiming authorship
+# is a false completion on a document turn.
+FIRST_PERSON_DONE = re.compile(
+    r"\b(?:I|we)(?: have|['’]ve)?\s+(?:(?:just|already|successfully)\s+)*"
+    r"(?:sent|paid|transferred|processed|created|submitted|executed|completed|confirmed|approved|made|filed|opened)\b"
+    r"|\b(?:tôi|mình|chúng tôi)\s+(?:đã|vừa)\s+(?:chuyển|gửi|thanh toán|xác nhận|tạo)\b", re.I)
 # Detect a claim about one specific transfer, transaction or ticket (EN/VI).
 # Specific = the assistant speaks in the first person, the user's own item, or a concrete amount. Conditional or
 # general rules (if/once/when/unless/nếu/khi) are policy text, not claims.
@@ -57,7 +63,7 @@ NOT_DONE = ("The assistant has not sent, paid or changed anything. I can't confi
             "from this chat. Check Activity, or ask about a specific transaction ID.")
 
 
-def status_facts(conn, run):
+def status_facts(conn, run, *, single_lookup_only=False):
     """Newest observation per record, drawn only from this run's allowed bank reads."""
     from .agent.guard import TOKEN
     facts = {}
@@ -65,6 +71,8 @@ def status_facts(conn, run):
         """SELECT name,result_json FROM agent_calls WHERE run_id=? AND decision='ALLOW'
            AND name IN (?,?,?) ORDER BY ordinal DESC""", (run['id'], *STATUS_READS))
     for tool, payload in calls:
+        if single_lookup_only and tool != 'get_transaction_status':
+            continue
         result = json.loads(payload)
         items = [result] if tool == 'get_transaction_status' else result.get('items', [])
         for item in items:
@@ -85,6 +93,8 @@ def status_facts(conn, run):
                     display_id = identifier[:11] + '*****' + identifier[-7:]
                 facts[identifier] = {'id': display_id, 'status': status, 'tool': tool,
                                      'amount': amount, 'direction': direction, 'date': date}
+    if single_lookup_only and len(facts) != 1:
+        return []
     return list(facts.values())
 
 
@@ -131,20 +141,21 @@ def filtered_answer(conn, db, run, answer):
 def _filtered_answer(conn, db, run, answer):
     from .agent.disclosure import wants_balance
     verified_balance = False
+    intent = json.loads(decrypt_secret(db, run['bound_request_json']))
+    document_turn = intent['tool'] == 'ask_document'
     staff = conn.execute("SELECT role FROM users WHERE id=?", (run['owner_id'],)).fetchone()
     customer = staff and staff[0] == 'customer'
     if staff and staff[0] != 'customer' and conn.execute(
             "SELECT 1 FROM agent_calls WHERE run_id=? AND name='read_ticket' AND reason IN ('SOURCE_INJECTION','SOURCE_GUARD_UNAVAILABLE')",
             (run['id'],)).fetchone():
         return QUARANTINED
-    if staff and staff[0] != 'customer' and STAFF_FALSE_DONE.search(answer) and not conn.execute(
+    if not document_turn and staff and staff[0] != 'customer' and STAFF_FALSE_DONE.search(answer) and not conn.execute(
             'SELECT 1 FROM tool_approvals WHERE run_id=? LIMIT 1', (run['id'],)).fetchone():
         return STAFF_NOT_DONE
     unsafe_link = re.search(r'(?:https?://|NB_CANARY_|eyJ[A-Za-z0-9_-]{20,}\.)', answer)
     if unsafe_link:
         answer = 'I could not safely display that response. Please use the banking screens or contact support.'
     proposal = conn.execute('SELECT name FROM tool_approvals WHERE run_id=? LIMIT 1', (run['id'],)).fetchone()
-    intent = json.loads(decrypt_secret(db, run['bound_request_json']))
     if proposal and proposal[0].startswith('propose_'):
         count = conn.execute('SELECT COUNT(*) FROM tool_approvals WHERE run_id=?', (run['id'],)).fetchone()[0]
         answer = (f'I prepared {count} proposal{"s" if count > 1 else ""} below. Nothing has been sent or changed yet. '
@@ -156,6 +167,9 @@ def _filtered_answer(conn, db, run, answer):
         answer = 'No action has been prepared or completed. Please use the banking screens or provide a specific request with the required details.'
     elif re.search(r'(?i)\b(?:send|provide|give|enter)\b.{0,40}\b(?:otp|pin|password|verification code)\b', answer):
         answer = 'Never share passwords, PINs or verification codes in chat. Use only the bank confirmation screen for codes.'
+    elif document_turn:
+        if FIRST_PERSON_DONE.search(answer):
+            return NOT_DONE  # A bank-authored warning must not be attributed to the file.
     elif not customer and (FALSE_DONE.search(answer) or (intent['tool'] not in STATUS_READS and claims_status(answer))):
         answer = NOT_DONE
     elif intent['tool'] in ('get_cards', 'get_savings'):
@@ -175,7 +189,10 @@ def _filtered_answer(conn, db, run, answer):
             answer = 'I have not verified your current balance. Please check the dashboard or ask me to check again.'
     else:
         claim = customer and (FALSE_DONE.search(answer) or claims_status(answer) or opens_topic(intent.get('text', ''), answer))
-        facts = status_facts(conn, run) if customer and not unsafe_link and (claim or intent['tool'] in STATUS_READS) else []
+        facts = []
+        if customer and not unsafe_link and (claim or intent['tool'] in STATUS_READS):
+            asked = intent['tool'] in STATUS_READS or USER_TOPIC.search(intent.get('text', ''))
+            facts = status_facts(conn, run, single_lookup_only=not asked)
         if facts:
             answer = render_status(facts)
         elif claim:
