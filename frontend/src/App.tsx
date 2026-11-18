@@ -11,6 +11,7 @@ import { Notifications } from './components/notifications/Notifications';
 import { AdminConsole } from './components/admin/AdminConsole';
 import { QrStudio } from './components/qr/QrStudio';
 import { Profile } from './components/profile/Profile';
+import { Documents } from './components/explore/Documents';
 import { Explore } from './components/explore/Explore';
 import { Support } from './components/explore/Support';
 import './styles/services.css';
@@ -60,7 +61,7 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
   const path = usePath();
   const chat = useBankingChat(user);
   const defaultTab: Tab = customer ? 'home' : user.permissions?.includes('admin:transactions:read') ? 'admin' : user.permissions?.includes('support:read') ? 'support' : 'profile';
-  const routes: Record<string, Tab> = { '/': defaultTab, '/home': 'home', '/activity': 'activity', '/qr': 'qr', '/assistant': 'assistant', '/admin/assistant': 'assistant', '/profile': 'profile', '/notifications': 'notifications', '/admin': 'admin', '/explore': 'explore', '/support': 'support' };
+  const routes: Record<string, Tab> = { '/': defaultTab, '/home': 'home', '/activity': 'activity', '/qr': 'qr', '/assistant': 'assistant', '/admin/assistant': 'assistant', '/profile': 'profile', '/notifications': 'notifications', '/admin': 'admin', '/explore': 'explore', '/support': 'support', '/documents': 'documents' };
   const exploreMatch = path.match(/^\/explore\/([a-z]+)(?:\/([A-Za-z0-9-]+))?$/);
   const tab = routes[path] ?? (exploreMatch ? 'explore' : defaultTab);
   const setTab = (next: Tab) => navigate(next === 'assistant' && !customer ? '/admin/assistant' : '/' + next);
@@ -122,6 +123,7 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
         {tab === 'qr' && <QrStudio user={user} pay={setTransfer} />}
         {tab === 'explore' && <Explore key={path} user={user} pay={setTransfer} initial={exploreMatch?.[1]} ticket={exploreMatch?.[2]} />}
         {tab === 'support' && <div className="page"><h1 className="page-title">Support</h1><Support user={user} /></div>}
+        {tab === 'documents' && <Documents user={user} ask={ask} />}
         {tab === 'profile' && <Profile user={user} profile={profile} logout={logout} />}
         {tab === 'assistant' && <Assistant chat={chat} openTransfer={draftId => setTransfer({ draftId })} />}
         </>}

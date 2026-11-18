@@ -4,6 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 import type { useBankingChat } from '../../hooks/useBankingChat';
 import { Topbar } from '../layout/Topbar';
 import { ToolActivity } from '../insights/ToolActivity';
+import { navigate } from '../../router';
 import { Sheet } from '../ui/Sheet';
 import { Composer } from './Composer';
 import { ConversationList } from './ConversationList';
@@ -43,6 +44,7 @@ export function Assistant({ chat, openTransfer }: { chat: ReturnType<typeof useB
         startConversation={chat.startConversation}
         safeguards={chat.health?.agent_mode === 'service' ? (chat.defenseProfile === 'defended' ? 'Defended' : 'Baseline') : undefined}
       />
+      <button className="link-button" onClick={() => navigate('/documents')}>My documents</button>
       <section className="chat-column" aria-label="Chat with Nova">
         <div className="messages-scroller" ref={chat.scrollerRef}>
           <div className="messages-inner" ref={innerRef}>
