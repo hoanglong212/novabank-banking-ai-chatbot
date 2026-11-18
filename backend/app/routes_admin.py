@@ -152,7 +152,8 @@ def audit_events(user=Depends(reader), db=Depends(get_db), offset: int = Query(0
 
 
 class GatewaySwitch(IdentityInput):
-    enabled: bool
+    enabled: bool | None = None
+    config: Literal['A', 'B', 'C', 'D'] | None = None
     # Switching off opens a measurement session for these users only.
     users: list[str] = Field(default_factory=list, max_length=10)
     minutes: int = Field(default=30, ge=1, le=120)
@@ -170,6 +171,13 @@ def agent_gateway_status(user=Depends(reader), db=Depends(get_db)):
 def switch_agent_gateway(payload: GatewaySwitch, user=Depends(writer), db=Depends(get_db)):
     from . import agent_gateway
     with transaction(db) as conn:
+        if payload.config is not None:
+            if payload.enabled is not None:
+                raise HTTPException(422, 'Choose config or enabled, not both.')
+            config = agent_gateway.set_configuration(conn, user, payload.config, payload.users, payload.minutes)
+            return {'gateway': 'off' if config == 'A' else 'on', 'config': config}
+        if payload.enabled is None:
+            raise HTTPException(422, 'A gateway configuration is required.')
         return {'gateway': agent_gateway.set_state(conn, user, payload.enabled, payload.users, payload.minutes)}
 
 

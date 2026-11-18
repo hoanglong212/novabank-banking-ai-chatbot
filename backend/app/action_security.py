@@ -101,6 +101,9 @@ def confirm(db, user, raw, code, key):
             payload = json.loads(row['payload_json'])
             if row['kind'].startswith('PROFILE_'):
                 result = apply_profile_change(conn, user, row['kind'], payload, stamp)
+            elif row['kind'] == 'CHANGE_TRANSFER_LIMIT':
+                from .customer_limits import apply
+                result = apply(conn, user, payload, stamp)
             else:
                 result = execute(conn, user, row['kind'], payload, challenge, stamp)
             conn.execute('UPDATE action_challenges SET consumed_at=?,idempotency_key=?,response_json=?,payload_json=? WHERE id=?',

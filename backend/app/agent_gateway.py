@@ -3,11 +3,11 @@
 Gateway OFF is never global: an admin opens a time-boxed measurement session naming the users it covers. Only runs
 those users start while it is open record gateway='off'; everyone else, and every run after it closes or expires, is on.
 
-Gateway ON (default) is every bank-side AI guard: the prompt tripwire on the user's message, the tool boundary (role
-allowlist, binding to the latest request, proposal checks, staff read checks), source screening, the two-denial stop
+Gateway ON (default) is every bank-side AI guard: the prompt tripwire on the user's message, the tool boundary (binding
+to the latest request, proposal checks, staff read checks), source screening, the two-denial stop
 and the output filter on the answer. Gateway OFF is a measurement mode for ENV=demo/lab only: messages reach the model
 unfiltered, the bank runs whatever tool the model asks for with the model's own arguments, and the answer is stored as
-written. Kept in both modes: sign-in and session checks, secret redaction, schema validation, the 8-call budget,
+written. Kept in both modes: the role allowlist (app authorization), sign-in and session checks, secret redaction, schema validation, the 8-call budget,
 owner-scoped data queries, and the human approval plus OTP/PIN verification before anything changes.
 """
 import csv
@@ -42,7 +42,10 @@ def session(conn):
     if not lab():
         return None
     row = conn.execute("SELECT value_json FROM bank_settings WHERE key='agent_gateway'").fetchone()
-    value = json.loads(row[0]) if row else None
+    try:
+        value = json.loads(row[0]) if row else None
+    except (ValueError, TypeError):
+        return None
     # A pre-session global "off" string is ignored on purpose: OFF must name its users and expire.
     if not isinstance(value, dict) or value.get('expires_at', 0) <= time.time():
         return None
@@ -52,7 +55,27 @@ def session(conn):
 def state(conn, user_id=None):
     """'off' only for a user inside the open session; without user_id, whether a session is open."""
     current = session(conn)
-    return 'off' if current and (user_id is None or user_id in current['users']) else 'on'
+    return 'off' if current and current.get('config', 'A') == 'A' and (user_id is None or user_id in current['users']) else 'on'
+
+
+def configuration(conn, user_id):
+    current = session(conn)
+    if current and user_id in current.get('users', ()) and current.get('config', 'A') in ('A', 'B', 'C'):
+        return current.get('config', 'A')
+    return 'D'
+
+
+def set_configuration(conn, user, config, users=(), minutes=30):
+    if config not in ('A', 'B', 'C', 'D'):
+        raise HTTPException(422, 'Unknown gateway configuration.')
+    if config == 'D':
+        set_state(conn, user, True)
+        return 'D'
+    set_state(conn, user, False, users, minutes)
+    current = session(conn)
+    current['config'] = config
+    conn.execute("UPDATE bank_settings SET value_json=? WHERE key='agent_gateway'", (json.dumps(current),))
+    return config
 
 
 def set_state(conn, user, enabled, users=(), minutes=30):

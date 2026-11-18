@@ -54,9 +54,9 @@ def month_data(conn, owner, month):
         JOIN ledger_entries e ON e.journal_id=p.journal_id AND e.account_id='SYS-INTEREST'
         WHERE a.owner_id=? AND t.date BETWEEN ? AND ? AND t.status='COMPLETED' AND p.kind='WITHDRAW_SAVINGS' ''', (owner, start, end))
     rows.extend(dict(amount_vnd=r['amount_vnd'], direction='in', description='Savings interest', date=r['date'], category=None) for r in interest)
-    credit = conn.execute('''SELECT ct.*,substr(ct.created_at,1,10) AS date FROM card_transactions ct
+    credit = conn.execute('''SELECT ct.*,date(ct.created_at,'+7 hours') AS date FROM card_transactions ct
         JOIN cards c ON c.id=ct.card_id WHERE c.owner_id=? AND c.kind='CREDIT'
-        AND ct.kind='CARD_PURCHASE' AND substr(ct.created_at,1,10) BETWEEN ? AND ?''', (owner, start, end))
+        AND ct.kind='CARD_PURCHASE' AND date(ct.created_at,'+7 hours') BETWEEN ? AND ?''', (owner, start, end))
     rows.extend(dict(amount_vnd=r['amount_vnd'], direction='out', description=r['merchant'], date=r['date'], category=None) for r in credit)
     totals = {name: 0 for name in CATEGORIES}
     daily = {}

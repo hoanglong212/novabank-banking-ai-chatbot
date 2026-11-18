@@ -15,6 +15,7 @@ from tests.test_week7 import grant_for
 
 TICKET = 'TKT-OUTBOXPROBE'
 ARGS = {
+    'prepare_transfer_limit': {'limit_vnd': 100_000},
     'read_ticket': {'ticket_id': TICKET}, 'get_customer_summary': {'user_id': 'bob'},
     'propose_ticket_reply': {'ticket_id': TICKET, 'body': 'Hello, we are looking into it.'},
     'propose_ticket_status': {'ticket_id': TICKET, 'status': 'IN_PROGRESS'},

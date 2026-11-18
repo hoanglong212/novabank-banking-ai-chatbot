@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { request } from '../../api';
 import type { DemoUser } from '../../types';
 import { navigate } from '../../router';
+import { ApprovalEvidence, type ReviewEvidence } from './ApprovalEvidence';
 
-interface Approval { id: string; name: string; status: string; arguments: Record<string, string | number>; expires_at: number }
+interface Approval { id: string; name: string; status: string; arguments: Record<string, string | number>; expires_at: number; review?: ReviewEvidence }
 export function ApprovalPage({ user, id }: { user: DemoUser; id: string }) {
   const [approval, setApproval] = useState<Approval | null>(null);
   const [error, setError] = useState('');
@@ -28,7 +29,8 @@ export function ApprovalPage({ user, id }: { user: DemoUser; id: string }) {
   return <div className="page"><h1 className="page-title">Review assistant proposal</h1>
     <p>Approval creates a draft. Payments still require a separate verification code.</p>
     {error && <p role="alert" className="form-error">{error}</p>}
-    {approval && <section className="card service-section"><h2>{approval.name.replaceAll('_', ' ')}</h2>
+    {approval && <section className="card service-section"><h2>{approval.review?.title ?? approval.name.replaceAll('_', ' ')}</h2>
+      <ApprovalEvidence review={approval.review} />
       <dl className="detail-list">{Object.entries(approval.arguments).map(([key, value]) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{String(value)}</dd></div>)}</dl>
       <p>{approval.status}</p>
       {approval.status === 'PENDING' && <div className="inline-actions">

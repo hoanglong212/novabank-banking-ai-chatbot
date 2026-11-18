@@ -1,0 +1,71 @@
+{
+  "synthetic": true,
+  "browser_results": {
+    "startTime": "2026-11-15T04:10:03.678Z",
+    "duration": 63275.39,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "recordings": [
+    {
+      "name": "mfa-continuous",
+      "seconds": 16.68,
+      "width": 1440,
+      "height": 900,
+      "sha256_webm": "e77163b5135a5f3ff703fe8f933a1b2887fb8e475df2324da2806de36f5873a4",
+      "continuous": true
+    },
+    {
+      "name": "quishing-blocked-continuous",
+      "seconds": 10.24,
+      "width": 1440,
+      "height": 900,
+      "sha256_webm": "6b86b05cbe052c9ad25e23f59eb8dfd593275782b0d67c8094e744992255c80f",
+      "continuous": true
+    },
+    {
+      "name": "quishing-genuine-continuous",
+      "seconds": 13.2,
+      "width": 1440,
+      "height": 900,
+      "sha256_webm": "2b80953e102ad6420f6c93b57a413e86145775744fda5f7f983755bd6ab6ec17",
+      "continuous": true
+    },
+    {
+      "name": "quishing-genuine-email-otp-continuous",
+      "seconds": 17.88,
+      "width": 1440,
+      "height": 900,
+      "sha256_webm": "a35e7bd3d0e792221c884649cda7c4ada41f7a348c8b4640247a50333849ad8e",
+      "sha256_gif": "6b61bf1e269e017dad0498f14ba9919a2dec4fa7c4eae4edaf00df1bec6722ac",
+      "continuous": true,
+      "scope": "Genuine uploaded QR review, new-recipient authenticator proof, distinct email OTP screen; no payment confirmation."
+    }
+  ],
+  "source_hashes": {
+    "fixtures.ts": "9617b2adc93afe90b9feff0a5c8d7f4a2ee6ec16bd9cd2d2fa390372f97b533c",
+    "quishing-fixture.ts": "b03e34242c7f1aceff8d408d7b891bdcb7d6399972f72048859805ad380fea8f",
+    "auth-helpers.ts": "3b3f0a88c91e2e804cfe016126bddf705d7a40b82d24199638bf62e3c9195fd7",
+    "new-recipient-stepup.spec.ts": "96d78055b152fe986be838189cbeac8f4cc17fc4f8f78f8c8f2c1b269a342175",
+    "quishing.spec.ts": "e8e914366a9150324599a20c584d761441d19789e65c9fcbeaf04c65adbf9972"
+  },
+  "privacy": "Visual-only CSS masks OTP digits and password inputs; no TOTP setup seed is recorded. Original behavior/assertions are unchanged.",
+  "mfa_scope": "Recording starts in a fresh browser context after authenticator enrollment; covers actual TOTP login, recipient step-up and separate email OTP confirmation.",
+  "gif_conversion": "FFmpeg from continuous browser WebM, 10fps at960px; no screenshot slideshow and no time cuts.",
+  "qr_email_otp_followup": {
+    "report": "quishing-genuine-email-otp.json",
+    "browser_results": {
+      "startTime": "2026-11-15T04:35:38.352Z",
+      "duration": 31909.885,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "process_exit": 0,
+    "supersedes_scope_of": "quishing-genuine-continuous",
+    "prior_recording_retained": true
+  }
+}

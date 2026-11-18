@@ -1,0 +1,56 @@
+{
+  "config": "C",
+  "layers": {
+    "spotlighting": false,
+    "classifier": false,
+    "provenance": true,
+    "intent_binding": true,
+    "approval_otp": true,
+    "output_filter": true,
+    "risk_signals": true,
+    "quarantine": true,
+    "dual_llm": true
+  },
+  "risk": {
+    "new_recipient_wait_seconds": 60,
+    "points": {
+      "floor_financial": 20,
+      "floor_account_change": 20,
+      "untrusted": 40,
+      "new_recipient": 20,
+      "flagged_case": 20,
+      "medium": 20,
+      "high": 60,
+      "very_high": 80
+    }
+  },
+  "rules": [
+    {
+      "id": "T4-bind",
+      "priority": 1,
+      "when": {
+        "arg_not_from_user": true
+      },
+      "then": "deny_and_flag"
+    },
+    {
+      "id": "large-transfer",
+      "priority": 20,
+      "when": {
+        "tool": "prepare_transfer",
+        "args": {
+          "amount_vnd": {
+            "gte": 50000000
+          }
+        }
+      },
+      "then": "band_high"
+    },
+    {
+      "id": "bank-approval",
+      "priority": 100,
+      "when": {},
+      "then": "approve_with_otp"
+    }
+  ]
+}

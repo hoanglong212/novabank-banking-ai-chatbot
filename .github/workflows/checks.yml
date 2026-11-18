@@ -5,7 +5,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,6 +27,7 @@ jobs:
         run: npm exec --yes --package=eslint@9.39.1 -- eslint --config eslint.config.mjs frontend/scripts
       - run: python -m compileall -q backend/app agent_service research scripts
       - run: python scripts/financial-coverage.py
+      - run: python -m pytest research/tests -q
       - run: npm ci
         working-directory: frontend
       - run: npm run test:components

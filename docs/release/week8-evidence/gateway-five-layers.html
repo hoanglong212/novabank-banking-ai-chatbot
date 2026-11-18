@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="vi"><meta charset="utf-8"><title>NovaBank — 5 lớp kiểm soát</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eae7ee;color:#181226;font-family:Arial,sans-serif}.slide{width:1600px;height:900px;margin:auto;background:#faf8fd;padding:64px 72px;position:relative}h1{font-size:54px;line-height:1.12;margin:0 0 22px;max-width:1250px;letter-spacing:-1.6px}p{font-size:26px;line-height:1.4;margin:0}.lead{max-width:1350px;color:#5a506b}.flow{display:flex;gap:27px;margin:64px 0 38px}.layer{width:270px;border-top:5px solid #5923a6;padding-top:18px;position:relative}.layer:not(:last-child):after{content:'→';font-size:30px;position:absolute;right:-25px;top:78px;color:#7c66a0}.num{font-size:22px;color:#6d4a9d;margin-bottom:12px}h2{font-size:29px;line-height:1.14;margin:0 0 18px;min-height:66px}.layer p{font-size:23px;line-height:1.4}.boundary{border-top:1px solid #d6cce1;padding-top:24px;display:flex;gap:52px}.boundary p{font-size:24px;width:47%}strong{color:#52228d}.evidence{position:absolute;bottom:62px;left:72px;right:72px;font-size:22px;line-height:1.45;color:#655873}a{color:inherit} @page{size:1600px 900px;margin:0}@media print{body{background:white}.slide{margin:0}}
+</style>
+<main class="slide">
+<h1>Model đề xuất.<br>Ngân hàng kiểm tra và quyết định.</h1>
+<p class="lead">Gateway kiểm tra danh tính, nguồn dữ liệu, quyền gọi công cụ và nội dung trước khi trả lời hoặc tạo đề xuất.</p>
+<section class="flow" aria-label="Năm lớp kiểm soát">
+<article class="layer"><div class="num">01 / Danh tính</div><h2>Đúng người,<br>đúng quyền</h2><p>Phiên còn hiệu lực.<br>Vai trò và chủ sở hữu.<br>Token ủy quyền có hạn.</p></article>
+<article class="layer"><div class="num">02 / Dữ liệu</div><h2>Biết dữ liệu<br>đến từ đâu</h2><p>Gắn nhãn nguồn.<br>Che dữ liệu riêng tư.<br>Cách ly nội dung độc.</p></article>
+<article class="layer"><div class="num">03 / Công cụ</div><h2>Khớp yêu cầu<br>đã được ký</h2><p>Danh sách tool cho phép.<br>Tham số có nguồn gốc.<br>Luật và điểm rủi ro.</p></article>
+<article class="layer"><div class="num">04 / Câu trả lời</div><h2>Kiểm tra bản<br>hiển thị cuối</h2><p>Số dư từ dữ liệu ngân hàng.<br>Chặn lộ tài khoản khác.<br>Không nhận đã chuyển tiền.</p></article>
+<article class="layer"><div class="num">05 / Thực thi</div><h2>Người dùng<br>xác nhận riêng</h2><p>Thẻ duyệt do bank tạo.<br>Người nhận mới: TOTP.<br>OTP, chống gửi lặp, sổ cái.</p></article>
+</section>
+<section class="boundary"><p><strong>Phát hiện nguy cơ →</strong> chặn, cách ly nguồn, hủy quyền của run và ghi sự kiện kiểm toán.</p><p><strong>Agent không có quyền chuyển tiền.</strong> Duyệt đề xuất vẫn phải qua xác minh tại ngân hàng.</p></section>
+<p class="evidence">Bằng chứng: <a href="../week8/RESULTS.md">RESULTS.md</a> · <a href="../week8/API_TESTS.md">API_TESTS.md</a> · GIF MFA / quishing · test hồi quy.<br>Giới hạn: thiếu model Prompt Guard và Qwen3; chưa đủ ma trận đo. TOTP/OTP không phải xác thực chống phishing.</p>
+</main></html>

@@ -80,6 +80,8 @@ def plain(text, limit):
 
 async def generate(bank, account_no, amount_vnd=None, add_info=None, account_name=None):
     from .local_qr import encode, png
+    from .qr_security import safe_payment_data
+    safe_payment_data({'bank': bank, 'account_name': account_name, 'add_info': add_info})
     # Personal demo QR must not wait for, or depend on, the public bank directory.
     found = find_bank(DEMO_BANKS, bank) or find_bank(await banks(), bank)
     if found is None:

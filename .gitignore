@@ -45,11 +45,13 @@ test-results/
 # Local AI tooling, browser profiles and scratch work
 /.claude/
 /.local/
+models/
 
 # Logs and process files
 *.log
 *.pid
 *.pid.lock
+*.sqlite3.gateway.jsonl
 
 # Personal IDE state
 .idea/

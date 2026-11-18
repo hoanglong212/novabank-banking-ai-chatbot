@@ -1,0 +1,24 @@
+{
+  "python": "3.14.6",
+  "interpreter": "D:\\NovaBank-Week8-Lab\\runtime\\Scripts\\python.exe",
+  "packages": {
+    "torch": "2.15.0+cpu",
+    "transformers": "5.23.0",
+    "numpy": "2.4.6",
+    "sentencepiece": "0.2.3",
+    "protobuf": "7.36.2"
+  },
+  "dependency_check_exit": 0,
+  "dependency_check": "No broken requirements found.",
+  "empty_local_model_probe": {
+    "injection": true,
+    "available": false,
+    "method": "unavailable",
+    "detector": "prompt_guard_2",
+    "reason": "model_unavailable"
+  },
+  "actual_prompt_guard_inference": false,
+  "network_calls": 0,
+  "human_license_accepted": false,
+  "note": "This verifies the isolated runtime and explicit missing-model handling, not model accuracy or local licensed weights."
+}

@@ -62,8 +62,8 @@ def preview(payload: PreviewInput, principal=Depends(delegated), db=Depends(get_
     user, run = principal
     with transaction(db) as conn:
         agent_access.active_run(conn, run)
-        answer = payload.answer if run.get('gateway') == 'off' else filtered_answer(conn, db, run, payload.answer)
-        return {'text': agent_access.vault_for(db, run).restore(answer)}
+        answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else agent_access.vault_for(db, run).restore(payload.answer)
+        return {'text': answer}
 
 
 @router.post('/agent/runs/{run_id}/cancel')
@@ -98,13 +98,14 @@ def finish(payload: FinishInput, principal=Depends(delegated), db=Depends(get_db
         if not active or active[0] not in ('READY', 'RUNNING'):
             raise HTTPException(409, 'Run is already finished.')
         # Gateway off (lab): the model's answer is stored as written, without the output filter.
-        answer = payload.answer if run.get('gateway') == 'off' else filtered_answer(conn, db, run, payload.answer)
-        restored = vault.restore(answer)
+        answer = filtered_answer(conn, db, run, payload.answer) if agent_access.layer_enabled(run, 'output_filter') else vault.restore(payload.answer)
+        from .risk.cases import finish as finish_risk_case
+        finish_risk_case(conn, run['id'])
         conn.execute('''UPDATE agent_runs SET status=?,completed_at=?,latency_ms=?,input_tokens=?,output_tokens=?,
             response_source='agent_service',answer=?,termination_reason=?,bound_request_json='{}',vault_json='{}' WHERE id=?''',
             (payload.status, now(), payload.latency_ms, payload.input_tokens, payload.output_tokens, agent_access.trace_safe(answer, vault), payload.termination_reason, run['id']))
         import uuid
-        message = {'id': str(uuid.uuid4()), 'conversation_id': run['conversation_id'], 'role': 'assistant', 'content': restored, 'created_at': now()}
+        message = {'id': str(uuid.uuid4()), 'conversation_id': run['conversation_id'], 'role': 'assistant', 'content': answer, 'created_at': now()}
         conn.execute('INSERT INTO messages VALUES (:id,:conversation_id,:role,:content,:created_at)', message)
         conn.execute('UPDATE conversations SET updated_at=? WHERE id=?', (message['created_at'], run['conversation_id']))
     return {'message': message, 'run_id': run['id'], 'response_source': 'agent_service',
@@ -129,6 +130,8 @@ def run_detail(run_id: str, user=Depends(assistant_user), db=Depends(get_db)):
         if not row:
             raise HTTPException(404, 'Run not found.')
         result = dict(row)
+        from .agent.ticket_isolation import human_view
+        result['human_assessments'] = human_view(conn, db, run_id) if user.role != 'customer' else []
         result['tool_calls'] = [{**dict(r), 'arguments': json.loads(r['arguments_json']), 'result': json.loads(r['result_json'])} for r in conn.execute('SELECT * FROM agent_calls WHERE run_id=? ORDER BY ordinal', (run_id,))]
         for call in result['tool_calls']:
             del call['arguments_json']; del call['result_json']
@@ -140,7 +143,11 @@ def approvals(conversation_id: str = Query(max_length=64), user=Depends(approval
     with db.connect() as conn:
         rows = conn.execute('''SELECT a.* FROM tool_approvals a JOIN agent_runs r ON r.id=a.run_id
             WHERE a.owner_id=? AND r.conversation_id=? ORDER BY a.created_at DESC,a.rowid DESC LIMIT 50''', (user.id, conversation_id))
-        return {'items': [dict(id=r['id'], name=r['name'], status=r['status'], arguments=json.loads(r['arguments_json']), expires_at=r['expires_at']) for r in rows]}
+        rows = rows.fetchall()
+        for row in rows:
+            agent_access.emit(conn, 'approval_shown', run_id=row['run_id'], tool=row['name'], event_id='shown:' + row['id'])
+        from .approval_view import review
+        return {'items': [dict(id=r['id'], name=r['name'], status=r['status'], arguments=json.loads(r['arguments_json']), expires_at=r['expires_at'], review=review(conn, r)) for r in rows]}
 
 
 @router.post('/agent/approvals/{approval_id}')
@@ -154,8 +161,10 @@ def approval_detail(approval_id: str, user=Depends(approval_user), db=Depends(ge
         row = conn.execute('SELECT * FROM tool_approvals WHERE id=? AND owner_id=?', (approval_id, user.id)).fetchone()
         if not row:
             raise HTTPException(404, 'Approval not found.')
+        agent_access.emit(conn, 'approval_shown', run_id=row['run_id'], tool=row['name'], event_id='shown:' + row['id'])
+        from .approval_view import review
         return {'id': row['id'], 'name': row['name'], 'status': row['status'],
-                'arguments': json.loads(row['arguments_json']), 'expires_at': row['expires_at']}
+                'arguments': json.loads(row['arguments_json']), 'expires_at': row['expires_at'], 'review': review(conn, row)}
 
 
 def sse(event, data):
@@ -198,8 +207,7 @@ async def stream(conversation_id: str, payload: StreamInput, request: Request, u
                         if line.startswith(('event:', 'data:')) or not line:
                             yield line + '\n'
         except (httpx.HTTPError, ValueError):
-            with transaction(db) as conn:
-                conn.execute("UPDATE agent_runs SET status='FAILED',completed_at=? WHERE id=? AND status IN ('READY','RUNNING')", (now(), grant['run_id']))
+            agent_access.fail_run(db, user, grant['run_id'])
             yield sse('error', {'message': 'The separate assistant service is unavailable or timed out. Your banking actions remain available.'})
         finally:
             # Closing the client stream revokes the delegated capability, including

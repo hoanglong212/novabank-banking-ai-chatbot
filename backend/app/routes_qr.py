@@ -2,7 +2,9 @@ import base64
 import binascii
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import Field
-from .dependencies import customer_user
+from .dependencies import customer_user, get_db
+from .auth import DemoPrincipal
+from .security_events import emit
 from .identity_schemas import IdentityInput
 from .local_qr import decode, uploaded_png
 
@@ -15,7 +17,19 @@ class ScanInput(IdentityInput):
 
 
 @router.post('/decode')
-def scan(payload: ScanInput):
+def scan(payload: ScanInput, user: DemoPrincipal = Depends(customer_user)):
+    try:
+        result = decode_input(payload)
+    except HTTPException:
+        with get_db().connect() as conn:
+            emit(conn, 'qr_scanned', user_id=user.id, decision='DENY', reason='INVALID_OR_UNSAFE_QR', detail={'source_origin': 'qr'})
+        raise
+    with get_db().connect() as conn:
+        emit(conn, 'qr_scanned', user_id=user.id, decision='ALLOW', reason='PAYMENT_DATA_ONLY', detail={'source_origin': 'qr', 'external_bank': result['qr_security']['external_bank']})
+    return result
+
+
+def decode_input(payload):
     if payload.payload and not payload.image_base64:
         return decode(payload.payload)
     if payload.image_base64 and not payload.payload:

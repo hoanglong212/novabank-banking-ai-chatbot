@@ -34,6 +34,9 @@ def validate_accounts(conn, t: dict):
     limit = int(conn.execute("SELECT value_json FROM bank_settings WHERE key='transfer_limit_vnd'").fetchone()[0])
     if type(t['amount_vnd']) is not int or not 1_000 <= t['amount_vnd'] <= limit:
         raise TransferError('INVALID_AMOUNT')
+    from .customer_limits import read as personal_limit
+    if t['amount_vnd'] > personal_limit(conn, t['owner_id'])['limit_vnd']:
+        raise TransferError('PERSONAL_TRANSFER_LIMIT')
     if source['balance_vnd'] < t['amount_vnd'] + t.get('fee_vnd', 0):
         raise TransferError('INSUFFICIENT_FUNDS')
     return source, target

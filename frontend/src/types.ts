@@ -66,10 +66,11 @@ export interface Bank { bin: string; code: string; shortName: string; name: stri
 export interface VietQR { bank: string; bin: string; account_no: string; account_name: string; amount_vnd: number | null; add_info: string; image: string; payload: string }
 // Codes are delivered to the simulated mailbox, never returned with a draft.
 export interface Transfer {
+  source_origin?: 'manual' | 'qr' | 'ocr';
   id: string; from_account: string; to_bank: string; to_account: string; to_name: string; amount_vnd: number;
   content: string; status: 'PENDING_OTP' | 'PENDING' | 'COMPLETED' | 'FAILED'; otp_expires_at?: string; transaction_id?: string | null; fee_vnd?: number;
   balance_vnd?: number; expires_at?: string; otp_method?: 'totp' | 'pin' | 'email';
   /** B5: signed, single-use token for confirming exactly this draft; issued while it is PENDING_OTP. */
   confirm_token?: string;
 }
-export interface TransferStart { draftId?: string; to_bank?: string; to_account?: string; to_name?: string; amount_vnd?: number; content?: string }
+export interface TransferStart { source_origin?: 'manual' | 'qr' | 'ocr'; draftId?: string; to_bank?: string; to_account?: string; to_name?: string; amount_vnd?: number; content?: string }

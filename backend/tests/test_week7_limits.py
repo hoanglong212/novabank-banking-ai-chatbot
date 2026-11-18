@@ -12,8 +12,15 @@ def confirm(client, headers, t):
 
 
 def test_first_transfer_to_new_recipient_is_capped_until_one_completes(client, alice):
+    from tests.stepup_helpers import verify_new_payee
+    from app.dependencies import get_db
+    with get_db().connect() as conn:
+        conn.execute("DELETE FROM verified_payees WHERE owner_id='alice' AND to_account='ACC-BOB-001'")
     assert draft(client, alice, 11_000_000).json()['detail'] == 'NEW_RECIPIENT_LIMIT_EXCEEDED'
-    assert confirm(client, alice, draft(client, alice).json()).status_code == 200
+    first = draft(client, alice).json()
+    verify_new_payee(client, alice, first['id'])
+    assert client.post('/api/transfers/' + first['id'] + '/otp', headers=alice).status_code == 200
+    assert confirm(client, alice, first).status_code == 200
     assert draft(client, alice, 11_000_000).status_code == 201
 
 

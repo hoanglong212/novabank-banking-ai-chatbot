@@ -1,0 +1,17 @@
+### anonymous: observed HTTP 401
+GET /api/customer/notification-preferences HTTP/1.1
+Host: testserver
+Authorization: Bearer [REDACTED OR ABSENT]
+# Payload values omitted; complete fixture and valid DTO are in test_week8_api_matrix.py.
+
+### anonymous: observed HTTP 401
+PUT /api/customer/notification-preferences HTTP/1.1
+Host: testserver
+Authorization: Bearer [REDACTED OR ABSENT]
+# Payload values omitted; complete fixture and valid DTO are in test_week8_api_matrix.py.
+
+### anonymous: observed HTTP 401
+POST /api/customer/beneficiaries/lookup HTTP/1.1
+Host: testserver
+Authorization: Bearer [REDACTED OR ABSENT]
+# Payload values omitted; complete fixture and valid DTO are in test_week8_api_matrix.py.

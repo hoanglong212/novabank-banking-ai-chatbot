@@ -33,7 +33,11 @@ async def create_transfer(payload: TransferArgs, user: DemoPrincipal = Depends(c
     db = get_db()
     try:
         draft = await transfers.prepare(db, user, payload.model_dump(exclude_none=True))
-        draft, _ = transfers.issue_otp(db, user, draft['id'])
+        from ... import transfer_stepup
+        with db.connect() as conn:
+            needs_stepup = transfer_stepup.status(conn, user, draft)['required']
+        if not needs_stepup:
+            draft, _ = transfers.issue_otp(db, user, draft['id'])
     except transfers.TransferError as exc:
         raise transfer_failed(exc) from exc
     return with_token(draft)

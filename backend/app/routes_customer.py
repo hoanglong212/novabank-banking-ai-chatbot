@@ -1,5 +1,5 @@
 from typing import Literal
-from fastapi import APIRouter, Depends, Header, Query, Response
+from fastapi import APIRouter, Depends, Header, Query, Response, HTTPException
 from pydantic import Field
 from . import action_security, customer_services, products
 from .dependencies import current_user, customer_user, get_db
@@ -48,6 +48,30 @@ class Beneficiary(Nickname):
 class RecipientLookup(IdentityInput):
     account_id: str = Field(min_length=3, max_length=40)
     bank: str = Field(min_length=2, max_length=80)
+
+
+class TransferStepUp(IdentityInput):
+    code: str = Field(min_length=6, max_length=6, pattern=r'^[0-9]{6}$')
+
+
+@router.get('/transfers/{transfer_id}/step-up')
+def transfer_stepup_status(transfer_id: str, user=Depends(customer_user), db=Depends(get_db)):
+    from . import transfer_stepup
+    from .posting import TransferError
+    try:
+        return transfer_stepup.describe(db, user, transfer_id)
+    except TransferError as exc:
+        raise HTTPException(404 if exc.reason_code == 'TRANSFER_NOT_FOUND' else 400, exc.reason_code)
+
+
+@router.post('/transfers/{transfer_id}/step-up')
+def transfer_stepup_verify(transfer_id: str, payload: TransferStepUp, user=Depends(customer_user), db=Depends(get_db)):
+    from . import transfer_stepup
+    from .posting import TransferError
+    try:
+        return transfer_stepup.verify(db, user, transfer_id, payload.code)
+    except TransferError as exc:
+        raise HTTPException(404 if exc.reason_code == 'TRANSFER_NOT_FOUND' else 403 if exc.reason_code == 'AUTHENTICATOR_ENROLLMENT_REQUIRED' else 400, exc.reason_code)
 
 
 @router.post('/customer/beneficiaries/lookup')

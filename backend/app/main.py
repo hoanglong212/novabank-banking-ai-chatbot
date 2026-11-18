@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from .agent import make_agent
 from . import transfers, vietqr
 from .auth import DemoPrincipal
-from .config import provider, setting
+from .config import provider, setting, legacy_test_mode
 from .database import Database
 from .gateway import PolicyGateway
 from .guard import inspect_prompt
@@ -28,6 +28,7 @@ from .routes_admin import router as admin_router
 from .routes_qr import router as qr_router
 from .routes_knowledge import router as knowledge_router
 from .routes_agent import router as agent_router
+from .routes_quarantine import router as quarantine_router
 from .routes_research import router as research_router
 from .http_security import HttpSecurity
 
@@ -35,6 +36,9 @@ from .http_security import HttpSecurity
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     get_db().initialize()
+    if provider() != 'mock':
+        from .agent.promptguard import initialize as initialize_prompt_guard
+        await asyncio.to_thread(initialize_prompt_guard)
     from .workers import loop
     task = asyncio.create_task(loop(get_db())) if setting('BANK_WORKER_ENABLED', 'true').lower() == 'true' else None
     try:
@@ -58,7 +62,7 @@ async def safe_validation_error(request, exc):
 
 async def health():
     return {'status': 'ok', 'llm_provider': provider(), 'gateway_mode': setting('GATEWAY_MODE', 'local'), 'demo_only': True,
-            'agent_mode': 'legacy_test' if setting('LEGACY_AGENT_TEST_MODE') == 'true' else 'service'}
+            'agent_mode': 'legacy_test' if legacy_test_mode() else 'service'}
 
 
 
@@ -91,7 +95,7 @@ def create_app():
         allow_headers=['Authorization', 'Content-Type', 'Idempotency-Key', 'X-Request-ID'], expose_headers=['X-Request-ID'])
     application.add_middleware(HttpSecurity)
     for router in (customer_router, insights_router, support_router, admin_router, qr_router, knowledge_router,
-                   agent_router, research_router, transfers_router, chat_router, dev_router,
+                   agent_router, quarantine_router, research_router, transfers_router, chat_router, dev_router,
                    banking_router, identity_router, sessions_router):
         application.include_router(router)
     application.add_api_route('/api/health', health, methods=['GET'])

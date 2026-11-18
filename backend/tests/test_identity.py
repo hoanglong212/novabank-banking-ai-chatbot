@@ -221,6 +221,9 @@ def test_new_customer_can_receive_money_without_breaking_ledger(client, alice):
     who = verified(client)
     account = client.get('/api/me', headers=who).json()['accounts'][0]['id']
     draft = client.post('/api/transfers', headers=alice, json={'to_account': account, 'amount_vnd': 1000}).json()
+    from tests.stepup_helpers import verify_new_payee
+    verify_new_payee(client, alice, draft['id'])
+    assert client.post('/api/transfers/' + draft['id'] + '/otp', headers=alice).status_code == 200
     assert confirm(client, alice, draft, 'new-customer-payment').status_code == 200
     assert client.get('/api/me', headers=who).json()['accounts'][0]['balance_vnd'] == 1000
     assert client.get('/api/notifications', headers=who).json()['unread_count'] == 1

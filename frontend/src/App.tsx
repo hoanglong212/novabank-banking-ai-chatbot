@@ -66,6 +66,7 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
   const setTab = (next: Tab) => navigate(next === 'assistant' && !customer ? '/admin/assistant' : '/' + next);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profileError, setProfileError] = useState('');
   const [prefill, setPrefill] = useState<TransferStart>({});
   const transferMatch = path.match(/^\/transfer\/([A-Za-z0-9-]+)\/(review|otp|receipt)$/);
   const qrMatch = path.match(/^\/qr\/pay\/([A-Za-z0-9-]+)$/);
@@ -87,7 +88,12 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
 
   useEffect(() => {
     // Refresh on every tab change so balances and history stay current.
-    api.me(user).then(setProfile).catch(() => { });
+    let active = true;
+    setProfileError('');
+    api.me(user).then(value => { if (active) setProfile(value); }).catch((error: Error) => {
+      if (active) { setProfile(null); setProfileError(error.message || 'Account information is unavailable.'); }
+    });
+    return () => { active = false; };
   }, [user, tab, refresh]);
 
   const [factor, setFactor] = useState<MfaStatus | null>(null);
@@ -107,8 +113,9 @@ function BankApp({ user, logout }: { user: DemoUser; logout: () => void }) {
       <NavBar tab={tab} setTab={setTab} user={user} logout={logout} />
       {/* key restarts the enter animation on every tab change */}
       <main id="main" key={tab} className={`app-main ${tab === 'assistant' ? 'is-assistant' : ''}`}>
+        {profileError && <div role="alert" className="form-error">Could not load account information. {profileError} <button className="link-button" onClick={() => setRefresh(n => n + 1)}>Try again</button></div>}
         {denied ? <p role="alert" className="form-error">403 · Your role does not have access to this page.</p> : approvalMatch ? <ApprovalPage key={approvalMatch[1]} user={user} id={approvalMatch[1]} /> : <>
-        {tab === 'home' && <Home user={user} profile={profile} navigate={setTab} ask={ask} transfer={() => setTransfer({})} />}
+        {tab === 'home' && <Home user={user} profile={profile} profileError={profileError} revision={refresh} navigate={setTab} ask={ask} transfer={() => setTransfer({})} />}
         {tab === 'activity' && <Activity user={user} profile={profile} openTransaction={setTransactionId} />}
         {tab === 'notifications' && <Notifications user={user} openTransaction={setTransactionId} />}
         {tab === 'admin' && <AdminConsole user={user} />}

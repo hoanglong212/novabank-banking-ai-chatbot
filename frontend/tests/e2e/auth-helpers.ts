@@ -1,14 +1,14 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { createHmac } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pythonExecutable } from './python';
 
 export function localMessage(email: string, kind: string) {
   const root = resolve('..');
   const db = JSON.parse(readFileSync(resolve(root, '.local/e2e/latest.json'), 'utf8')).db_path;
-  const venv = resolve(root, process.platform === 'win32' ? 'backend/.venv/Scripts/python.exe' : 'backend/.venv/bin/python');
-  const python = process.env.NOVABANK_PYTHON || (existsSync(venv) ? venv : 'python');
+  const python = pythonExecutable(root);
   const cli = resolve(root, 'scripts/dev-outbox.py');
   const rows = JSON.parse(execFileSync(python, [cli, '--db', db, '--email', email], { encoding: 'utf8' }));
   const row = rows.find((r: { kind: string }) => r.kind === kind);
@@ -71,4 +71,12 @@ export async function enterTransactionPin(scope: Page | Locator, username: strin
 /** API-level confirmations: the PIN once set, otherwise the emailed code. */
 export function transactionCode(draft: { otp_method?: string; method?: string }, email: string, kind: string) {
   return (draft.otp_method ?? draft.method) === 'pin' ? DEMO_PIN : localMessage(email, kind).code;
+}
+
+export function freshPayeeFixture(owner: string, account: string) {
+  const root = resolve('..');
+  const db = JSON.parse(readFileSync(resolve(root, '.local/e2e/latest.json'), 'utf8')).db_path;
+  execFileSync(pythonExecutable(root), ['-c',
+    'import pathlib,sqlite3,sys; p=pathlib.Path(sys.argv[1]).resolve(); root=pathlib.Path(sys.argv[2]).resolve(); assert p.is_relative_to(root/".local"/"e2e"); c=sqlite3.connect(p); c.execute("DELETE FROM verified_payees WHERE owner_id=? AND to_account=? AND origin=\'fixture_known\'",(sys.argv[3],sys.argv[4])); c.commit(); assert c.execute("SELECT COUNT(*) FROM transfers WHERE owner_id=? AND to_account=? AND status=\'COMPLETED\'",(sys.argv[3],sys.argv[4])).fetchone()[0]==0',
+    db, root, owner, account]);
 }

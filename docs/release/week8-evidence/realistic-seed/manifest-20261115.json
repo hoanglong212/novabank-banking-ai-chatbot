@@ -1,0 +1,31 @@
+{
+  "synthetic": true,
+  "seed": 20261115,
+  "anchor_date": "2026-11-15",
+  "customers": 50,
+  "months": [
+    "2026-06",
+    "2026-07",
+    "2026-08",
+    "2026-09",
+    "2026-10",
+    "2026-11"
+  ],
+  "counts": {
+    "users": 62,
+    "accounts": 125,
+    "transactions": 4150,
+    "ledger_entries": 8900,
+    "beneficiaries": 150,
+    "cards": 100,
+    "card_transactions": 600,
+    "bills": 200,
+    "savings": 50,
+    "savings_goals": 50,
+    "support_tickets": 100
+  },
+  "staff_per_role": 3,
+  "ledger_balanced": true,
+  "business_fingerprint": "58e358900b644940d510e365097301a967fd705df82f1143fbf1b861ce075aab",
+  "note": "Fictional names and reserved .test email addresses. Security salts are random; existing Alice/Bob/Charlie demo logins are retained. No legacy display-only history."
+}

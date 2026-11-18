@@ -305,6 +305,26 @@ def require_choice(text, value, patterns):
         raise HTTPException(403, 'USER_INTENT_MISMATCH')
 
 
+def account_status_target(text):
+    """Bind a single explicit account-action pair, independent of ticket routing.
+
+    Mentioning an account is insufficient. Only the object of a supported staff
+    command can be proposed; ambiguous multiple actions require clarification.
+    Keep the existing negation/quotation/memo exclusions in affirmative_action.
+    """
+    from .banking_workflow import CONTENT
+    head = CONTENT.split(fold(text))[0]
+    pattern = (r'\b(?P<verb>unfreeze|unlock|mo(?:\s+khoa)?|freeze|lock|khoa)\s+'
+               r'(?:(?:the\s+)?account\s+|tai\s+khoan\s+)?'
+               r'(?P<account>acc-[a-z0-9]+(?:-[a-z0-9]+)+)\b')
+    targets = set()
+    for match in re.finditer(pattern, head):
+        if affirmative_action(head[:match.end()], re.escape(match['verb'])):
+            status = 'FROZEN' if match['verb'] in ('freeze', 'lock', 'khoa') else 'ACTIVE'
+            targets.add((match['account'].upper(), status))
+    return next(iter(targets)) if len(targets) == 1 else None
+
+
 SECRET = re.compile(r'\b(otp|password|passcode|pin|cvv|recovery code|mật khẩu|mã xác (thực|nhận)|mã otp)\b', re.I)
 # "enter"/"nhập" are left out on purpose: "enter a new password", "đăng nhập" (sign in) are normal instructions.
 ASKS = re.compile(r"\b(send|share|provide|give|tell|confirm|reply with|read out|what is|what's|gửi|cung cấp|cho biết|đọc)\b", re.I)
@@ -462,16 +482,12 @@ def bind_proposal(conn, name, args, text):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
         if not conn.execute('SELECT 1 FROM accounts WHERE id=?', (args['account_id'],)).fetchone():
             raise HTTPException(404, 'ACCOUNT_NOT_FOUND')
-        verbs = {'ACTIVE': r'unfreeze|unlock|mở',
-                 'FROZEN': r'freeze|lock|khóa|khoá'}[args['status']]
+        verbs = {'ACTIVE': r'unfreeze|unlock|mo',
+                 'FROZEN': r'freeze|lock|khoa'}[args['status']]
         if not affirmative_action(text, verbs):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
-        derived = bind(text)
-        if derived['tool'] == 'propose_account_status':
-            if derived['arguments'].get('account_id', '').upper() != args['account_id'].upper():
-                raise HTTPException(403, 'USER_INTENT_MISMATCH')
-            if derived['arguments'].get('status') != args['status']:
-                raise HTTPException(403, 'USER_INTENT_MISMATCH')
+        if account_status_target(text) != (args['account_id'].upper(), args['status']):
+            raise HTTPException(403, 'USER_INTENT_MISMATCH')
     elif name == 'propose_customer_update':
         if not mentioned(args['user_id'], text):
             raise HTTPException(403, 'USER_INTENT_REQUIRED')
