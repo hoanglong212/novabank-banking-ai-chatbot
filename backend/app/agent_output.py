@@ -28,8 +28,10 @@ STATUS_CLAIM = re.compile(
 STATUS_READS = ('get_transaction_status', 'get_recent_transactions', 'get_support_tickets')
 
 
-# Transaction topics (EN/VI, with or without diacritics). An answer may not open one the user's bound message never raised.
-# shortcut: an answer with no topic word ("I've sent it.") passes; upgrade with a server-side topic classifier if it is abused.
+# Transaction topics (EN/VI, with or without diacritics). On a turn whose bound message never raised money, an answer may
+# not state the status of a transaction: one sentence with a topic word and a status word is replaced.
+# shortcut: a status sentence with no topic word ("Done, it went through.") or no status word passes, and a policy sentence
+# with both ("...that has been scanned...payment") is replaced; upgrade with a server-side classifier if either is abused.
 TOPIC = re.compile(r'(?i)\b(?:transfer\w*|payments?|pay|paid|transactions?|money|funds?|refund\w*|tickets?|support requests?)\b'
                    r'|\b(?:chuyển|chuyển tiền|chuyển khoản|thanh toán|giao dịch|tiền|hoàn tiền|phiếu hỗ trợ)\b'
                    r'|\b(?:chuyen tien|chuyen khoan|thanh toan|giao dich|hoan tien|phieu ho tro)\b')
@@ -39,13 +41,19 @@ USER_TOPIC = re.compile(TOPIC.pattern + r'|\b(?:spend\w*|spent|bills?|recipients
                         r'|\b(?:chi tiêu|chi tieu|hóa đơn|hoá đơn|hoa don|người nhận|nguoi nhan|hạn mức|han muc|số dư|so du|tài khoản|tai khoan)\b')
 
 
+def sentences(answer):
+    return re.split(r'(?<=[.!?])\s+|\n', answer)
+
+
 def opens_topic(user_text, answer):
-    return bool(TOPIC.search(answer)) and not USER_TOPIC.search(user_text)
+    # No STATUS_SPECIFIC and no conditional exemption here: the user never asked, so any status sentence is a claim.
+    return not USER_TOPIC.search(user_text) and any(
+        (TOPIC.search(s) or STATUS_SUBJECT.search(s)) and STATUS_CLAIM.search(s) for s in sentences(answer))
 
 
 def claims_status(answer):
     return any(STATUS_SUBJECT.search(s) and STATUS_CLAIM.search(s) and STATUS_SPECIFIC.search(s) and not CONDITIONAL.search(s)
-               for s in re.split(r'(?<=[.!?])\s+|\n', answer))
+               for s in sentences(answer))
 
 
 NOT_DONE = ('Nothing has been sent, paid or changed. I cannot complete payments, transfers or tickets from chat. '

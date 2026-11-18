@@ -49,8 +49,8 @@ def test_S5_answer_without_a_status_claim_passes_unchanged(client, alice, answer
 
 @pytest.mark.parametrize('lie', ['When I checked, your transfer has been completed.', 'The transfer has been confirmed.',
                                  'Bạn yên tâm, tiền đã tới tài khoản người nhận.', 'Đã chuyển xong rồi nhé.',
-                                 'Your money is on its way to Bob.'])
-def test_S5_answer_opening_a_transaction_topic_the_user_did_not_raise_is_replaced(client, alice, lie):
+                                 'Your money is on its way to Bob.', 'Yes, the ticket was created and an agent will reply soon.'])
+def test_S5_status_sentence_on_a_topic_the_user_did_not_raise_is_replaced(client, alice, lie):
     _, _, token = grant_for(client, alice, PIN)
     assert preview(client, token, lie) == NOT_DONE
 
@@ -61,7 +61,16 @@ def test_S5_answer_opening_a_transaction_topic_the_user_did_not_raise_is_replace
     # Data reads the bank binds to search_banking_faq: the user raised money in other words.
     ('How much did I spend this month?', 'You spent 2,000,000 VND this month, mostly on transfers and bill payments.'),
     ('What bills do I have?', 'You have one electricity bill; pay it from the Bills screen.'),
-    ('Show my saved recipients', 'Bob is saved, so you can send money to him quickly.')])
+    ('Show my saved recipients', 'Bob is saved, so you can send money to him quickly.'),
+    # Off-topic FAQ answers that mention money without stating a status (7 of these 8 were replaced before).
+    ('What is VietQR?', 'VietQR presents payment or transfer details in a QR code. Always verify the recipient, amount, '
+                        'and bank in your official banking app before approving a transfer.'),  # the faq.py text
+    ('VietQR là gì?', 'VietQR hiển thị thông tin thanh toán hoặc chuyển khoản dưới dạng mã QR.'),
+    ('How do I stay safe from scams?', 'Never share passwords, OTPs or PINs. Scammers often ask you to transfer money urgently.'),
+    ('My card is blocked, what should I do?', 'Contact the issuing bank. A blocked card cannot be used for payments until it is unlocked.'),
+    (PIN, 'Changing your PIN does not affect your transactions.'),
+    ('What are your opening hours?', 'Opening hours vary by branch. You can still make transfers in the app at any time.'),
+    ('How do I stay safe from scams?', 'If money has already been taken, contact your bank immediately.')])
 def test_S5_on_topic_or_topic_free_answer_passes_unchanged(client, alice, turn, answer):
     _, _, token = grant_for(client, alice, turn)
     assert preview(client, token, answer) == answer
