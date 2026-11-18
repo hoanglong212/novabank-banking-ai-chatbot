@@ -138,6 +138,23 @@ def test_document_attribution_retains_filename_underscores(client,engines,monkey
     result=client.post('/api/agent/finish',headers=token,json={'answer':'Total: 150000 VND.','latency_ms':1})
     assert result.json()['message']['content'].startswith('According to document "benign_invoice.pdf.txt":')
 
+def test_document_question_uses_file_citations_without_weakening_knowledge_checks(client,engines,monkeypatch):
+    from tests.agent_acceptance_helpers import exercise, calls
+    monkeypatch.setenv('ENV','demo')
+    who=login(client)
+    doc=upload(client,who,b'Total: 150000 VND.','invoice.txt').json()['id']
+    config(client,'D')
+    _,_,token=grant_for(client,who,'What is the total in document '+doc)
+    payloads,_,events=exercise(client,monkeypatch,token,[
+        calls(('ask_document',{'document_id':doc,'question':'What is the total?'})),
+        {'content':'Total: 150000 VND. [KB-invented]'}])
+    prompt=payloads[0]['messages'][0]['content']
+    assert 'Cite knowledge IDs such as [KB-savings].' not in prompt
+    assert 'filename_display' in prompt
+    completion=json.loads(next(e.split('data: ',1)[1] for e in events if e.startswith('event: complete')))
+    assert '150000 VND' not in completion['message']['content']
+    assert 'could not verify the cited source' in completion['message']['content']
+
 def test_pdf_contents_array_bounded_before_concatenation(monkeypatch):
     import io
     from pypdf import PdfWriter

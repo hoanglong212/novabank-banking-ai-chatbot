@@ -45,6 +45,10 @@ async def run_events(authorization, context):
     defended = context['profile'] == 'defended'
     spotlight = for_context(context)
     system = SYSTEM + ('\n' + HARDENED if defended else '')
+    if context.get('bound_hint', {}).get('tool') == 'ask_document':
+        system = system.replace('Cite knowledge IDs such as [KB-savings].',
+            'For uploaded documents, cite the exact filename_display returned by ask_document. '
+            'The bank adds verified document attribution. Do not invent KB-* knowledge IDs for document answers.')
     if spotlight.enabled:
         system += '\n' + spotlight.instruction
     messages = [{'role': 'system', 'content': system}, *context['messages']]
