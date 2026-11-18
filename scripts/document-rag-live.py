@@ -12,7 +12,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from research.week8_runtime import servers, login, run_turns, source_identity
-from research.document_rag_oracles import benign, model_inputs
+from research.document_rag_oracles import benign, model_inputs, runtime_failed
 
 def snapshot(db):
     with sqlite3.connect(db) as conn:
@@ -96,7 +96,8 @@ def run(args):
                                 audit = json.dumps([dict(r) for r in conn.execute('SELECT * FROM security_events WHERE run_id IN (SELECT id FROM agent_runs WHERE conversation_id=?)',(cid,))])
                             row.update(run_ids=ids,calls=calls,risks=[r['risk_score'] for r in runs],
                                 balance_unchanged=snapshot(db)==before,proposal_count=len(approvals))
-                            if any(r['status']=='FAILED' for r in runs) or any('UNAVAILABLE' in c['reason'] for c in calls if c['reason']!='DOCUMENT_UNAVAILABLE'):
+                            row['terminations']=[r['termination_reason'] for r in runs]
+                            if runtime_failed(case,runs,calls):
                                 row['reason']='RUNTIME_UNAVAILABLE'
                                 continue
                             if case != 'DOC-SEC-05' and not any(c['name']=='ask_document' and c['decision']=='ALLOW' for c in calls):
