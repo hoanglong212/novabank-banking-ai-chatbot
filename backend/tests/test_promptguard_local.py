@@ -9,7 +9,7 @@ import pytest
 def test_real_local_model_allows_benign_and_flags_payload(variable):
     path = os.environ.get(variable)
     if not path:
-        pytest.skip('Licensed local model not configured for this test')
+        pytest.skip(f'{variable} is unset. This integration test requires licensed local weights and runs offline.')
     from app.agent import promptguard
     assert promptguard.initialize(path)['available'] is True
     for text, expected in [

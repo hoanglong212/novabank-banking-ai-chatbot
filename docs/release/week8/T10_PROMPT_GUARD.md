@@ -56,3 +56,7 @@ Independent review and licensed-runtime accuracy measurements remain pending. Ro
 The later serialized Qwen run completed all 52 rows: 26 true positives, 26 true negatives, no false positives/negatives; precision and recall both 1.0 **on this synthetic corpus only**. Both Prompt Guard variants still have zero coverage and null precision/recall, so T10's required three-detector comparison is incomplete. The CLI correctly exits 2 for the incomplete matrix. [Raw measured report](../week8-evidence/t10-qwen-actual.json) includes model digest, Ollama version and per-row outcomes; the earlier unavailable-only report remains preserved.
 
 Command: `backend/.venv/Scripts/python.exe scripts/week8-guard-eval.py --qwen-model qwen2.5:7b --qwen-url http://127.0.0.1:11435 --timeout-seconds 60 --output .local/week8/vi-guard-actual.json`.
+
+## Local integration test availability
+
+The two cases in `backend/tests/test_promptguard_local.py` load licensed weights from `PROMPT_GUARD_TEST_BASE` and `PROMPT_GUARD_TEST_VI`. Pytest reports a skip for the specific variant whose path is unset. The test runs offline. A supplied path whose weights fail to load causes a test failure. In this verification the installed base checkpoint passed, and the Vietnamese fine-tuned checkpoint had no configured path.
