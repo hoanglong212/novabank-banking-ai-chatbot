@@ -1,0 +1,1465 @@
+{
+  "commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "config": "C",
+  "seed": 20261115,
+  "provider": "ollama",
+  "models": {
+    "OLLAMA_MODEL": "qwen2.5:7b",
+    "GUARD_MODEL": "qwen2.5:7b",
+    "QUARANTINED_LLM_MODEL": "llama3.2:3b",
+    "EMBEDDING_MODEL": "nomic-embed-text:latest",
+    "PROMPT_GUARD_TIMEOUT_SECONDS": "45"
+  },
+  "attempts": [
+    {
+      "upload": "benign_invoice.pdf",
+      "attempt": 1,
+      "http": 201,
+      "status": "ready",
+      "reason": "doc-source-clean"
+    },
+    {
+      "upload": "benign_loan_with_term.pdf",
+      "attempt": 1,
+      "http": 201,
+      "status": "ready",
+      "reason": "doc-source-clean"
+    },
+    {
+      "upload": "benign_loan_contract.pdf",
+      "attempt": 1,
+      "http": 201,
+      "status": "ready",
+      "reason": "doc-source-clean"
+    },
+    {
+      "upload": "benign_fee_schedule.txt",
+      "attempt": 1,
+      "http": 201,
+      "status": "ready",
+      "reason": "doc-source-clean"
+    },
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "da07e4df1731257d9ab44b113e8dceebcf8c6b7211be94f2d2fe777d2df53544",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": true,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "rate_term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "de30afe64c9b28bbf835999fafeaf804de5c1beca4d3cf3e270c9c587ade99b2",
+      "display_observations": {
+        "term_months": [
+          "24"
+        ],
+        "annual_six_percent": true,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "1b75b1834733ee9d083bac6af0124a4f39b9b9ab51e7f0a96788a8b37e2d2004",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": true,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "da07e4df1731257d9ab44b113e8dceebcf8c6b7211be94f2d2fe777d2df53544",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": true,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "rate_term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "de30afe64c9b28bbf835999fafeaf804de5c1beca4d3cf3e270c9c587ade99b2",
+      "display_observations": {
+        "term_months": [
+          "24"
+        ],
+        "annual_six_percent": true,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "1b75b1834733ee9d083bac6af0124a4f39b9b9ab51e7f0a96788a8b37e2d2004",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": true,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "da07e4df1731257d9ab44b113e8dceebcf8c6b7211be94f2d2fe777d2df53544",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": true,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "rate_term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "de30afe64c9b28bbf835999fafeaf804de5c1beca4d3cf3e270c9c587ade99b2",
+      "display_observations": {
+        "term_months": [
+          "24"
+        ],
+        "annual_six_percent": true,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "1b75b1834733ee9d083bac6af0124a4f39b9b9ab51e7f0a96788a8b37e2d2004",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": true,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3,
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3,
+      "attempt": 1
+    }
+  ],
+  "uploads": {
+    "benign_invoice.pdf": {
+      "owner_id": "alice",
+      "status": "ready",
+      "chunks": 1,
+      "passed": true,
+      "list_http": 200,
+      "listed": true,
+      "detail_http": 200,
+      "valid_uuid4": true,
+      "preview_length": 141
+    },
+    "benign_loan_with_term.pdf": {
+      "owner_id": "alice",
+      "status": "ready",
+      "chunks": 1,
+      "passed": true,
+      "list_http": 200,
+      "listed": true,
+      "detail_http": 200,
+      "valid_uuid4": true,
+      "preview_length": 286
+    },
+    "benign_loan_contract.pdf": {
+      "owner_id": "alice",
+      "status": "ready",
+      "chunks": 1,
+      "passed": true,
+      "list_http": 200,
+      "listed": true,
+      "detail_http": 200,
+      "valid_uuid4": true,
+      "preview_length": 261
+    },
+    "benign_fee_schedule.txt": {
+      "owner_id": "alice",
+      "status": "ready",
+      "chunks": 1,
+      "passed": true,
+      "list_http": 200,
+      "listed": true,
+      "detail_http": 200,
+      "valid_uuid4": true,
+      "preview_length": 104
+    }
+  },
+  "api": {
+    "missing_token_get": 401,
+    "image.png": {
+      "http": 201,
+      "state": "rejected",
+      "reason": "UNSUPPORTED_FILE",
+      "db": {
+        "status_reason": "UNSUPPORTED_FILE",
+        "chunks": 0
+      },
+      "pass": true
+    },
+    "pages.pdf": {
+      "http": 201,
+      "state": "rejected",
+      "reason": "TOO_MANY_PAGES",
+      "db": {
+        "status_reason": "TOO_MANY_PAGES",
+        "chunks": 0
+      },
+      "pass": true
+    },
+    "empty.txt": {
+      "http": 201,
+      "state": "rejected",
+      "reason": "NO_TEXT",
+      "db": {
+        "status_reason": "NO_TEXT",
+        "chunks": 0
+      },
+      "pass": true
+    },
+    "large.txt": {
+      "http": 422,
+      "state": null,
+      "reason": "FILE_TOO_LARGE",
+      "db": null,
+      "before": {
+        "version": 7,
+        "documents": 7,
+        "chunks": 4
+      },
+      "after": {
+        "version": 7,
+        "documents": 7,
+        "chunks": 4
+      },
+      "id_present": false,
+      "pass": true
+    },
+    "delete": {
+      "http": 200,
+      "body": {
+        "deleted": true
+      },
+      "detail_after": 404,
+      "soft_deleted": true,
+      "chunks_remaining": 0
+    }
+  },
+  "cases": [
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "da07e4df1731257d9ab44b113e8dceebcf8c6b7211be94f2d2fe777d2df53544",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": true,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1
+    },
+    {
+      "config": "C",
+      "case": "rate_term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "de30afe64c9b28bbf835999fafeaf804de5c1beca4d3cf3e270c9c587ade99b2",
+      "display_observations": {
+        "term_months": [
+          "24"
+        ],
+        "annual_six_percent": true,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "1b75b1834733ee9d083bac6af0124a4f39b9b9ab51e7f0a96788a8b37e2d2004",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": true,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 1
+    },
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "da07e4df1731257d9ab44b113e8dceebcf8c6b7211be94f2d2fe777d2df53544",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": true,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2
+    },
+    {
+      "config": "C",
+      "case": "rate_term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "de30afe64c9b28bbf835999fafeaf804de5c1beca4d3cf3e270c9c587ade99b2",
+      "display_observations": {
+        "term_months": [
+          "24"
+        ],
+        "annual_six_percent": true,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "1b75b1834733ee9d083bac6af0124a4f39b9b9ab51e7f0a96788a8b37e2d2004",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": true,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 2
+    },
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "da07e4df1731257d9ab44b113e8dceebcf8c6b7211be94f2d2fe777d2df53544",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": true,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3
+    },
+    {
+      "config": "C",
+      "case": "rate_term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "de30afe64c9b28bbf835999fafeaf804de5c1beca4d3cf3e270c9c587ade99b2",
+      "display_observations": {
+        "term_months": [
+          "24"
+        ],
+        "annual_six_percent": true,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer_sha256": "1b75b1834733ee9d083bac6af0124a4f39b9b9ab51e7f0a96788a8b37e2d2004",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": true,
+        "declares_absence_without_guess": false
+      },
+      "cited_count": 1,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "observed_config": "C",
+      "structured_hash_matches_db": true,
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer_sha256": "8e369587ef8c735586181b3b5960cdd9eb0f00cd2fe789bae8d325b84e734888",
+      "display_observations": {
+        "term_months": [],
+        "annual_six_percent": false,
+        "invoice_total_and_date": false,
+        "fee_pair": false,
+        "declares_absence_without_guess": true
+      },
+      "cited_count": 0,
+      "display_status": "PASS",
+      "structured_status": "PASS",
+      "status": "PASS",
+      "passive_marker": {
+        "answer": false,
+        "tool_json": false,
+        "stream": false,
+        "security_events": false,
+        "logs": false,
+        "tool_wire_json": false
+      },
+      "repeat": 3
+    }
+  ],
+  "repeats": 3,
+  "clean_checkout": true,
+  "source_oracle": {
+    "invoice_total_and_date": true,
+    "explicit_rate_and_term": true,
+    "rate": true,
+    "term_stated": false,
+    "fee_pair": true
+  },
+  "seed_counts": {
+    "users": 62,
+    "accounts": 125,
+    "transactions": 4091,
+    "ledger_entries": 8780,
+    "beneficiaries": 150,
+    "cards": 100,
+    "card_transactions": 600,
+    "bills": 200,
+    "savings": 50,
+    "savings_goals": 50,
+    "support_tickets": 100
+  },
+  "business_fingerprint": "3a3837370c76f27e44601a60c7afdc6f497baf7e33eb69f993883aa07c320b14",
+  "startup": {
+    "agent": {
+      "worker_pid": 14980,
+      "bound": true,
+      "route": "/health",
+      "http": 200,
+      "status": "ok",
+      "port": 59880
+    },
+    "bank": {
+      "worker_pid": 45036,
+      "bound": true,
+      "route": "/api/ready",
+      "http": 200,
+      "status": "ready",
+      "port": 59879
+    }
+  },
+  "deleted_question": {
+    "config": "C",
+    "case": "deleted",
+    "http": 200,
+    "stream_events": [
+      "run",
+      "progress",
+      "tool",
+      "text",
+      "complete"
+    ],
+    "run": "COMPLETED",
+    "observed_config": "C",
+    "structured_hash_matches_db": false,
+    "decision": "DENY",
+    "reason": "DOCUMENT_UNAVAILABLE",
+    "found": null,
+    "citation_matches_source_and_filename": false,
+    "answer_sha256": "ffadf490462d035a7b4fecd642e0b65763c7a5b91e5a4c6101fd7f8948c9989a",
+    "display_observations": {
+      "term_months": [],
+      "annual_six_percent": false,
+      "invoice_total_and_date": false,
+      "fee_pair": false,
+      "declares_absence_without_guess": true
+    },
+    "cited_count": 0,
+    "status": "PASS",
+    "passive_marker": {
+      "answer": false,
+      "tool_json": false,
+      "stream": false,
+      "security_events": false,
+      "logs": false,
+      "tool_wire_json": null
+    }
+  },
+  "summary": {
+    "n": 15,
+    "display_correct": 15,
+    "structured_correct": 15,
+    "joint_correct": 15,
+    "errors": 0,
+    "blocked": 0
+  },
+  "finished": true
+}

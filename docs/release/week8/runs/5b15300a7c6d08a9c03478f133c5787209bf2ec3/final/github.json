@@ -1,0 +1,21 @@
+﻿{
+    "source_commit":  "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+    "observed_utc":  "2026-11-19T11:06:12.5735744Z",
+    "pr_numbers":  [
+
+                   ],
+    "jobs":  [
+                 {
+                     "name":  "test",
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "html_url":  "https://github.com/hoanglong212/novabank-banking-ai-chatbot/actions/runs/44508657927/job/135506797986"
+                 },
+                 {
+                     "name":  "container-agent",
+                     "status":  "completed",
+                     "conclusion":  "success",
+                     "html_url":  "https://github.com/hoanglong212/novabank-banking-ai-chatbot/actions/runs/44508657927/job/135506797558"
+                 }
+             ]
+}

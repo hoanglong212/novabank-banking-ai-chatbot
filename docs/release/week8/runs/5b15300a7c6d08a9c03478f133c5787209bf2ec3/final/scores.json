@@ -1,0 +1,115 @@
+{
+  "source_commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "profiles": {
+    "A": {
+      "file": "rag-A.json",
+      "questions": 15,
+      "display": 15,
+      "structured": 15,
+      "joint": 15,
+      "terminal_statuses": {
+        "PASS": 15
+      },
+      "failed_attempts": [
+        {
+          "case": "invoice",
+          "repeat": 3,
+          "attempt": 1,
+          "reason": "RUNNING",
+          "events": [
+            "run",
+            "progress",
+            "tool",
+            "error"
+          ]
+        }
+      ],
+      "uploads_ready": 4,
+      "ownership_file": "ownership-A.json",
+      "ownership_clean": 3
+    },
+    "B": {
+      "file": "utility-B.json",
+      "questions": 15,
+      "display": 15,
+      "structured": 15,
+      "joint": 15,
+      "terminal_statuses": {
+        "PASS": 15
+      },
+      "failed_attempts": [],
+      "uploads_ready": 4,
+      "ownership_file": "ownership-B.json",
+      "ownership_clean": 3
+    },
+    "C": {
+      "file": "utility-C.json",
+      "questions": 15,
+      "display": 15,
+      "structured": 15,
+      "joint": 15,
+      "terminal_statuses": {
+        "PASS": 15
+      },
+      "failed_attempts": [],
+      "uploads_ready": 4,
+      "ownership_file": "ownership-C.json",
+      "ownership_clean": 3
+    },
+    "D": {
+      "file": "rag-D.json",
+      "questions": 15,
+      "display": 15,
+      "structured": 15,
+      "joint": 15,
+      "terminal_statuses": {
+        "PASS": 15
+      },
+      "failed_attempts": [],
+      "uploads_ready": 4,
+      "ownership_file": "ownership-D.json",
+      "ownership_clean": 3
+    }
+  },
+  "questions": {
+    "invoice": {
+      "n": 12,
+      "display": 12,
+      "structured": 12,
+      "joint": 12
+    },
+    "rate_term": {
+      "n": 12,
+      "display": 12,
+      "structured": 12,
+      "joint": 12
+    },
+    "term": {
+      "n": 12,
+      "display": 12,
+      "structured": 12,
+      "joint": 12
+    },
+    "fees": {
+      "n": 12,
+      "display": 12,
+      "structured": 12,
+      "joint": 12
+    },
+    "absent": {
+      "n": 12,
+      "display": 12,
+      "structured": 12,
+      "joint": 12
+    }
+  },
+  "extra_attempts": {
+    "initial_A_cleanup": {
+      "status": "ERROR",
+      "http": 429,
+      "route": "POST /api/auth/login"
+    },
+    "repeated_cleanup_file": "quota-retry-A.json",
+    "included_in_60": false
+  }
+}

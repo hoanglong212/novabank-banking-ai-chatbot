@@ -1,0 +1,17 @@
+﻿{
+    "source_commit":  "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+    "models":  [
+                   {
+                       "name":  "nomic-embed-text:latest",
+                       "digest":  "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f"
+                   },
+                   {
+                       "name":  "qwen2.5:7b",
+                       "digest":  "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e"
+                   },
+                   {
+                       "name":  "llama3.2:3b",
+                       "digest":  "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72"
+                   }
+               ]
+}

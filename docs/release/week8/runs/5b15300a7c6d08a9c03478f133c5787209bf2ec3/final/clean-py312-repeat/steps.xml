@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="Week 8 verification commands" tests="4" failures="0" errors="0" skipped="0">
+  <properties>
+    <property name="source_commit" value="5b15300a7c6d08a9c03478f133c5787209bf2ec3" />
+  </properties>
+  <testcase classname="Week8.command" name="inventory" />
+  <testcase classname="Week8.command" name="bank" />
+  <testcase classname="Week8.command" name="documents" />
+  <testcase classname="Week8.command" name="backend" />
+</testsuite>

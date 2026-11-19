@@ -1,0 +1,56 @@
+{
+  "source_commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "pytest_exit": 0,
+  "contracts": {
+    "Bank POST /api/auth/mfa/setup": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "N/A public, all session roles, or separate delegation credential",
+      "GEN05": "PASS identical DB for 4 cases (missing-body HTTP 422, missing:password HTTP 422, type:password HTTP 422, bound:password HTTP 422)"
+    },
+    "Bank GET /api/customer/accounts": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "PASS forbidden HTTP 403: admin,auditor,operations,support",
+      "GEN05": "N/A no declared invalid business parameter or body variant"
+    },
+    "Bank GET /api/health": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "N/A public, all session roles, or separate delegation credential",
+      "GEN05": "N/A no declared invalid business parameter or body variant"
+    },
+    "Bank PATCH /api/support/tickets/{ticket_id}": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "PASS forbidden HTTP 403: auditor,customer,operations",
+      "GEN05": "PASS identical DB for 5 cases (missing-body HTTP 422, missing:status HTTP 422, type:status HTTP 422, type:assigned_to HTTP 422, bound:assigned_to HTTP 422)"
+    },
+    "Bank GET /api/admin/agent-gateway": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "PASS forbidden HTTP 403: customer,support",
+      "GEN05": "N/A no declared invalid business parameter or body variant"
+    },
+    "Bank POST /api/agent/finish": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "N/A public, all session roles, or separate delegation credential",
+      "GEN05": "PASS identical DB for 13 cases (missing-body HTTP 422, missing:answer HTTP 422, type:answer HTTP 422, bound:answer HTTP 422, type:input_tokens HTTP 422, bound:input_tokens HTTP 422, type:output_tokens HTTP 422, bound:output_tokens HTTP 422, missing:latency_ms HTTP 422, type:latency_ms HTTP 422, bound:latency_ms HTTP 422, type:status HTTP 422, type:termination_reason HTTP 422)"
+    },
+    "Bank GET /api/conversations/{conversation_id}/messages": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "N/A public, all session roles, or separate delegation credential",
+      "GEN05": "N/A no declared invalid business parameter or body variant"
+    },
+    "Bank POST /api/agent/runs": {
+      "GEN01": "PASS 5 successful HTTP responses validated",
+      "GEN04": "N/A public, all session roles, or separate delegation credential",
+      "GEN05": "PASS identical DB for 8 cases (missing-body HTTP 422, missing:conversation_id HTTP 422, type:conversation_id HTTP 422, bound:conversation_id HTTP 422, missing:content HTTP 422, type:content HTTP 422, bound:content HTTP 422, type:profile HTTP 422)"
+    },
+    "Bank DELETE /api/savings-goals/{goal_id}": {
+      "GEN01": "PASS 1 successful HTTP responses validated",
+      "GEN04": "PASS forbidden HTTP 403: admin,auditor,operations,support",
+      "GEN05": "N/A no declared invalid business parameter or body variant"
+    }
+  },
+  "agent_framework_head": {
+    "http": 200,
+    "mime": "application/json",
+    "bytes": 0
+  }
+}

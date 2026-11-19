@@ -1,0 +1,39 @@
+{
+  "source_commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "seed": {
+    "tables": 68,
+    "different_tables": [
+      "reconciliation_runs"
+    ],
+    "excluded": [
+      "users.password_hash"
+    ],
+    "timestamps": [
+      [
+        "2026-11-19T11:31:29+00:00",
+        "2026-11-19T11:31:29+00:00"
+      ],
+      [
+        "2026-11-19T11:32:06+00:00",
+        "2026-11-19T11:32:06+00:00"
+      ]
+    ],
+    "locked_users": [
+      {
+        "id": "cust047",
+        "status": "DISABLED"
+      }
+    ],
+    "hashes": [
+      "74aa8e007c1a6a9ec4edc9056b5ceb006dd685cd2e1e312ad8099097b8b78af1",
+      "5202ffabcfd26667522024167a796f6882bc4aaecfb7d9e65ce1033249c4b0c5"
+    ],
+    "business_without_audit_clock": {
+      "different_tables": [],
+      "additional_exclusions": [
+        "reconciliation_runs.created_at",
+        "reconciliation_runs.report_json.created_at"
+      ]
+    }
+  }
+}

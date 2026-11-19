@@ -1,0 +1,173 @@
+{
+  "commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "clean": true,
+  "seed": 20261115,
+  "provider": "explicit offline mock",
+  "results": {
+    "DOC-API-01": {
+      "http": 201,
+      "body_status": "ready",
+      "db_owner": "bob",
+      "db_status": "ready",
+      "hash_correct": true,
+      "detail": 200,
+      "preview_present": true
+    },
+    "DOC-API-02": {
+      "anonymous_upload": 401,
+      "anonymous_body": {
+        "detail": "Please sign in"
+      },
+      "expired_http": 401,
+      "expired_body": {
+        "detail": "Session expired. Please sign in again."
+      },
+      "clock_fixture": "real sign-in with 1-second test TTL, then wait 2 seconds"
+    },
+    "DOC-API-03": {
+      "http": 201,
+      "status": "rejected",
+      "reason": "UNSUPPORTED_FILE",
+      "db_reason": "UNSUPPORTED_FILE",
+      "input": "Inert header and zero bytes, no executable content"
+    },
+    "DOC-API-04": {
+      "textless": {
+        "http": 201,
+        "reason": "NO_TEXT",
+        "state": "rejected",
+        "db_reason": "NO_TEXT",
+        "chunks": 0
+      },
+      "pages": {
+        "http": 201,
+        "reason": "TOO_MANY_PAGES",
+        "state": "rejected",
+        "db_reason": "TOO_MANY_PAGES",
+        "chunks": 0
+      },
+      "encrypted": {
+        "http": 201,
+        "reason": "ENCRYPTED_PDF",
+        "state": "rejected",
+        "db_reason": "ENCRYPTED_PDF",
+        "chunks": 0
+      },
+      "oversize": {
+        "contract_version": 2,
+        "http": 422,
+        "body": {
+          "detail": "FILE_TOO_LARGE"
+        },
+        "documents_before": 5,
+        "documents_after": 5,
+        "chunks_before": 1,
+        "chunks_after": 1
+      }
+    },
+    "DOC-API-05": {
+      "http": 201,
+      "filename": "Demo.txt",
+      "ui_source": "frontend/src/components/explore/Documents.tsx:88",
+      "browser_executed": false
+    },
+    "DOC-API-06": {
+      "other_http": [
+        404,
+        404
+      ],
+      "other_body": [
+        {
+          "detail": "DOCUMENT_UNAVAILABLE"
+        },
+        {
+          "detail": "DOCUMENT_UNAVAILABLE"
+        }
+      ],
+      "owner_get": 200,
+      "owner": "bob",
+      "deleted_at": null,
+      "chunk_count": 1
+    },
+    "DOC-API-07": {
+      "valid_uuid4": true,
+      "owner_file_visible_to_second_customer": false,
+      "absent_uuid_http": 404,
+      "list_http": 200
+    },
+    "DOC-API-08": {
+      "http": 201,
+      "db_owner": "alice"
+    },
+    "DOC-API-09": {
+      "cap_http": [
+        201,
+        409
+      ],
+      "cap_body": "DOCUMENT_LIMIT",
+      "preexisting": 19,
+      "db_active_after": 20,
+      "sequential_upload_statuses": [
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        201,
+        429
+      ]
+    },
+    "DOC-API-10": {
+      "delete": 200,
+      "delete_body": {
+        "deleted": true
+      },
+      "detail_after": 404,
+      "chunks_after": 0
+    },
+    "DOC-API-11": {
+      "anonymous_http": 401,
+      "anonymous_body": {
+        "detail": "Delegated authorization required."
+      },
+      "normal_customer_http": 401,
+      "normal_customer_body": {
+        "detail": "Invalid or expired delegation."
+      },
+      "positive_gateway_case": "rag-results.json, ordinary user question; ask_document ALLOW"
+    },
+    "DOC-API-12": {
+      "bad_media_http": 415,
+      "bad_media_body": {
+        "detail": "MULTIPART_REQUIRED"
+      },
+      "auth_body": {
+        "detail": "Please sign in"
+      },
+      "unavailable_body": {
+        "detail": "DOCUMENT_UNAVAILABLE"
+      },
+      "malformed_paths_or_traces": false
+    }
+  },
+  "offline_checks": {
+    "DOC-API-01": true,
+    "DOC-API-02": true,
+    "DOC-API-03": true,
+    "DOC-API-04": true,
+    "DOC-API-05": true,
+    "DOC-API-06": true,
+    "DOC-API-07": true,
+    "DOC-API-08": true,
+    "DOC-API-09": true,
+    "DOC-API-10": true,
+    "DOC-API-11": true,
+    "DOC-API-12": true
+  },
+  "additional_live_cases": [
+    "DOC-API-10",
+    "DOC-API-11"
+  ]
+}

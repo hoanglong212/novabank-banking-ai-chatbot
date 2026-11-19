@@ -1,0 +1,388 @@
+{
+  "source_commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "transport": "HTTP/1.1 on loopback",
+  "cases": {
+    "API-02": {
+      "status": "PASS",
+      "http": [
+        [
+          "POST",
+          "/api/auth/login",
+          202
+        ],
+        [
+          "GET",
+          "/api/me",
+          401
+        ],
+        [
+          "POST",
+          "/api/dev/outbox/challenge",
+          200
+        ],
+        [
+          "POST",
+          "/api/auth/mfa/verify",
+          200
+        ],
+        [
+          "GET",
+          "/api/me",
+          200
+        ],
+        [
+          "POST",
+          "/api/transfers",
+          400
+        ]
+      ],
+      "sql_results": {
+        "before": {
+          "balances": [
+            38200000,
+            39450000,
+            5542670000
+          ],
+          "drafts": 1,
+          "entries": 8780
+        },
+        "after": {
+          "balances": [
+            38200000,
+            39450000,
+            5542670000
+          ],
+          "drafts": 1,
+          "entries": 8780
+        },
+        "reason": "ACCOUNT_NOT_OWNED"
+      }
+    },
+    "API-11": {
+      "status": "PASS",
+      "http": [
+        [
+          "POST",
+          "/api/auth/login",
+          202
+        ],
+        [
+          "GET",
+          "/api/me",
+          401
+        ],
+        [
+          "GET",
+          "/api/documents",
+          401
+        ],
+        [
+          "GET",
+          "/api/transactions",
+          401
+        ]
+      ],
+      "sql_results": {
+        "sessions_before": 0,
+        "sessions_after": 0
+      }
+    },
+    "API-08": {
+      "status": "PASS",
+      "http": [
+        [
+          "POST",
+          "/api/auth/login",
+          202
+        ],
+        [
+          "GET",
+          "/api/me",
+          401
+        ],
+        [
+          "POST",
+          "/api/dev/outbox/challenge",
+          200
+        ],
+        [
+          "POST",
+          "/api/auth/mfa/verify",
+          200
+        ],
+        [
+          "GET",
+          "/api/me",
+          200
+        ],
+        [
+          "POST",
+          "/api/auth/mfa/setup",
+          200
+        ],
+        [
+          "POST",
+          "/api/auth/mfa/enable",
+          200
+        ],
+        [
+          "POST",
+          "/api/auth/pin",
+          200
+        ],
+        [
+          "POST",
+          "/api/transfers",
+          201
+        ],
+        [
+          "POST",
+          "/api/transfers/TRF-CC3645509C8F45E69A66DA05903812E8/step-up",
+          200
+        ],
+        [
+          "POST",
+          "/api/transfers/TRF-CC3645509C8F45E69A66DA05903812E8/otp",
+          200
+        ],
+        [
+          "POST",
+          "/api/transfers/TRF-CC3645509C8F45E69A66DA05903812E8/confirm",
+          200
+        ],
+        [
+          "POST",
+          "/api/transfers",
+          201
+        ],
+        [
+          "POST",
+          "/api/transfers",
+          201
+        ]
+      ],
+      "sql_results": {
+        "before": [
+          15000,
+          39451000,
+          5504486000
+        ],
+        "after": [
+          5000,
+          39461000,
+          5504486000
+        ],
+        "request_amounts": [
+          10000,
+          10000
+        ],
+        "http_confirm": [
+          [
+            400,
+            "INSUFFICIENT_FUNDS"
+          ],
+          [
+            200,
+            "COMPLETED"
+          ]
+        ],
+        "journal_rows": 2,
+        "net_vnd": 0,
+        "posted_drafts": 1,
+        "history_rows": 2,
+        "min_account_balance": 0
+      }
+    },
+    "Agent GEN-03": {
+      "status": "PASS",
+      "observations": [
+        {
+          "variant": "missing",
+          "bank": 401,
+          "bank_reason": "Delegated authorization required.",
+          "agent": 401
+        },
+        {
+          "variant": "expired",
+          "bank": 401,
+          "bank_reason": "Invalid or expired delegation.",
+          "agent": 401
+        },
+        {
+          "variant": "wrong_signature",
+          "bank": 401,
+          "bank_reason": "Invalid or expired delegation.",
+          "agent": 401
+        },
+        {
+          "variant": "wrong_audience",
+          "bank": 401,
+          "bank_reason": "Invalid or expired delegation.",
+          "agent": 401
+        }
+      ]
+    },
+    "inventory spot": {
+      "seed": 100146558434413,
+      "population": 142,
+      "observations": [
+        {
+          "service": "Bank",
+          "method": "POST",
+          "path": "/api/auth/mfa/setup",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "GET",
+          "path": "/api/customer/accounts",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "GET",
+          "path": "/api/health",
+          "actual": {
+            "GEN07": 405
+          },
+          "expected": {
+            "GEN07": 405
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "PATCH",
+          "path": "/api/support/tickets/{ticket_id}",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        },
+        {
+          "service": "Agent",
+          "method": "HEAD",
+          "path": "/openapi.json",
+          "actual": {
+            "GEN07": 405
+          },
+          "expected": {
+            "GEN07": 405
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "GET",
+          "path": "/api/admin/agent-gateway",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "POST",
+          "path": "/api/agent/finish",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "GET",
+          "path": "/api/conversations/{conversation_id}/messages",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "POST",
+          "path": "/api/agent/runs",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        },
+        {
+          "service": "Bank",
+          "method": "DELETE",
+          "path": "/api/savings-goals/{goal_id}",
+          "actual": {
+            "GEN07": 405,
+            "GEN02": 401
+          },
+          "expected": {
+            "GEN07": 405,
+            "GEN02": 401
+          }
+        }
+      ],
+      "status": "PASS"
+    }
+  },
+  "seed": {
+    "tables": 68,
+    "different_tables": [
+      "reconciliation_runs"
+    ],
+    "excluded": [
+      "users.password_hash"
+    ],
+    "timestamps": [
+      [
+        "2026-11-19T10:59:24+00:00",
+        "2026-11-19T10:59:24+00:00"
+      ],
+      [
+        "2026-11-19T11:00:06+00:00",
+        "2026-11-19T11:00:06+00:00"
+      ]
+    ],
+    "locked_users": [
+      {
+        "id": "cust047",
+        "status": "DISABLED"
+      }
+    ],
+    "hashes": [
+      "afd05bafdbe920b786f9cab2e5084e78646e9c53cd677f7e28445420ea432012",
+      "26a12ee88da4ca1068c1a610e2984e7f2b66346f919b327c2fa49d1f7402c6eb"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+﻿{
+    "source_commit":  "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+    "node":  "backend/tests/test_gateway.py::test_staff_ticket_reply_target_must_match_first_mention",
+    "independent_pytest_exit_codes":  [
+                                          0,
+                                          0
+                                      ],
+    "scope":  "Python 3.12 development venv; separate clean checkout; fresh fixture DB per pytest invocation"
+}

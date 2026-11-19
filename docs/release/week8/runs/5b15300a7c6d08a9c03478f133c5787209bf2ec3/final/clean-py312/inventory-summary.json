@@ -1,0 +1,70 @@
+{
+  "commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "clean_before": true,
+  "seed": 20261115,
+  "transport": "isolated ASGI TestClient",
+  "services": {
+    "Agent": 10,
+    "Bank": 132
+  },
+  "operations": 125,
+  "historic_count": 580,
+  "registry_count": 132,
+  "api_report_count": 134,
+  "prior_digest": "5b6784cac1650afcc209c3000ae5ac7636091a1dc6773f579af0da93e3cff742",
+  "registry_digest": "a060be9ae3552d6e7f963f2d257d75f8057a21596d5d8658dfe3fbbd8120d62f",
+  "missing_report": [
+    "Agent:GET:/docs",
+    "Agent:HEAD:/docs",
+    "Agent:GET:/docs/oauth2-redirect",
+    "Agent:HEAD:/docs/oauth2-redirect",
+    "Agent:GET:/health",
+    "Agent:GET:/openapi.json",
+    "Agent:HEAD:/openapi.json",
+    "Agent:GET:/redoc",
+    "Agent:HEAD:/redoc",
+    "Agent:POST:/run"
+  ],
+  "missing_registry": [
+    "Agent:GET:/docs",
+    "Agent:HEAD:/docs",
+    "Agent:GET:/docs/oauth2-redirect",
+    "Agent:HEAD:/docs/oauth2-redirect",
+    "Agent:GET:/health",
+    "Agent:GET:/openapi.json",
+    "Agent:HEAD:/openapi.json",
+    "Agent:GET:/redoc",
+    "Agent:HEAD:/redoc",
+    "Agent:POST:/run"
+  ],
+  "historical_pass_routes": 107,
+  "historical_pass_operations": 107,
+  "gen_counts": {
+    "GEN01": {
+      "PASS": 142
+    },
+    "GEN02": {
+      "N/A": 30,
+      "PASS": 112
+    },
+    "GEN03": {
+      "N/A": 30,
+      "BLOCKED": 1,
+      "PASS": 111
+    },
+    "GEN04": {
+      "N/A": 80,
+      "PASS": 62
+    },
+    "GEN05": {
+      "N/A": 67,
+      "PASS": 75
+    },
+    "GEN06": {
+      "PASS": 142
+    },
+    "GEN07": {
+      "PASS": 142
+    }
+  }
+}

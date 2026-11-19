@@ -1,0 +1,10 @@
+{
+  "source_commit": "5b15300a7c6d08a9c03478f133c5787209bf2ec3",
+  "steps": {
+    "inventory": 0,
+    "bank": 0,
+    "documents": 0,
+    "backend": 1
+  },
+  "finished": true
+}
