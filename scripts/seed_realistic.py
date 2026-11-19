@@ -61,6 +61,7 @@ def _fingerprint(conn):
         'card_transactions': '*', 'bills': '*', 'savings': '*', 'savings_events': '*',
         'savings_goals': '*', 'budgets': '*', 'support_tickets': '*', 'ticket_messages': '*',
         'ticket_assignments': '*', 'product_transaction_details': '*', 'transaction_categories': '*',
+        'login_lockouts': '*',
     }
     digest = hashlib.sha256()
     for table, projection in columns.items():
@@ -171,6 +172,7 @@ def seed(target, seed=20261115):
     from app.database import Database
     from app.identity import lookup_principal, transaction
     from app.ledger import reconcile
+    from app.session_security import failure
     if type(seed) is not int or not 0 <= seed < 2 ** 63:
         raise ValueError('Seed must be a nonnegative 63-bit integer.')
     if Path(target).is_symlink():
@@ -198,6 +200,22 @@ def seed(target, seed=20261115):
                 _activity(conn, user, index, rng)
         with transaction(db) as conn:
             _services(conn, owners)
+            # Model a cancelled deposit on an empty reserve. It appears in history
+            # but never moves money, creates a receipt, or touches the journal.
+            edge_owner = owners[-1]
+            reserve = f'ACC-{edge_owner.upper()}-003'
+            edge_time = _stamp(ANCHOR, ANCHOR.day)
+            conn.execute("""INSERT INTO transactions
+                (id,account_id,amount_vnd,direction,status,description,date,created_at)
+                VALUES ('TX-SYN-CANCELLED',?,150000,'in','CANCELLED',?,?,?)""",
+                (reserve, 'Mô phỏng — Đã hủy yêu cầu nộp tiền, chưa ghi có', ANCHOR.isoformat(), edge_time))
+            conn.execute("UPDATE accounts SET status='CLOSED' WHERE id=? AND balance_vnd=0", (reserve,))
+            # The temporary login lock is reproducible at the dataset's snapshot.
+            # Administrative disabling also keeps this synthetic identity locked on later demo days.
+            edge_stamp = int(datetime.fromisoformat(edge_time).timestamp())
+            for _ in range(5):
+                failure(conn, edge_owner, edge_stamp)
+            conn.execute("UPDATE users SET status='DISABLED',auth_version=auth_version+1 WHERE id=?", (edge_owner,))
             conn.execute("""INSERT INTO transfers
                 (id,owner_id,from_account,to_bank,to_account,to_name,internal,amount_vnd,content,status,created_at)
                 VALUES ('TR-SYN-PENDING','alice','ACC-ALICE-001','NovaBank','ACC-BOB-001','SYNTHETIC RECIPIENT',1,1000,

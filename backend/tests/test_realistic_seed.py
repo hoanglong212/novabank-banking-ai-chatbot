@@ -36,6 +36,19 @@ def test_realistic_seed_has_fifty_multibank_customers_and_balanced_history(tmp_p
         assert conn.execute('SELECT COUNT(*) FROM accounts WHERE balance_vnd=0').fetchone()[0] > 0
         assert conn.execute("SELECT COUNT(*) FROM transfers WHERE status='PENDING_OTP'").fetchone()[0] > 0
         assert conn.execute('SELECT MIN(balance_vnd) FROM accounts').fetchone()[0] >= 0
+        # A closed reserve with a cancelled deposit has no posted money or journal.
+        reserve = conn.execute("""SELECT a.id,a.balance_vnd,t.id,t.direction FROM accounts a
+            JOIN transactions t ON t.account_id=a.id
+            WHERE a.status='CLOSED' AND t.status='CANCELLED'""").fetchone()
+        assert reserve and reserve[1] == 0 and reserve[3] == 'in'
+        assert conn.execute('SELECT COUNT(*) FROM ledger_entries WHERE account_id=?', (reserve[0],)).fetchone()[0] == 0
+        assert conn.execute('SELECT COUNT(*) FROM product_transaction_details WHERE transaction_id=?', (reserve[2],)).fetchone()[0] == 0
+        from app.identity import digest
+        from app.session_security import LOCK_SECONDS, lock_remaining
+        disabled = conn.execute("SELECT id FROM users WHERE role='customer' AND status='DISABLED'").fetchone()
+        assert disabled and disabled[0] not in ('alice', 'bob', 'charlie')
+        lock = conn.execute('SELECT window_start FROM login_lockouts WHERE subject_hash=?', (digest(disabled[0]),)).fetchone()
+        assert lock and lock_remaining(conn, disabled[0], lock[0]) == LOCK_SECONDS
     assert reconcile(Database(str(target)))['balanced']
 
 
