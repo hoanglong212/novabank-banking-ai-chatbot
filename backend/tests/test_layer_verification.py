@@ -343,7 +343,8 @@ def test_L4_proposal_moves_no_money_and_only_the_owner_with_the_code_completes_i
     after = balances()
     assert after['ACC-BOB-001'] - before['ACC-BOB-001'] == 10000
     replay = client.post('/api/transfers/' + draft + '/confirm', headers=alice, json={'otp': code})
-    assert replay.status_code != 200 and balances() == after  # single use
+    assert replay.status_code == 409
+    assert balances() == after
 
 
 def test_L4_confirmation_token_bound_to_amount_and_recipient(client, alice):

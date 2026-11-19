@@ -28,7 +28,7 @@ def test_profile_contact_requires_bound_otp_and_password_revokes(client, alice, 
     assert confirm(client, bob, draft).status_code == 404
     assert confirm(client, alice, draft).status_code == 200
     assert client.get('/api/customer/profile', headers=alice).json()['email'] == 'alice.new@example.test'
-    assert client.post('/api/auth/mfa/verify', json={'challenge_id': pending['challenge_id'], 'code': old_login_code}).status_code != 200
+    assert client.post('/api/auth/mfa/verify', json={'challenge_id': pending['challenge_id'], 'code': old_login_code}).status_code == 400
     # A consumed code cannot authorize any second action; same key returns the original result.
     assert client.post('/api/actions/confirm', headers={**alice, 'Idempotency-Key': 'different-key'},
         json={'challenge_id': draft['challenge_id'], 'code': original_code}).status_code == 409
