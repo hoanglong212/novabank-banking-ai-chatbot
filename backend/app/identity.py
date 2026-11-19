@@ -62,7 +62,9 @@ def quota(conn, scope, subject, limit, window, stamp):
     return count <= limit
 
 
-def request_limit(db, action, peer):
+def request_limit(db, request):
+    action = request.url.path
+    peer = request.client.host if request.client else 'unknown'
     with transaction(db) as conn:
         allowed = quota(conn, 'request:' + action, peer, 20, 900, timestamp())
     if not allowed:

@@ -14,6 +14,7 @@ import sys
 import tempfile
 from collections import Counter
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 
 def routes(router):
@@ -107,7 +108,7 @@ def run(root, out, tmp):
                         source = 'backend/app/web.py:33'
                     history = sorted({h['case'] for h in old if service == 'Bank' and
                                     (h['method'],h['path'] or '/') == key and h['status'] == 'passed'})
-                    row = dict(service=service,method=method,path=path,source=source,auth=auth,
+                    row = dict(source_commit=rev,service=service,method=method,path=path,source=source,auth=auth,
                                roles='|'.join(roles),openapi=key in ops,
                                in_author_matrix=service=='Bank' and key in registry,
                                in_author_api_report=service=='Bank' and key in published,
@@ -118,8 +119,42 @@ def run(root, out, tmp):
                     row.update({f'GEN0{i}':v for i,v in enumerate(gen,1)})
                     rows.append(row)
             assert ops <= found, ops-found
-    rows.sort(key=lambda r:(r['service'],r['path'],r['method']))
     out.mkdir(parents=True,exist_ok=True)
+    observations=tmp/'openapi-contracts.json'
+    raw_xml=tmp/'pytest-contracts.xml'
+    contract_run=subprocess.run(
+        [sys.executable,'-m','pytest','backend/tests/test_openapi_contracts.py','-q','--tb=no','--show-capture=no',
+         '-p','no:cacheprovider','--junitxml',str(raw_xml)],
+        cwd=root,env={**os.environ,'NOVABANK_CONTRACT_RESULTS':str(observations)},
+    )
+    if raw_xml.exists():
+        tree=ET.parse(raw_xml)
+        for suite in tree.iter('testsuite'):
+            for attribute in set(suite.attrib)-{'name','tests','failures','errors','skipped','time','timestamp'}:
+                del suite.attrib[attribute]
+            suite.set('hostname','local')
+            for child in list(suite):
+                if child.tag not in ('testcase','testsuite'):
+                    suite.remove(child)
+            properties=ET.Element('properties')
+            suite.insert(0,properties)
+            ET.SubElement(properties,'property',name='source_commit',value=rev)
+        for case in tree.iter('testcase'):
+            for attribute in set(case.attrib)-{'classname','name','time'}:
+                del case.attrib[attribute]
+            for child in list(case):
+                if child.tag in ('error','failure','skipped'):
+                    child.clear()
+                else:
+                    case.remove(child)
+        tree.write(out/'inventory-contracts.xml',encoding='utf-8',xml_declaration=True)
+    contracts=json.loads(observations.read_text(encoding='utf-8')) if observations.exists() else {}
+    for row in rows:
+        if row['openapi']:
+            record=contracts.get(' '.join([row['service'],row['method'],row['path']]),{})
+            for field in ('GEN01','GEN04','GEN05'):
+                row[field]=record.get(field,'ERROR contract observation missing')
+    rows.sort(key=lambda r:(r['service'],r['path'],r['method']))
     with (out/'inventory-matrix.csv').open('w',encoding='utf-8-sig',newline='') as f:
         writer = csv.DictWriter(f,fieldnames=rows[0])
         writer.writeheader()
@@ -136,6 +171,7 @@ def run(root, out, tmp):
             gen_counts={k:dict(Counter(r[k].split()[0] for r in rows)) for k in rows[0] if k.startswith('GEN')})
     (out/'inventory-summary.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(summary))
+    return contract_run.returncode
 
 
 def evaluate(client,user,service,method,actual,path,auth,roles,permissions,op):
@@ -216,4 +252,5 @@ if __name__=='__main__':
     parser.add_argument('output',type=Path)
     args=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='mentor-matrix-') as temp:
-        run(args.checkout.resolve(),args.output.resolve(),Path(temp))
+        exit_code=run(args.checkout.resolve(),args.output.resolve(),Path(temp))
+    sys.exit(exit_code)

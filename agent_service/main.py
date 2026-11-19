@@ -35,7 +35,10 @@ def event(name, payload):
     return f'event: {name}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n'
 
 
-@app.get('/health')
+@app.get('/health', responses={200: {'content': {'application/json': {'schema': {
+    'type': 'object', 'required': ['status', 'database_access', 'tools_transport'],
+    'properties': {'status': {'type':'string'}, 'database_access': {'type':'boolean'},
+                   'tools_transport': {'type':'string'}}}}}}})
 def health():
     return {'status': 'ok', 'database_access': False, 'tools_transport': 'delegated_http'}
 
@@ -195,7 +198,8 @@ async def run_events(authorization, context):
         yield event('error', {'message': 'Your banking session or delegated run expired. Sign in again if needed.'})
 
 
-@app.post('/run')
+@app.post('/run', response_class=StreamingResponse,
+          responses={200: {'content': {'text/event-stream': {'schema': {'type':'string'}}}}})
 async def run(authorization: str | None = Header(default=None)):
     if not authorization or not authorization.startswith('Bearer '):
         raise HTTPException(401, 'Delegated authorization required.')

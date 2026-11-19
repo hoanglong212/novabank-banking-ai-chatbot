@@ -105,6 +105,8 @@ def create_app():
     application.add_api_route('/api/me', me, methods=['GET'])
     if setting('FRONTEND_DIST'):
         mount_frontend(application, setting('FRONTEND_DIST'))
+    from .openapi_contracts import install
+    install(application)
     return application
 
 

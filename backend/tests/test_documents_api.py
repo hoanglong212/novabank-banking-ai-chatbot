@@ -77,7 +77,11 @@ def test_DOC_API_06_07_ownership_and_delete(client, engines):
 ], ids=['executable', 'corrupt', 'binary', 'size', 'pages', 'scan', 'chunks'])
 def test_DOC_API_03_04_12_rejections(client, engines, data, name, reason):
     r = upload(client, login(client), data, name)
-    assert r.status_code in (201, 413, 415), r.text
+    if reason == 'FILE_TOO_LARGE':
+        assert r.status_code == 422
+        assert r.json() == {'detail': 'FILE_TOO_LARGE'}
+    else:
+        assert r.status_code in (201, 415)
     value = r.json()
     assert value.get('status_reason', value.get('detail')) == reason
     assert 'Traceback' not in r.text and 'C:\\' not in r.text

@@ -35,6 +35,10 @@ def check(response, expected):
 
 @pytest.fixture
 def owned(client, monkeypatch):
+    return prepare_owned_resources(client, monkeypatch)
+
+
+def prepare_owned_resources(client, monkeypatch):
     monkeypatch.setenv('ENV', 'demo')
     monkeypatch.setenv('LEGACY_AGENT_TEST_MODE', 'true')
     monkeypatch.setenv('RESEARCH_SANDBOX_ENABLED', 'true')

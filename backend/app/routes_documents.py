@@ -8,6 +8,7 @@ from .documents.extract import MAX_BYTES
 from .documents.repository import Repository
 
 router = APIRouter(prefix='/api/documents')
+MULTIPART_OVERHEAD_BYTES = 64 * 1024
 
 
 async def read_upload(request):
@@ -16,9 +17,9 @@ async def read_upload(request):
         raise HTTPException(415, 'MULTIPART_REQUIRED')
     data = bytearray()
     async for part in request.stream():
+        if len(data) + len(part) > MAX_BYTES + MULTIPART_OVERHEAD_BYTES:
+            raise HTTPException(422, 'FILE_TOO_LARGE')
         data.extend(part)
-        if len(data) > MAX_BYTES + 65536:
-            raise HTTPException(413, 'FILE_TOO_LARGE')
     state = {'headers': {}, 'key': bytearray(), 'value': bytearray(), 'count': 0, 'files': [], 'body': bytearray()}
     def begin():
         state.update(headers={}, key=bytearray(), value=bytearray(), body=bytearray())
@@ -54,8 +55,10 @@ async def read_upload(request):
 
 @router.post('', status_code=201)
 async def upload(request: Request, user=Depends(current_user), db=Depends(get_db)):
-    Repository(db, user.id).rate_limit()
     data, name = await read_upload(request)
+    if len(data) > MAX_BYTES:
+        raise HTTPException(422, 'FILE_TOO_LARGE')
+    Repository(db, user.id).rate_limit()
     return await service.ingest(db, user.id, data, name)
 
 

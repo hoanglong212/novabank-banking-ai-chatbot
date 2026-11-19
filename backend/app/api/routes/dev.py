@@ -53,7 +53,7 @@ def inbox(user=Depends(current_user), db=Depends(get_db)):
 CHALLENGE_POLLS = 600
 
 
-def challenge_limit(request: Request, db=Depends(get_db)):
+def challenge_limit(request: Request, db):
     peer = request.client.host if request.client else 'unknown'
     with transaction(db) as conn:
         allowed = quota(conn, 'outbox-challenge', peer, CHALLENGE_POLLS, 900, timestamp())
@@ -62,8 +62,9 @@ def challenge_limit(request: Request, db=Depends(get_db)):
 
 
 # POST keeps the challenge out of URLs and access logs. The environment gate runs before rate limiting.
-@router.post('/outbox/challenge', dependencies=[Depends(demo_only), Depends(challenge_limit)])
-def challenge_mail(payload: ChallengeInput, db=Depends(get_db)):
+@router.post('/outbox/challenge', dependencies=[Depends(demo_only)])
+def challenge_mail(payload: ChallengeInput, request: Request, db=Depends(get_db)):
+    challenge_limit(request, db)
     with db.connect() as conn:
         row = conn.execute("SELECT * FROM dev_outbox WHERE challenge_id=? AND kind='LOGIN_OTP' ORDER BY rowid DESC LIMIT 1",
                            (digest(payload.challenge_id),)).fetchone()

@@ -13,18 +13,20 @@ import time
 import uuid
 from unittest.mock import patch
 from pypdf import PdfWriter
+from mentor_doc_contracts import offline_checks
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = Path(os.environ.get('WEEK8_DOC_API_OUT', ROOT/'docs/release/week8/verify-evidence/rag-api.json'))
 
 
-def verify(src, db):
+def verify(src, db, results=None):
     sys.path.insert(0,str(src/'backend'))
     from fastapi.testclient import TestClient
     from app.main import app
     from app.documents.repository import Repository
     from app.dependencies import get_db
-    results={}
+    if results is None:
+        results = {}
     with TestClient(app,raise_server_exceptions=False) as client, closing(sqlite3.connect(db)) as conn:
         def login(user):
             response=client.post('/api/auth/login',json={'username':user,'password':user.capitalize()+'@2026'})
@@ -69,7 +71,6 @@ def verify(src, db):
             buf=BytesIO()
             writer.write(buf)
             materials[label]=(label+'.pdf',buf.getvalue())
-        materials['oversize']=('oversize.txt',b'A'*(5*1024*1024+1))
         results['DOC-API-04']={}
         for label,(name,data) in materials.items():
             r=post(alice,name,data)
@@ -77,6 +78,15 @@ def verify(src, db):
             row=conn.execute('SELECT status_reason,(SELECT COUNT(*) FROM doc_chunks WHERE document_id=d.id) FROM documents d WHERE id=?',(body.get('id'),)).fetchone()
             results['DOC-API-04'][label]={'http':r.status_code,'reason':body.get('status_reason',body.get('detail')),
                 'state':body.get('status'),'db_reason':row[0] if row else None,'chunks':row[1] if row else None}
+        counts_sql = 'SELECT (SELECT COUNT(*) FROM documents), (SELECT COUNT(*) FROM doc_chunks)'
+        documents_before, chunks_before = conn.execute(counts_sql).fetchone()
+        oversized = post(alice, 'oversize.txt', b'A' * (5*1024*1024 + 1))
+        documents_after, chunks_after = conn.execute(counts_sql).fetchone()
+        results['DOC-API-04']['oversize'] = {
+            'contract_version': 2, 'http': oversized.status_code, 'body': oversized.json(),
+            'documents_before': documents_before, 'documents_after': documents_after,
+            'chunks_before': chunks_before, 'chunks_after': chunks_after,
+        }
         normalized=post(bob,'folder/<Demo>.txt',b'Synthetic sample file.')
         results['DOC-API-05']={'http':normalized.status_code,'filename':normalized.json().get('filename_display'),
                                'ui_source':'frontend/src/components/explore/Documents.tsx:88','browser_executed':False}
@@ -117,18 +127,34 @@ def verify(src, db):
     return results
 
 
-if __name__=='__main__':
+def main():
     sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     with tempfile.TemporaryDirectory(prefix='mentor-docapi-',ignore_cleanup_errors=True) as tmp:
         folder=Path(tmp)
         src=folder/'source'
-        subprocess.run(['git','clone','-q','--shared','--no-checkout',str(ROOT),str(src)],check=True)
+        subprocess.run(['git','clone','-q','--no-hardlinks','--no-checkout',str(ROOT),str(src)],check=True)
         subprocess.run(['git','checkout','-q','--detach',sha],cwd=src,check=True)
         assert not subprocess.check_output(['git','status','--porcelain'],cwd=src).strip()
         db=folder/'demo.sqlite3'
         os.environ.update(ENV='demo',LLM_PROVIDER='mock',BANK_WORKER_ENABLED='false',GATEWAY_MODE='local',DB_PATH=str(db),PYTHONDONTWRITEBYTECODE='1')
         subprocess.run([sys.executable,str(src/'scripts/seed_realistic.py'),'--output',str(db)],cwd=src,stdout=subprocess.DEVNULL,check=True)
-        out={'commit':sha,'clean':True,'seed':20261115,'provider':'explicit offline mock','results':verify(src,db)}
+        results = {}
+        out = {'commit': sha, 'clean': True, 'seed': 20261115,
+               'provider': 'explicit offline mock', 'results': results}
+        try:
+            verify(src, db, results)
+        except Exception as exc:
+            # Keep already observed cases when a malformed response interrupts collection.
+            # Request bodies, credentials and response strings do not belong in this diagnostic.
+            out['collection_error'] = type(exc).__name__
+        out['offline_checks'] = offline_checks(results, require_current_upload=True)
+        out['additional_live_cases'] = ['DOC-API-10', 'DOC-API-11']
         OUT.parent.mkdir(parents=True,exist_ok=True)
         OUT.write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
-        print(OUT)
+        failed = [case_id for case_id, passed in out['offline_checks'].items() if not passed]
+        print(OUT, 'offline contract failures', failed)
+        return int(bool(failed) or 'collection_error' in out)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
