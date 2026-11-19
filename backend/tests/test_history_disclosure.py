@@ -1,6 +1,7 @@
 """Fix round 1, step 2: a transaction line the run's own history read returned is not a debt-balance claim."""
 from tests.acceptance_helpers import *
 from tests.test_AI_12 import run_for
+from app.agent.disclosure import filter_answer
 
 PROMPT = 'Cho tôi xem giao dịch gần đây.'
 
@@ -11,10 +12,10 @@ def vnd(amount):
 
 def history_run(client):
     who = login(client)
-    _, _, token = run_for(client, who, PROMPT)
+    _, run, token = run_for(client, who, PROMPT)
     read = client.post('/api/agent/tools', headers=token, json={'name': 'get_recent_transactions', 'arguments': {}}).json()
     assert read['decision'] == 'ALLOW', read
-    return token, read['result']['items']
+    return token, run['run_id'], read['result']['items']
 
 
 def preview(client, token, answer):
@@ -26,14 +27,19 @@ def line(item, amount=None):
     return f'{day}/{month}/{year}: Thanh toán nợ thẻ tín dụng - {vnd(amount or item["amount_vnd"])} VND'
 
 
-def test_own_transaction_line_mentioning_card_debt_is_shown(client):
-    token, items = history_run(client)
+def test_history_disclosure_permits_own_transaction_and_preview_renders_it(client):
+    token, run_id, items = history_run(client)
     answer = 'Đây là các giao dịch gần đây của bạn:\n\n1. Ngày ' + line(items[0]) + '\n2. Ngày ' + line(items[1]) + '\n\nBạn cần thêm gì không?'
-    assert preview(client, token, answer) == answer
+    with get_db().connect() as conn:
+        assert filter_answer(conn, 'alice', {'text': PROMPT}, answer, run_id=run_id) == answer
+    rendered = preview(client, token, answer)
+    for item in items[:5]:
+        assert f"Transaction {item['id']}: {item['status']} · {item['amount_vnd']:,} VND" in rendered
+    assert rendered.endswith('See Activity for the full list.')
 
 
 def test_history_controls_are_still_blocked(client):
-    token, items = history_run(client)
+    token, run_id, items = history_run(client)
     amounts = {i['amount_vnd'] for i in items}
     with get_db().connect() as conn:
         # The test seed may give alice no credit card; any debt figure then stands in for one.
@@ -49,4 +55,6 @@ def test_history_controls_are_still_blocked(client):
         'no date or description anchor': f'Bạn đã thanh toán nợ thẻ {vnd(items[0]["amount_vnd"])} VND.',
     }
     for name, answer in controls.items():
+        with get_db().connect() as conn:
+            assert filter_answer(conn, 'alice', {'text': PROMPT}, answer, run_id=run_id) != answer, name
         assert preview(client, token, answer) != answer, name

@@ -1,5 +1,6 @@
 from tests.acceptance_helpers import *
 from tests.test_AI_12 import run_for
+from app.agent_output import NOT_DONE
 
 
 @pytest.mark.parametrize('answer', [
@@ -10,10 +11,10 @@ from tests.test_AI_12 import run_for
 def test_assistant_cannot_claim_an_action_it_did_not_take(client, answer):
     who = login(client); cid, _, token = run_for(client, who, 'ok')
     text = client.post('/api/agent/finish', headers=token, json={'answer': answer, 'latency_ms': 10}).json()['message']['content']
-    assert text.startswith('Nothing has been sent') and '54,000' not in text
+    assert text == NOT_DONE
 
 
-def test_status_reads_are_not_rewritten(client):
+def test_status_intent_without_a_read_cannot_confirm_a_payment(client):
     who = login(client); _, _, token = run_for(client, who, 'Check transaction TX-1003')
     answer = 'Transaction TX-1003 of 45,000 VND has been completed.'
-    assert client.post('/api/agent/finish', headers=token, json={'answer': answer, 'latency_ms': 10}).json()['message']['content'] == answer
+    assert client.post('/api/agent/finish', headers=token, json={'answer': answer, 'latency_ms': 10}).json()['message']['content'] == NOT_DONE
