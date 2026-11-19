@@ -1,0 +1,232 @@
+{
+  "week7-default": {
+    "counts": {
+      "users": 7,
+      "accounts": 3,
+      "transactions": 7
+    }
+  },
+  "week7-rich": {
+    "counts": {
+      "users": 9,
+      "accounts": 5,
+      "transactions": 162
+    }
+  },
+  "a": {
+    "counts": {
+      "users": 62,
+      "accounts": 125,
+      "transactions": 4090
+    },
+    "dump_sha256": "d5b12f396c64369847ac49d0e928f325e331779339c1518934cbfd53e1b50fb3",
+    "user_fields_except_password_hash_sha256": "78c939c792632e5b3b91e865203ee682c4d70ed9b2f9a16edac7994e319d3087",
+    "roles": [
+      {
+        "role": "admin",
+        "n": 3
+      },
+      {
+        "role": "auditor",
+        "n": 3
+      },
+      {
+        "role": "customer",
+        "n": 50
+      },
+      {
+        "role": "operations",
+        "n": 3
+      },
+      {
+        "role": "support",
+        "n": 3
+      }
+    ],
+    "user_statuses": [
+      {
+        "status": "ACTIVE",
+        "n": 62
+      }
+    ],
+    "account_statuses": [
+      {
+        "status": "ACTIVE",
+        "n": 125
+      }
+    ],
+    "zero_negative": [
+      {
+        "zero_balance": 2,
+        "negative_balance": 0,
+        "account_total_vnd": 5542670000
+      }
+    ],
+    "accounts_per_owner": [
+      {
+        "accounts": 2,
+        "owners": 25
+      },
+      {
+        "accounts": 3,
+        "owners": 25
+      }
+    ],
+    "factors": [
+      {
+        "users": 62,
+        "enrolled_totp": 0,
+        "configured_pin": 0
+      }
+    ],
+    "lockouts": [
+      {
+        "login_locks": 0,
+        "pin_locks": 0
+      }
+    ],
+    "transfers": [
+      {
+        "status": "PENDING_OTP",
+        "n": 1
+      }
+    ],
+    "transactions": [
+      {
+        "status": "COMPLETED",
+        "n": 4090
+      }
+    ],
+    "legacy_fixture": [
+      {
+        "n": 0
+      }
+    ],
+    "journal": [
+      {
+        "journals": 4390,
+        "unbalanced": 0
+      }
+    ],
+    "per_account": [
+      {
+        "mismatches": 0,
+        "customer_ledger_vnd": 5542670000
+      }
+    ],
+    "global_ledger": [
+      {
+        "entries": 8780,
+        "sum_vnd": 0
+      }
+    ],
+    "email_domains": [
+      {
+        "domain": "novabank.test",
+        "n": 62
+      }
+    ],
+    "ten_transaction_samples": [
+      {
+        "date": "2026-06-01",
+        "direction": "in",
+        "amount_vnd": 8900000,
+        "description": "Mô phỏng — Lương Công ty Sen Xanh"
+      },
+      {
+        "date": "2026-06-09",
+        "direction": "out",
+        "amount_vnd": 740000,
+        "description": "Mô phỏng — Mua sắm Chợ Bình An"
+      },
+      {
+        "date": "2026-07-03",
+        "direction": "out",
+        "amount_vnd": 360000,
+        "description": "Mô phỏng — Ăn uống Cửa hàng Lá Sen"
+      },
+      {
+        "date": "2026-08-01",
+        "direction": "in",
+        "amount_vnd": 9900000,
+        "description": "Mô phỏng — Lương Công ty Sen Xanh"
+      },
+      {
+        "date": "2026-08-09",
+        "direction": "out",
+        "amount_vnd": 810000,
+        "description": "Mô phỏng — Mua sắm Chợ Bình An"
+      },
+      {
+        "date": "2026-09-03",
+        "direction": "out",
+        "amount_vnd": 230000,
+        "description": "Mô phỏng — Ăn uống Cửa hàng Lá Sen"
+      },
+      {
+        "date": "2026-10-01",
+        "direction": "in",
+        "amount_vnd": 9400000,
+        "description": "Mô phỏng — Lương Công ty Sen Xanh"
+      },
+      {
+        "date": "2026-10-09",
+        "direction": "out",
+        "amount_vnd": 650000,
+        "description": "Mô phỏng — Mua sắm Chợ Bình An"
+      },
+      {
+        "date": "2026-11-06",
+        "direction": "out",
+        "amount_vnd": 230000,
+        "description": "Mô phỏng — Đi lại Xe Xanh"
+      },
+      {
+        "date": "2026-11-15",
+        "direction": "out",
+        "amount_vnd": 450000,
+        "description": "Nova Energy"
+      }
+    ],
+    "integrity": [
+      {
+        "integrity_check": "ok"
+      }
+    ],
+    "foreign_key_issues": []
+  },
+  "b": {
+    "counts": {
+      "users": 62,
+      "accounts": 125,
+      "transactions": 4090
+    },
+    "dump_sha256": "7148e74da8cb9a20305e815a3492e1226d5a2ca6369c29e5b0bf4673f590ed97",
+    "user_fields_except_password_hash_sha256": "78c939c792632e5b3b91e865203ee682c4d70ed9b2f9a16edac7994e319d3087"
+  },
+  "different_tables": [
+    "users"
+  ],
+  "week8": {
+    "sha": "0548e998e44c9fb5400ae9211ffdaf6cdf677074"
+  },
+  "week7": {
+    "sha": "6a6617e374e9355a25b56f26a3abf55ede5baf5f"
+  },
+  "fixtures": [
+    "README.md",
+    "benign_fee_schedule.txt",
+    "benign_invoice.pdf",
+    "benign_loan_contract.pdf",
+    "bob_canary.pdf",
+    "inj_alias_variant.pdf",
+    "inj_direct.pdf",
+    "inj_fake_pseudonym.pdf",
+    "inj_hidden_variant.pdf",
+    "inj_hidden_white.pdf",
+    "inj_link.pdf",
+    "inj_link_variant.pdf",
+    "inj_subtle.pdf",
+    "inj_vi_khongdau.pdf"
+  ]
+}

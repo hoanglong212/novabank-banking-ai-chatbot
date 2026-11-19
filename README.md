@@ -70,6 +70,15 @@ QR codes remain NovaBank-only, not NAPAS/VietQR. The bank directory is fetched f
 
 ## Verification
 
+From a clean clone with Python 3.12 and Git installed, run the Week 8 backend regression and API evidence suite:
+
+```powershell
+python verify/week8.py --setup
+```
+
+The runner creates a temporary virtual environment and seeded databases, and writes sanitized JUnit and JSON under `docs/release/week8/runs/<source-commit>/`. An existing backend development environment can omit `--setup`. Real-model checks are recorded separately from this deterministic suite.
+
+
 ```powershell
 .\backend\.venv\Scripts\python.exe scripts/financial-coverage.py
 cd frontend

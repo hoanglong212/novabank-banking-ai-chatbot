@@ -151,3 +151,24 @@ All resources are from disposable TestClient databases. Tests use real authentic
 - JSON field-type probes cover typed bodies; endpoints with no JSON DTO are N/A for that probe. The table does not claim every possible parameter/value or concurrency interleaving was explored.
 - The original matrix was measured through TestClient. A later [actual Caido capture](CAPTURE_COMPLETION.md) on an isolated synthetic bank now demonstrates anonymous 401, customer-to-staff 403 and foreign-conversation 404, with two owner-positive 200 controls. Those three proxy cases do not reclassify all 452 matrix observations as Caido measurements. Original redacted HTTP examples remain TestClient evidence.
 - The normal full backend suite, independent review and browser acceptance remain separate gates. No security guarantee follows from green tests.
+
+## Bank and Agent additions at 0548e998e44c9fb5400ae9211ffdaf6cdf677074
+
+Fourteen method/path rows were absent from the historical table. GET and HEAD are counted independently.
+
+| Method | Path | Service | Observed |
+|---|---|---|---|
+| GET | `/docs` | Agent | PASS 405 |
+| HEAD | `/docs` | Agent | PASS 405 |
+| GET | `/docs/oauth2-redirect` | Agent | PASS 405 |
+| HEAD | `/docs/oauth2-redirect` | Agent | PASS 405 |
+| GET | `/health` | Agent | PASS 405 |
+| GET | `/openapi.json` | Agent | PASS 405 |
+| HEAD | `/openapi.json` | Agent | PASS 405 |
+| GET | `/redoc` | Agent | PASS 405 |
+| HEAD | `/redoc` | Agent | PASS 405 |
+| POST | `/run` | Agent | PASS 405 |
+| GET | `/api/documents` | Bank | PASS 405 |
+| POST | `/api/documents` | Bank | PASS 405 |
+| DELETE | `/api/documents/{document_id}` | Bank | PASS 405 |
+| GET | `/api/documents/{document_id}` | Bank | PASS 405 |

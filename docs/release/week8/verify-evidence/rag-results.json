@@ -1,0 +1,945 @@
+{
+  "commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+  "seed": 20261115,
+  "provider": "ollama",
+  "models": {
+    "OLLAMA_MODEL": "qwen2.5:7b",
+    "GUARD_MODEL": "qwen2.5:7b",
+    "QUARANTINED_LLM_MODEL": "llama3.2:3b",
+    "EMBEDDING_MODEL": "nomic-embed-text:latest",
+    "PROMPT_GUARD_TIMEOUT_SECONDS": "45"
+  },
+  "attempts": [
+    {
+      "upload": "benign_invoice.pdf",
+      "attempt": 1,
+      "http": 201,
+      "status": "ready",
+      "reason": "doc-source-clean"
+    },
+    {
+      "upload": "benign_loan_contract.pdf",
+      "attempt": 1,
+      "http": 201,
+      "status": "ready",
+      "reason": "doc-source-clean"
+    },
+    {
+      "upload": "benign_fee_schedule.txt",
+      "attempt": 1,
+      "http": 201,
+      "status": "ready",
+      "reason": "doc-source-clean"
+    },
+    {
+      "config": "D",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "D",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "D",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "cited_count": 0,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "D",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "D",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "cited_count": 0,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "A",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "A",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "A",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "FAIL",
+      "attempt": 1
+    },
+    {
+      "config": "A",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "A",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "FAIL",
+      "attempt": 1
+    },
+    {
+      "config": "B",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "B",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "B",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "FAIL",
+      "attempt": 1
+    },
+    {
+      "config": "B",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "B",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "FAIL",
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "cited_count": 0,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "cited_count": 1,
+      "status": "PASS",
+      "attempt": 1
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "cited_count": 0,
+      "status": "PASS",
+      "attempt": 1
+    }
+  ],
+  "uploads": {
+    "benign_invoice.pdf": {
+      "owner_id": "alice",
+      "status": "ready",
+      "chunks": 1,
+      "passed": true,
+      "list_http": 200,
+      "listed": true,
+      "detail_http": 200,
+      "valid_uuid4": true,
+      "preview_length": 141
+    },
+    "benign_loan_contract.pdf": {
+      "owner_id": "alice",
+      "status": "ready",
+      "chunks": 1,
+      "passed": true,
+      "list_http": 200,
+      "listed": true,
+      "detail_http": 200,
+      "valid_uuid4": true,
+      "preview_length": 261
+    },
+    "benign_fee_schedule.txt": {
+      "owner_id": "alice",
+      "status": "ready",
+      "chunks": 1,
+      "passed": true,
+      "list_http": 200,
+      "listed": true,
+      "detail_http": 200,
+      "valid_uuid4": true,
+      "preview_length": 104
+    }
+  },
+  "api": {
+    "missing_token_get": 401,
+    "image.png": {
+      "http": 201,
+      "state": "rejected",
+      "reason": "UNSUPPORTED_FILE",
+      "db": {
+        "status_reason": "UNSUPPORTED_FILE",
+        "chunks": 0
+      },
+      "pass": true
+    },
+    "pages.pdf": {
+      "http": 201,
+      "state": "rejected",
+      "reason": "TOO_MANY_PAGES",
+      "db": {
+        "status_reason": "TOO_MANY_PAGES",
+        "chunks": 0
+      },
+      "pass": true
+    },
+    "empty.txt": {
+      "http": 201,
+      "state": "rejected",
+      "reason": "NO_TEXT",
+      "db": {
+        "status_reason": "NO_TEXT",
+        "chunks": 0
+      },
+      "pass": true
+    },
+    "large.txt": {
+      "http": 201,
+      "state": "rejected",
+      "reason": "FILE_TOO_LARGE",
+      "db": {
+        "status_reason": "FILE_TOO_LARGE",
+        "chunks": 0
+      },
+      "pass": true
+    },
+    "delete": {
+      "http": 200,
+      "body": {
+        "deleted": true
+      },
+      "detail_after": 404,
+      "soft_deleted": true,
+      "chunks_remaining": 0
+    }
+  },
+  "cases": [
+    {
+      "config": "D",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "D",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_loan_contract.pdf\":\n6 percent",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "D",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.",
+      "cited_count": 0,
+      "status": "PASS"
+    },
+    {
+      "config": "D",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_fee_schedule.txt\":\nInternal transfers: 0 VND, External transfers: 3,000 VND.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "D",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "tool",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.",
+      "cited_count": 0,
+      "status": "PASS"
+    },
+    {
+      "config": "A",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18, as stated in the document \"benign_invoice.pdf\".",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "A",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_loan_contract.pdf\":\nThe annual interest rate for the loan is 6 percent.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "A",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_loan_contract.pdf\":\nThe length of the loan in months is not explicitly stated in the document, but the start date is given as 2026-11-18. Assuming the loan is for a typical term, it might be a 36-month loan, but this is an estimate based on common loan terms. For precise information, you may need to refer to the full document or contact the bank.",
+      "cited_count": 1,
+      "status": "FAIL"
+    },
+    {
+      "config": "A",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_fee_schedule.txt\":\nThe internal transfer fee in VND is 0 VND, and the external transfer fee is 3,000 VND, as per the fee schedule effective from 2026-11-18.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "A",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_invoice.pdf\":\nThe document \"benign_invoice.pdf\" does not contain information about the warranty period in years. It appears to be an invoice for Lotus Books. If you need assistance with warranty periods, please provide the relevant document or details.",
+      "cited_count": 1,
+      "status": "FAIL"
+    },
+    {
+      "config": "B",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18, as stated in the document \"benign_invoice.pdf\".",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "B",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_loan_contract.pdf\":\nThe annual interest rate for the loan is 6 percent.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "B",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_loan_contract.pdf\":\nThe length of the loan in months is not explicitly stated in the document. However, the start date of the loan is given as 2026-11-18. If you need the duration, please provide more details or check the document again.",
+      "cited_count": 1,
+      "status": "FAIL"
+    },
+    {
+      "config": "B",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_fee_schedule.txt\":\nAccording to the fee schedule in the document \"benign_fee_schedule.txt\", internal transfers incur no fee in VND, while external transfers have a fee of 3,000 VND. This information is effective as of November 18, 2026.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "B",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_invoice.pdf\":\nThe document \"benign_invoice.pdf\" does not contain information about the warranty period in years. It appears to be an invoice for fictional training data.",
+      "cited_count": 1,
+      "status": "FAIL"
+    },
+    {
+      "config": "C",
+      "case": "invoice",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "C",
+      "case": "rate",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_loan_contract.pdf\":\nThe annual interest rate stated in the document is 6 percent.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "C",
+      "case": "term",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.",
+      "cited_count": 0,
+      "status": "PASS"
+    },
+    {
+      "config": "C",
+      "case": "fees",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": true,
+      "citation_matches_source_and_filename": true,
+      "answer": "According to document \"benign_fee_schedule.txt\":\nThe internal transfer fee is 0 VND, and the external transfer fee is 3,000 VND.",
+      "cited_count": 1,
+      "status": "PASS"
+    },
+    {
+      "config": "C",
+      "case": "absent",
+      "http": 200,
+      "stream_events": [
+        "run",
+        "progress",
+        "tool",
+        "text",
+        "complete"
+      ],
+      "run": "COMPLETED",
+      "decision": "ALLOW",
+      "reason": "AUTHORIZED",
+      "found": false,
+      "citation_matches_source_and_filename": false,
+      "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.",
+      "cited_count": 0,
+      "status": "PASS"
+    }
+  ],
+  "clean_checkout": true,
+  "source_oracle": {
+    "invoice_total_and_date": true,
+    "rate": true,
+    "term_stated": false,
+    "fee_pair": true
+  },
+  "seed_counts": {
+    "users": 62,
+    "accounts": 125,
+    "transactions": 4090,
+    "ledger_entries": 8780,
+    "beneficiaries": 150,
+    "cards": 100,
+    "card_transactions": 600,
+    "bills": 200,
+    "savings": 50,
+    "savings_goals": 50,
+    "support_tickets": 100
+  },
+  "deleted_question": {
+    "config": "C",
+    "case": "deleted",
+    "http": 200,
+    "stream_events": [
+      "run",
+      "progress",
+      "tool",
+      "text",
+      "complete"
+    ],
+    "run": "COMPLETED",
+    "decision": "DENY",
+    "reason": "DOCUMENT_UNAVAILABLE",
+    "found": null,
+    "citation_matches_source_and_filename": false,
+    "answer": "I could not verify an answer from this document. Select a ready document and try again.",
+    "cited_count": 0,
+    "status": "PASS"
+  },
+  "finished": true
+}

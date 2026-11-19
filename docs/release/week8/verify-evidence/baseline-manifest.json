@@ -1,0 +1,70 @@
+{
+  "assistant-before.json": {
+    "source_commit": "5f0a87a431571a4f174f36984e9f59b2d09c7d4d",
+    "sha256": "3820864dce78517650044c70858d4285d3f6285f371dcd5c0bfe4a0c9d3f6b4b"
+  },
+  "assistant-now.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "f7e3ab18fdf9e7862db1d513fbdd7040e4f69820c7f994885a00cdf12cdc3488"
+  },
+  "bank.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "adf7e96c2c16cd319fdcea2286c5b8c41dc8a9b8796964ede172d57bace0893e"
+  },
+  "bank.xml": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "ad79bc66e2a4b8cfdc6083ffc47b6fd3583924df42da01462f96111ad7bbb9bb"
+  },
+  "controls-results.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "291ff8de3ac4106985ba8e90acd1430032cb3b0400a878070fe66cdbe634bb01"
+  },
+  "controls-review.md": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "cec84e76086304bea8febce1045957cfd3ab73e7dc324d3509f7e11bba76fe26"
+  },
+  "inventory-matrix.csv": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "49c25556c5c2ececc7e6e371ad67f04c6a7e4c5b356a4939e1e0ea9578015cf3"
+  },
+  "inventory-quality-1.xml": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "485f1082336d3f533fe83f8863ab5c92f0c159eb1110b857790f393391f7063e"
+  },
+  "inventory-quality-2.xml": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "9f97bf67775fc0bb2432b0fdc1104b0b5f1ae37f7082bbdbbc8505f2738291a5"
+  },
+  "inventory-review.md": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "5a1d0d19e2b16ddcd6dff2a26394e12c398c7eff52fa5f394acab07005c04eb5"
+  },
+  "inventory-summary.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "204f62048771706a0dd64bac12a325825dce93700f48168e45560af65e7c8879"
+  },
+  "rag-api.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "0a446f20ac8497be5c63f03c8d35c6280ccf5a987abae06f53623559ac7486a3"
+  },
+  "rag-junit.xml": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "9afd0322ff7d8ede12c1983eb44c02e195ad7c00c01a5cf05f0465bef2d97337"
+  },
+  "rag-results.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "13aae86e1c8bd20b12fa311340909ddd3fc00fe4fad335cbfcc1d0653a24f326"
+  },
+  "rag-summary.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "68584c1d14a6d74f8bf1cd2ad3ab020e0864bdf8807f6f3c0481878c9dc842ec"
+  },
+  "rag-ui.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "070fdb1ca31aae1438adb92f78a92ed147425547a56742bd48ab78e063b1c2e0"
+  },
+  "seed.json": {
+    "source_commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+    "sha256": "7589d815e0dba8a35a74d8685979707b344dd0d860d8d9da3cd449734ec0f5f1"
+  }
+}

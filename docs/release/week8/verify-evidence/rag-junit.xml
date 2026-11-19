@@ -1,0 +1,118 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="Mentor independent document contracts and live structured answers" tests="37" failures="4" errors="0" skipped="0">
+  <testcase classname="Document API" name="DOC-API-01">
+    <system-out>{"http": 201, "body_status": "ready", "db_owner": "bob", "db_status": "ready", "hash_correct": true, "detail": 200, "preview_present": true}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-02">
+    <system-out>{"anonymous_upload": 401, "anonymous_body": {"detail": "Please sign in"}, "expired_http": 401, "expired_body": {"detail": "Session expired. Please sign in again."}, "clock_fixture": "real sign-in with 1-second test TTL, then wait 2 seconds"}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-03">
+    <system-out>{"http": 201, "status": "rejected", "reason": "UNSUPPORTED_FILE", "db_reason": "UNSUPPORTED_FILE", "input": "Inert header and zero bytes, no executable content"}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-04">
+    <system-out>{"textless": {"http": 201, "reason": "NO_TEXT", "state": "rejected", "db_reason": "NO_TEXT", "chunks": 0}, "pages": {"http": 201, "reason": "TOO_MANY_PAGES", "state": "rejected", "db_reason": "TOO_MANY_PAGES", "chunks": 0}, "encrypted": {"http": 201, "reason": "ENCRYPTED_PDF", "state": "rejected", "db_reason": "ENCRYPTED_PDF", "chunks": 0}, "oversize": {"http": 201, "reason": "FILE_TOO_LARGE", "state": "rejected", "db_reason": "FILE_TOO_LARGE", "chunks": 0}}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-05">
+    <system-out>{"http": 201, "filename": "Demo.txt", "ui_source": "frontend/src/components/explore/Documents.tsx:88", "browser_executed": false}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-06">
+    <system-out>{"other_http": [404, 404], "other_body": [{"detail": "DOCUMENT_UNAVAILABLE"}, {"detail": "DOCUMENT_UNAVAILABLE"}], "owner_get": 200, "owner": "bob", "deleted_at": null, "chunk_count": 1}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-07">
+    <system-out>{"valid_uuid4": true, "owner_file_visible_to_second_customer": false, "absent_uuid_http": 404, "list_http": 200}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-08">
+    <system-out>{"http": 201, "db_owner": "alice"}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-09">
+    <system-out>{"cap_http": [201, 409], "cap_body": "DOCUMENT_LIMIT", "preexisting": 19, "db_active_after": 20, "sequential_upload_statuses": [201, 201, 201, 201, 201, 201, 201, 201, 429]}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-10">
+    <system-out>{"delete": 200, "delete_body": {"deleted": true}, "detail_after": 404, "chunks_after": 0}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-11">
+    <system-out>{"anonymous_http": 401, "anonymous_body": {"detail": "Delegated authorization required."}, "normal_customer_http": 401, "normal_customer_body": {"detail": "Invalid or expired delegation."}, "positive_gateway_case": "rag-results.json, ordinary user question; ask_document ALLOW"}</system-out>
+  </testcase>
+  <testcase classname="Document API" name="DOC-API-12">
+    <system-out>{"bad_media_http": 415, "bad_media_body": {"detail": "MULTIPART_REQUIRED"}, "auth_body": {"detail": "Please sign in"}, "unavailable_body": {"detail": "DOCUMENT_UNAVAILABLE"}, "malformed_paths_or_traces": false}</system-out>
+  </testcase>
+  <testcase classname="Document RAG D" name="invoice">
+    <system-out>{"config": "D", "case": "invoice", "http": 200, "stream_events": ["run", "tool", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG D" name="rate">
+    <system-out>{"config": "D", "case": "rate", "http": 200, "stream_events": ["run", "tool", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\n6 percent", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG D" name="term">
+    <system-out>{"config": "D", "case": "term", "http": 200, "stream_events": ["run", "tool", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": false, "citation_matches_source_and_filename": false, "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.", "cited_count": 0, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG D" name="fees">
+    <system-out>{"config": "D", "case": "fees", "http": 200, "stream_events": ["run", "tool", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_fee_schedule.txt\":\nInternal transfers: 0 VND, External transfers: 3,000 VND.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG D" name="absent">
+    <system-out>{"config": "D", "case": "absent", "http": 200, "stream_events": ["run", "tool", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": false, "citation_matches_source_and_filename": false, "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.", "cited_count": 0, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG A" name="invoice">
+    <system-out>{"config": "A", "case": "invoice", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18, as stated in the document \"benign_invoice.pdf\".", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG A" name="rate">
+    <system-out>{"config": "A", "case": "rate", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\nThe annual interest rate for the loan is 6 percent.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG A" name="term">
+    <failure message="FAIL">{"config": "A", "case": "term", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\nThe length of the loan in months is not explicitly stated in the document, but the start date is given as 2026-11-18. Assuming the loan is for a typical term, it might be a 36-month loan, but this is an estimate based on common loan terms. For precise information, you may need to refer to the full document or contact the bank.", "cited_count": 1, "status": "FAIL"}</failure>
+    <system-out>{"config": "A", "case": "term", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\nThe length of the loan in months is not explicitly stated in the document, but the start date is given as 2026-11-18. Assuming the loan is for a typical term, it might be a 36-month loan, but this is an estimate based on common loan terms. For precise information, you may need to refer to the full document or contact the bank.", "cited_count": 1, "status": "FAIL"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG A" name="fees">
+    <system-out>{"config": "A", "case": "fees", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_fee_schedule.txt\":\nThe internal transfer fee in VND is 0 VND, and the external transfer fee is 3,000 VND, as per the fee schedule effective from 2026-11-18.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG A" name="absent">
+    <failure message="FAIL">{"config": "A", "case": "absent", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe document \"benign_invoice.pdf\" does not contain information about the warranty period in years. It appears to be an invoice for Lotus Books. If you need assistance with warranty periods, please provide the relevant document or details.", "cited_count": 1, "status": "FAIL"}</failure>
+    <system-out>{"config": "A", "case": "absent", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe document \"benign_invoice.pdf\" does not contain information about the warranty period in years. It appears to be an invoice for Lotus Books. If you need assistance with warranty periods, please provide the relevant document or details.", "cited_count": 1, "status": "FAIL"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG B" name="invoice">
+    <system-out>{"config": "B", "case": "invoice", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18, as stated in the document \"benign_invoice.pdf\".", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG B" name="rate">
+    <system-out>{"config": "B", "case": "rate", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\nThe annual interest rate for the loan is 6 percent.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG B" name="term">
+    <failure message="FAIL">{"config": "B", "case": "term", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\nThe length of the loan in months is not explicitly stated in the document. However, the start date of the loan is given as 2026-11-18. If you need the duration, please provide more details or check the document again.", "cited_count": 1, "status": "FAIL"}</failure>
+    <system-out>{"config": "B", "case": "term", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\nThe length of the loan in months is not explicitly stated in the document. However, the start date of the loan is given as 2026-11-18. If you need the duration, please provide more details or check the document again.", "cited_count": 1, "status": "FAIL"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG B" name="fees">
+    <system-out>{"config": "B", "case": "fees", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_fee_schedule.txt\":\nAccording to the fee schedule in the document \"benign_fee_schedule.txt\", internal transfers incur no fee in VND, while external transfers have a fee of 3,000 VND. This information is effective as of November 18, 2026.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG B" name="absent">
+    <failure message="FAIL">{"config": "B", "case": "absent", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe document \"benign_invoice.pdf\" does not contain information about the warranty period in years. It appears to be an invoice for fictional training data.", "cited_count": 1, "status": "FAIL"}</failure>
+    <system-out>{"config": "B", "case": "absent", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe document \"benign_invoice.pdf\" does not contain information about the warranty period in years. It appears to be an invoice for fictional training data.", "cited_count": 1, "status": "FAIL"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG C" name="invoice">
+    <system-out>{"config": "C", "case": "invoice", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_invoice.pdf\":\nThe invoice total is 150,000 VND and the invoice date is 2026-11-18.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG C" name="rate">
+    <system-out>{"config": "C", "case": "rate", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_loan_contract.pdf\":\nThe annual interest rate stated in the document is 6 percent.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG C" name="term">
+    <system-out>{"config": "C", "case": "term", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": false, "citation_matches_source_and_filename": false, "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.", "cited_count": 0, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG C" name="fees">
+    <system-out>{"config": "C", "case": "fees", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": true, "citation_matches_source_and_filename": true, "answer": "According to document \"benign_fee_schedule.txt\":\nThe internal transfer fee is 0 VND, and the external transfer fee is 3,000 VND.", "cited_count": 1, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document RAG C" name="absent">
+    <system-out>{"config": "C", "case": "absent", "http": 200, "stream_events": ["run", "progress", "tool", "text", "complete"], "run": "COMPLETED", "decision": "ALLOW", "reason": "AUTHORIZED", "found": false, "citation_matches_source_and_filename": false, "answer": "I read the selected document, but could not verify an answer from its text. Try asking about a specific section.", "cited_count": 0, "status": "PASS"}</system-out>
+  </testcase>
+  <testcase classname="Document UI" name="image.png">
+    <system-out>{"label": "Not supported", "reason": "Choose a text-based PDF, TXT or Markdown file.", "visible": true}</system-out>
+  </testcase>
+  <testcase classname="Document UI" name="pages.pdf">
+    <system-out>{"label": "Not supported", "reason": "Choose a PDF with up to 50 pages.", "visible": true}</system-out>
+  </testcase>
+  <testcase classname="Document UI" name="empty.txt">
+    <system-out>{"label": "Not supported", "reason": "No readable text was found. Scanned documents are not supported.", "visible": true}</system-out>
+  </testcase>
+  <testcase classname="Document UI" name="large.txt">
+    <system-out>{"label": "Not supported", "reason": "Choose a file up to 5 MB.", "visible": true}</system-out>
+  </testcase>
+  <testcase classname="Document UI" name="quarantine-state.txt">
+    <system-out>{"label": "Unavailable for chat", "reason": "This document contains instructions aimed at the assistant.", "visible": true}</system-out>
+  </testcase>
+</testsuite>

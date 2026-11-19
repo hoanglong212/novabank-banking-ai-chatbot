@@ -1,0 +1,31 @@
+{
+  "commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+  "source": "Chromium mounted Documents component; GET list replay of observed invalid-upload states. Quarantine is a synthetic UI-only state.",
+  "results": {
+    "image.png": {
+      "label": "Not supported",
+      "reason": "Choose a text-based PDF, TXT or Markdown file.",
+      "visible": true
+    },
+    "pages.pdf": {
+      "label": "Not supported",
+      "reason": "Choose a PDF with up to 50 pages.",
+      "visible": true
+    },
+    "empty.txt": {
+      "label": "Not supported",
+      "reason": "No readable text was found. Scanned documents are not supported.",
+      "visible": true
+    },
+    "large.txt": {
+      "label": "Not supported",
+      "reason": "Choose a file up to 5 MB.",
+      "visible": true
+    },
+    "quarantine-state.txt": {
+      "label": "Unavailable for chat",
+      "reason": "This document contains instructions aimed at the assistant.",
+      "visible": true
+    }
+  }
+}

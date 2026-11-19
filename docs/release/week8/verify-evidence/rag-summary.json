@@ -1,0 +1,95 @@
+{
+  "commit": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+  "api_observed": {
+    "DOC-API-01": true,
+    "DOC-API-02": true,
+    "DOC-API-03": true,
+    "DOC-API-04": true,
+    "DOC-API-05": true,
+    "DOC-API-06": true,
+    "DOC-API-07": true,
+    "DOC-API-08": true,
+    "DOC-API-09": true,
+    "DOC-API-10": true,
+    "DOC-API-11": true,
+    "DOC-API-12": true
+  },
+  "profiles": {
+    "A": {
+      "display": {
+        "invoice": "PASS",
+        "rate": "PASS",
+        "term": "FAIL",
+        "fees": "PASS",
+        "absent": "PASS"
+      },
+      "display_correct": 4,
+      "structured_correct": 3,
+      "denominator": 5
+    },
+    "B": {
+      "display": {
+        "invoice": "PASS",
+        "rate": "PASS",
+        "term": "PASS",
+        "fees": "PASS",
+        "absent": "PASS"
+      },
+      "display_correct": 5,
+      "structured_correct": 3,
+      "denominator": 5
+    },
+    "C": {
+      "display": {
+        "invoice": "PASS",
+        "rate": "PASS",
+        "term": "PASS",
+        "fees": "PASS",
+        "absent": "PASS"
+      },
+      "display_correct": 5,
+      "structured_correct": 5,
+      "denominator": 5
+    },
+    "D": {
+      "display": {
+        "invoice": "PASS",
+        "rate": "PASS",
+        "term": "PASS",
+        "fees": "PASS",
+        "absent": "PASS"
+      },
+      "display_correct": 5,
+      "structured_correct": 5,
+      "denominator": 5
+    }
+  },
+  "browser": {
+    "image.png": {
+      "label": "Not supported",
+      "reason": "Choose a text-based PDF, TXT or Markdown file.",
+      "visible": true
+    },
+    "pages.pdf": {
+      "label": "Not supported",
+      "reason": "Choose a PDF with up to 50 pages.",
+      "visible": true
+    },
+    "empty.txt": {
+      "label": "Not supported",
+      "reason": "No readable text was found. Scanned documents are not supported.",
+      "visible": true
+    },
+    "large.txt": {
+      "label": "Not supported",
+      "reason": "Choose a file up to 5 MB.",
+      "visible": true
+    },
+    "quarantine-state.txt": {
+      "label": "Unavailable for chat",
+      "reason": "This document contains instructions aimed at the assistant.",
+      "visible": true
+    }
+  },
+  "coverage_note": "DOC-API-05 uses a benign nested HTML-like filename and reads the React text sink. DOC-API-07 uses a known foreign record and an unused UUID. DOC-API-11 is an ordinary credential denial plus a separate authorized question. No adversarial replay."
+}

@@ -1,0 +1,82 @@
+{
+  "revision": "0548e998e44c9fb5400ae9211ffdaf6cdf677074",
+  "fresh_seed": 20261115,
+  "results": {
+    "API-02": {
+      "result": "WEAK",
+      "unit": "validate_accounts",
+      "reason": "ACCOUNT_NOT_OWNED",
+      "balance_before": 39450000,
+      "balance_after": 39450000,
+      "scope": "Ledger unit; HTTP foreign-owner write not exercised"
+    },
+    "API-03": {
+      "result": "WEAK",
+      "dto": "Nickname",
+      "allowed_field": "nickname",
+      "extra_forbidden": [
+        "role",
+        "balance",
+        "owner_id"
+      ],
+      "scope": "Validator rejected all extras; no HTTP write was attempted, only one DTO sampled"
+    },
+    "API-05": {
+      "result": "WEAK",
+      "missing_delegation": 401,
+      "recorded_calls_before": 0,
+      "recorded_calls_after": 0,
+      "scope": "Normal missing-credential denial. No bypass scenario or delegated positive in this case"
+    },
+    "API-11": {
+      "result": "WEAK",
+      "password_step": 202,
+      "issued_session_before_mfa": false,
+      "unit_pending_challenge_credential": 401,
+      "unauthenticated_me": 401,
+      "after_mfa_me": 200,
+      "sessions_before": 0,
+      "sessions_pending": 0,
+      "sessions_after": 1,
+      "scope": "Pending credential at authenticate() unit, ordinary /me HTTP before and after MFA"
+    },
+    "API-12": {
+      "result": "WEAK",
+      "unit": "login email MFA",
+      "expired_status": 400,
+      "replay_status": 400,
+      "wrong_status": 400,
+      "failure_count": 5,
+      "consumed": true,
+      "locked": true,
+      "scope": "Controlled expiry, one-time and lock threshold. Transfer OTP path and brute force not executed"
+    },
+    "API-09": {
+      "result": "WEAK",
+      "ordinary_name_search_status": 200,
+      "returned": 0,
+      "source": "backend/app/customer_services.py:97; user ID and three LIKE values bound as parameters",
+      "scope": "Bound SQL and ordinary apostrophe-bearing name only; no SQL injection payload run"
+    },
+    "API-08": {
+      "result": "WEAK",
+      "unit": "BEGIN IMMEDIATE + post_journal, 2 local workers",
+      "outcomes": [
+        "INSUFFICIENT_FUNDS",
+        "posted"
+      ],
+      "balances_before": [
+        38200000,
+        39450000
+      ],
+      "balances_after": [
+        19099999,
+        58550001
+      ],
+      "single_journal_amount": 19100001,
+      "ledger_rows": 2,
+      "signed_journal_sum": 0,
+      "scope": "No parallel HTTP transfer execution"
+    }
+  }
+}
