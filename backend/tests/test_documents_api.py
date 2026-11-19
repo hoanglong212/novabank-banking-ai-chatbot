@@ -87,6 +87,26 @@ def test_DOC_API_03_04_12_rejections(client, engines, data, name, reason):
     assert 'Traceback' not in r.text and 'C:\\' not in r.text
 
 
+def test_embedding_outage_can_retry_same_upload(client, engines, monkeypatch):
+    who = login(client)
+    working = engines.embed
+
+    async def unavailable(texts):
+        raise TimeoutError
+
+    monkeypatch.setattr(engines, 'embed', unavailable)
+    response = upload(client, who, b'Loan term: 12 months.', 'term.txt')
+    assert response.status_code == 201
+    failed = response.json()
+    assert (failed['status'], failed['status_reason']) == ('scan_failed', 'DOCUMENT_EMBEDDING_UNAVAILABLE')
+    with get_db().connect() as db:
+        assert db.execute('SELECT COUNT(*) FROM doc_chunks WHERE document_id=?', (failed['id'],)).fetchone()[0] == 0
+    monkeypatch.setattr(engines, 'embed', working)
+    retry = upload(client, who, b'Loan term: 12 months.', 'term.txt')
+    assert retry.status_code == 201
+    assert (retry.json()['id'], retry.json()['status']) == (failed['id'], 'ready')
+
+
 def test_DOC_API_04_password_pdf(client, engines):
     writer = PdfWriter()
     writer.add_blank_page(100, 100)

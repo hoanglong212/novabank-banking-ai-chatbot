@@ -6,6 +6,84 @@ from tests.test_documents_api import engines, upload  # noqa: F401
 from tests.test_documents_gateway import config, call
 from tests.test_week7 import grant_for
 
+
+@pytest.mark.parametrize(('answer','supported'), [
+    ('The annual rate is 6%.', True),
+    ('The annual rate is 9 percent.', False),
+    ('The fee is 40,000 VND.', False),
+    ('The start date is 2026-12-18.', False),
+    ('It belongs to NAME_9.', False),
+])
+def test_reader_distinguishes_unsupported_facts_from_model_failure(monkeypatch, answer, supported):
+    import asyncio
+    from app.documents import reader
+
+    async def response(question, passages):
+        return json.dumps({'found':True, 'answer':answer, 'cited_chunk_ids':['S1']})
+
+    monkeypatch.setattr(reader, 'request', response)
+    chunks = [{'id':'verified', 'text':'Annual rate: 6 percent. Fee: 30,000 VND. Start date: 2026-11-18.'}]
+    result, rule = asyncio.run(reader.isolate('What does the contract state?', chunks))
+    assert rule == 'document-isolated'
+    assert result['found'] is supported
+    assert result['cited_chunk_ids'] == (['verified'] if supported else [])
+    assert result['answer'] == (answer if supported else '')
+
+
+@pytest.mark.parametrize('cfg', ['A', 'B'])
+@pytest.mark.parametrize('stated', [False, True])
+def test_document_term_uses_grounded_answer_for_display_and_audit(client, engines, monkeypatch, cfg, stated):
+    from app.documents import reader
+
+    monkeypatch.setenv('ENV', 'demo')
+    who = login(client)
+    text = 'Annual interest: 6 percent.' + (' Contract term: 24 months.' if stated else '')
+    key = upload(client, who, text.encode(), 'loan.txt').json()['id']
+    question = 'What is the contract term in months?'
+    config(client, cfg)
+    _, grant, token = grant_for(client, who, 'Document ' + key + ': ' + question)
+
+    async def fixture_reader(prompt, passages):
+        return json.dumps({'found': True, 'answer': 'The term is 24 months.',
+                           'cited_chunk_ids': [passages[0]['id']]})
+
+    monkeypatch.setattr(reader, 'request', fixture_reader)
+    response = call(client, token, key, question)
+    assert response['decision'] == 'ALLOW'
+    payload = response['result']
+    assert payload['chunks'] and payload['found'] is stated
+    with get_db().connect() as conn:
+        audit = json.loads(conn.execute("SELECT result_json FROM agent_calls WHERE run_id=? AND name='ask_document'",
+                                       (grant['run_id'],)).fetchone()[0])
+    assert audit['found'] is stated and bool(audit['cited_chunk_ids']) is stated
+    finished = client.post('/api/agent/finish', headers=token, json={'answer': 'The term is 24 months.', 'latency_ms': 1})
+    assert finished.status_code == 200
+    displayed = finished.json()['message']['content']
+    assert ('24 months' in displayed) is stated
+    assert ('could not verify an answer' in displayed) is not stated
+
+
+def test_later_unanswered_document_read_cannot_reuse_the_earlier_citation(client, engines, monkeypatch):
+    from app.documents import reader
+
+    monkeypatch.setenv('ENV', 'demo')
+    who = login(client)
+    key = upload(client, who, b'Contract term: 24 months.', 'loan.txt').json()['id']
+    config(client, 'A')
+    _, _, token = grant_for(client, who, 'Document ' + key + ': What are the term and fee?')
+
+    async def fixture_reader(question, passages):
+        amount = '24 months' if 'term' in question else '9,000 VND'
+        return json.dumps({'found': True, 'answer': amount, 'cited_chunk_ids': ['S1']})
+
+    monkeypatch.setattr(reader, 'request', fixture_reader)
+    assert call(client, token, key, 'What is the term?')['result']['found']
+    assert not call(client, token, key, 'What is the fee?')['result']['found']
+    finished = client.post('/api/agent/finish', headers=token,
+                           json={'answer':'The fee is 9,000 VND.', 'latency_ms':1})
+    assert finished.status_code == 200
+    assert 'could not verify an answer' in finished.json()['message']['content']
+
 @pytest.mark.parametrize('cfg',['C','D'])
 def test_document_selection_is_bound_to_user_not_model(client, engines, monkeypatch,cfg):
     monkeypatch.setenv('ENV','demo')

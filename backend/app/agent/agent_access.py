@@ -513,8 +513,7 @@ async def execute_tool(db, user, run, name, arguments):
                 if args['document_id'] != selected(db, user.id, intent):
                     raise HTTPException(403, 'DOCUMENT_SELECTION_MISMATCH')
             doc, chunks = await retrieve(db, user.id, args['document_id'], args['question'], vault)
-            result = {'document_id': doc['id'], 'filename_display': doc['filename_display'],
-                      'found': True, 'chunks': chunks, 'cited_chunk_ids': [c['id'] for c in chunks]}
+            result = {'document_id': doc['id'], 'filename_display': doc['filename_display'], 'chunks': chunks}
         elif name in staff_tools.READS:
             with closing(db.connect()) as conn:
                 result = staff_tools.execute(conn, user, name, args, intent, bound=not off)
@@ -587,13 +586,16 @@ async def execute_tool(db, user, run, name, arguments):
         safe_result = {**result, 'filename_display': private_document(result['filename_display'], vault),
                        'chunks': [{'id': c['id'], 'text': private_document(c['text'], vault)} for c in result['chunks']]}
         document_aliases = set().union(*(aliases(c['text']) for c in safe_result['chunks']))
+        # Similarity only selects passages. An answer and its citations must be
+        # verified even in the A/B configurations that expose those passages.
+        from ..documents.reader import isolate
+        grounded, isolation_rule = await isolate(vault.pseudonymize(args['question']), safe_result['chunks'])
         if layer_enabled(run, 'dual_llm'):
-            from ..documents.reader import isolate
-            isolated, isolation_rule = await isolate(vault.pseudonymize(args['question']), safe_result['chunks'])
-            safe_result = {'document_id': result['document_id'], 'filename_display': safe_result['filename_display'], **isolated}
-            document_aliases &= aliases(isolated['answer'])
-            if isolation_rule == 'DOCUMENT_READER_UNAVAILABLE':
-                decision, reason = 'DENY', isolation_rule
+            safe_result.pop('chunks')
+            document_aliases &= aliases(grounded['answer'])
+        safe_result.update(grounded)
+        if isolation_rule == 'DOCUMENT_READER_UNAVAILABLE':
+            decision, reason, safe_result = 'DENY', isolation_rule, {'error': isolation_rule}
         from ..documents.repository import Repository
         try:
             Repository(db, user.id).get(args['document_id'], ready=True)

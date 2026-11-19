@@ -66,6 +66,7 @@ async def ingest(db, owner, data, original_name):
         event(db, owner, 'doc_ingest', key, digest, str(exc))
         return repo.get(key)
     # Screen the filename as well: filenames are another untrusted text surface.
+    failure_reason = 'DOCUMENT_PROCESSING_UNAVAILABLE'
     try:
         vault = register([display, *chunks])
         for text in [display, *chunks]:
@@ -78,12 +79,14 @@ async def ingest(db, owner, data, original_name):
                 repo.finish(key, 'quarantined', 'SOURCE_INJECTION')
                 event(db, owner, 'doc_quarantine', key, digest, 'SOURCE_INJECTION')
                 return repo.get(key)
-        model, vectors = await embed([prepare(text, vault) for text in chunks])
+        inputs = [prepare(text, vault) for text in chunks]
+        failure_reason = 'DOCUMENT_EMBEDDING_UNAVAILABLE'
+        model, vectors = await embed(inputs)
         if not valid_vectors(vectors, len(chunks)):
             raise ValueError('Invalid embeddings')
     except Exception:
-        repo.finish(key, 'scan_failed', 'DOCUMENT_PROCESSING_UNAVAILABLE')
-        event(db, owner, 'doc_scan_failed', key, digest, 'DOCUMENT_PROCESSING_UNAVAILABLE')
+        repo.finish(key, 'scan_failed', failure_reason)
+        event(db, owner, 'doc_scan_failed', key, digest, failure_reason)
         return repo.get(key)
     repo.finish(key, 'ready', 'doc-source-clean', chunks, vectors, model)
     event(db, owner, 'doc_ingest', key, digest, 'doc-source-clean')

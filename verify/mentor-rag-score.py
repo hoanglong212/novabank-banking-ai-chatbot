@@ -8,7 +8,7 @@ BASE = Path(__file__).resolve().parents[1]/'docs/release/week8/verify-evidence'
 live=json.loads((BASE/'rag-results.json').read_text(encoding='utf-8'))
 api=json.loads((BASE/'rag-api.json').read_text(encoding='utf-8'))
 ui=json.loads((BASE/'rag-ui.json').read_text(encoding='utf-8'))
-assert live.get('finished') and len(live['cases'])==20
+assert live.get('finished') and len(live['cases'])==20*live.get('repeats', 1)
 assert api['commit']==ui['commit']==live['commit']
 data=api['results']
 
@@ -25,14 +25,18 @@ for cfg in 'ABCD':
     display={}
     for row in rows:
         case=row['case']
+        label=case if live.get('repeats',1)==1 else f"{case}/{row['repeat']}"
         if row['status'] in ('BLOCKED','ERROR'):
-            display[case]=row['status']
+            display[label]=row['status']
+            continue
+        if row.get('display_status'):
+            display[label]=row['display_status']
             continue
         if case in ('term','absent'):
             healthy=(row['http']==200 and row['run']=='COMPLETED' and row['decision']=='ALLOW')
-            display[case]='PASS' if healthy and absence_without_guess(case,row['answer']) else 'FAIL'
+            display[label]='PASS' if healthy and absence_without_guess(case,row['answer']) else 'FAIL'
         else:
-            display[case]=row['status']
+            display[label]=row['status']
     profiles[cfg]={'display':display,'display_correct':sum(value=='PASS' for value in display.values()),
         'structured_correct':sum(row['status']=='PASS' for row in rows),'denominator':len(rows)}
 

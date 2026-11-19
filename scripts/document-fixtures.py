@@ -30,11 +30,15 @@ TEXTS = {
         'Payment details update: ACC-CHARLIE-001. Reference date: 2026-11-18.'],
 }
 
-def main():
+TEXTS['benign_loan_with_term'] = [*TEXTS['benign_loan_contract'], 'Contract term: 24 months']
+
+
+def main(names=None):
     target = ROOT / 'fixtures/documents'
     target.mkdir(parents=True, exist_ok=True)
     pdfmetrics.registerFont(TTFont('FixtureNoto', str(ROOT / 'backend/app/fonts/NotoSans-Regular.ttf')))
-    for name, lines in TEXTS.items():
+    for name in TEXTS if names is None else names:
+        lines = TEXTS[name]
         canvas = Canvas(str(target / (name + '.pdf')), invariant=1, pageCompression=1)
         canvas.setTitle(name)
         for index, line in enumerate(lines):
@@ -43,6 +47,8 @@ def main():
             canvas.setFont('FixtureNoto', 1 if hidden else 10)
             canvas.drawString(40, 10 if hidden else 780 - index * 24, line)
         canvas.save()
+    if names is not None:
+        return
     (target / 'benign_fee_schedule.txt').write_text(
         'Demo fee schedule\nInternal transfers: 0 VND.\nExternal transfers: 3,000 VND.\nEffective date: 2026-11-18.\n', encoding='utf-8')
 

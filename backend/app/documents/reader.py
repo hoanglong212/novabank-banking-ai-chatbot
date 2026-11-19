@@ -12,9 +12,19 @@ from .binding import MAX_SUMMARY_PASSAGES, summary_requested
 from .privacy import aliases
 
 NUMBER = r'\d+(?:[.,]\d+|[ \u00a0]\d{3})*'
-UNIT = r'VND|USD|₫|%'
+UNIT = r'VND|USD|₫|%|percent|per cent|phần trăm'
 AMOUNT = re.compile(rf'(?<!\w)({NUMBER})(?:[ \t\u00a0]*({UNIT}))?(?!\w|[.,]\d)', re.IGNORECASE)
 DATE = re.compile(r'(?<!\d)(?:\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4})(?!\d)')
+DURATION = re.compile(r'\b(\d+)[\s-]*(months?|years?|days?|weeks?|tháng|năm|ngày|tuần)\b', re.I)
+DURATION_UNIT = {'tháng':'month', 'năm':'year', 'ngày':'day', 'tuần':'week'}
+NO_INFORMATION = re.compile(
+    r'\b(?:not (?:explicitly )?(?:stated|specified|provided|mentioned)|does not (?:contain|specify|provide) '
+    r'(?:any |the requested )?information|cannot (?:be )?(?:determined|found) (?:from|in) (?:the|this) document)\b', re.I)
+
+
+class UnsupportedClaim(ValueError):
+    """The reader responded successfully but its cited passages do not establish the claim."""
+
 
 class CitedAnswer(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
@@ -32,6 +42,14 @@ def numeric_value(value):
     if re.fullmatch(r'\d{1,3}(?:[., \u00a0]\d{3})+', value):
         return re.sub(r'\D', '', value)
     return value.replace(',', '.')
+
+
+def unit_value(value):
+    return '%' if value.casefold() in ('percent', 'per cent', 'phần trăm') else value.upper()
+
+
+def durations(text):
+    return {(int(n), DURATION_UNIT.get(unit.casefold(), unit.casefold().rstrip('s'))) for n, unit in DURATION.findall(text)}
 
 
 def calendar_date(value):
@@ -62,15 +80,18 @@ def validate(content, chunks, *, summary=False):
         if sentence:
             result['answer'] = sentence[1]
     source = '\n'.join(c['text'] for c in chunks if c['id'] in result['cited_chunk_ids'])
-    source_amounts = {(numeric_value(n), unit.upper()) for n, unit in AMOUNT.findall(source)}
+    if result['found'] and (not durations(result['answer']) <= durations(source)
+                            or (not summary and NO_INFORMATION.search(result['answer']))):
+        raise UnsupportedClaim('Unsupported document answer')
+    source_amounts = {(numeric_value(n), unit_value(unit)) for n, unit in AMOUNT.findall(source)}
     amounts = result['amounts'] + [m[0] for m in AMOUNT.finditer(result['answer']) if m[2]]
     for amount in amounts:
         match = AMOUNT.fullmatch(amount)
         if not match:
             raise ValueError('Unsupported amount')
-        number, unit = numeric_value(match[1]), (match[2] or '').upper()
+        number, unit = numeric_value(match[1]), unit_value(match[2] or '')
         if not any(n == number and (not unit or unit == u) for n, u in source_amounts):
-            raise ValueError('Unsupported amount')
+            raise UnsupportedClaim('Unsupported amount')
     source_dates = set()
     for item in DATE.findall(source):
         try:
@@ -78,10 +99,12 @@ def validate(content, chunks, *, summary=False):
         except ValueError:
             continue
     for item in [*result['dates'], *DATE.findall(result['answer'])]:
-        if not DATE.fullmatch(item) or calendar_date(item) not in source_dates:
-            raise ValueError('Unsupported date')
+        if not DATE.fullmatch(item):
+            raise ValueError('Invalid date')
+        if calendar_date(item) not in source_dates:
+            raise UnsupportedClaim('Unsupported date')
     if not aliases(result['answer']) <= aliases(source):
-        raise ValueError('Invented pseudonym')
+        raise UnsupportedClaim('Invented pseudonym')
     return result
 
 
@@ -130,10 +153,13 @@ async def isolate(question, chunks):
     # to stored chunk IDs, after verifying that every citation was supplied.
     references = {f'S{i}': chunk['id'] for i, chunk in enumerate(chunks, 1)}
     prompts = [{**chunk, 'id': key} for key, chunk in zip(references, chunks)]
+    no_answer = {'found':False,'answer':'','cited_chunk_ids':[],'amounts':[],'dates':[]}
     try:
         async with asyncio.timeout(85):
             result = validate(await request(question, prompts), prompts, summary=summary_requested(question))
             result['cited_chunk_ids'] = [references[key] for key in result['cited_chunk_ids']]
             return result, 'document-isolated'
+    except UnsupportedClaim:
+        return no_answer, 'document-isolated'
     except (httpx.HTTPError, TimeoutError, ValueError, KeyError, TypeError):
-        return {'found':False,'answer':'','cited_chunk_ids':[],'amounts':[],'dates':[]}, 'DOCUMENT_READER_UNAVAILABLE'
+        return no_answer, 'DOCUMENT_READER_UNAVAILABLE'

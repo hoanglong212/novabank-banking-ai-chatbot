@@ -32,19 +32,21 @@ def unfiltered_answer(conn, db, run, answer, vault):
     return attribute(conn, db, run, answer) if is_read(conn, db, run) else answer
 
 def cited_document(conn, db, run):
-    rows = conn.execute("""SELECT result_json FROM agent_calls
-        WHERE run_id=? AND name='ask_document' AND decision='ALLOW' ORDER BY ordinal DESC""", (run['id'],))
-    for row in rows:
-        evidence = json.loads(row[0])
-        if not evidence.get('found'):
-            continue
-        try:
-            doc = Repository(db, run['owner_id']).get(evidence.get('document_id'), ready=True)
-        except HTTPException:
-            continue
-        chunks = Repository(db, run['owner_id']).chunks(doc['id'])
-        if any(c['id'] in evidence.get('cited_chunk_ids', []) for c in chunks):
-            return doc, len(chunks)
+    row = conn.execute("""SELECT decision,result_json FROM agent_calls
+        WHERE run_id=? AND name='ask_document' ORDER BY ordinal DESC LIMIT 1""", (run['id'],)).fetchone()
+    if not row or row['decision'] != 'ALLOW':
+        return None
+    evidence = json.loads(row['result_json'])
+    if not evidence.get('found') or not evidence.get('cited_chunk_ids'):
+        return None
+    repo = Repository(db, run['owner_id'])
+    try:
+        doc = repo.get(evidence.get('document_id'), ready=True)
+        chunks = repo.chunks(doc['id'])
+    except HTTPException:
+        return None
+    if set(evidence['cited_chunk_ids']) <= {chunk['id'] for chunk in chunks}:
+        return doc, len(chunks)
     return None
 
 

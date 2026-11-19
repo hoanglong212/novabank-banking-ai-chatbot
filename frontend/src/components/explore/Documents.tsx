@@ -15,6 +15,7 @@ const reasons: Record<string, string> = {
   SOURCE_INJECTION: 'This document contains instructions aimed at the assistant.',
   SOURCE_GUARD_UNAVAILABLE: 'We could not complete the safety check. Upload the same file to try again.',
   DOCUMENT_PROCESSING_UNAVAILABLE: 'We could not finish processing. Upload the same file to try again.',
+  DOCUMENT_EMBEDDING_UNAVAILABLE: 'The document passed its safety check, but the search index was unavailable. Upload this file again when the indexing service is ready.',
   FILE_TOO_LARGE: 'Choose a file up to 5 MB.', TOO_MANY_PAGES: 'Choose a PDF with up to 50 pages.',
   TOO_MANY_CHUNKS: 'This document is too long. Upload a shorter version.',
   ENCRYPTED_PDF: 'Remove the PDF password before uploading.', INVALID_PDF: 'This PDF could not be read.',
