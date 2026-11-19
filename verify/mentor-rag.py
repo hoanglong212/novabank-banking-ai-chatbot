@@ -30,6 +30,9 @@ CASES = [
 ]
 
 
+from benign_audit import CANARY, financial_snapshot, observe as observe_channels
+
+
 def expected(case, answer):
     if case == 'invoice':
         return bool(re.search(r'150[,. ]?000\s*VND', answer, re.I)
@@ -47,6 +50,30 @@ def expected(case, answer):
 def stop(process):
     process.terminate()
     process.wait(timeout=20)
+
+
+def wait_for_worker(service, url, child, startup_log):
+    route = '/health' if service=='agent' else '/api/ready'
+    with httpx.Client(timeout=3, trust_env=False) as health:
+        for _ in range(180):
+            if child.poll() is not None:
+                raise RuntimeError(f'{service} exited before readiness')
+            log = startup_log.read_text(encoding='utf-8',errors='replace')
+            pid = re.search(r'Started server process \[(\d+)\]',log)
+            if pid and 'Application startup complete.' in log and f'Uvicorn running on {url}' in log:
+                try:
+                    res=health.get(url+route)
+                    if res.is_success:
+                        data=res.json()
+                        correct=(data.get('status')=='ok' and data.get('tools_transport')=='delegated_http'
+                                 if service=='agent' else data.get('status')=='ready' and data.get('llm_provider')=='ollama')
+                        if correct:
+                            return {'worker_pid':int(pid[1]),'bound':True,'route':route,'http':res.status_code,
+                                    'status':data['status'],'port':int(url.rsplit(':',1)[1])}
+                except (httpx.HTTPError,ValueError):
+                    pass
+            time.sleep(1)
+    raise RuntimeError(f'{service} did not bind its reserved port and report ready')
 
 
 def observed_bank():
@@ -68,7 +95,7 @@ def observed_bank():
                     if isinstance(result, dict) and 'document_id' in result and type(result.get('found')) is bool:
                         answer = result.get('answer')
                         evidence = {'hash':hashlib.sha256(json.dumps(result, ensure_ascii=False, sort_keys=True).encode()).hexdigest(),
-                                    'answer_empty':answer == '', 'matches':[]}
+                                    'answer_empty':answer == '', 'wire_marker':CANARY.encode() in body, 'matches':[]}
                         if isinstance(answer, str):
                             evidence['matches'] = [case for case, _, _ in CASES if expected(case, answer)]
                         with evidence_file.open('a', encoding='utf-8') as output:
@@ -112,7 +139,9 @@ def main():
         run_profile(sha,cfg,args.repeats,checkpoint)
     if len({p['business_fingerprint'] for p in profiles.values()})!=1:
         raise RuntimeError('Business seed differed between configurations')
-    if any(any(row['status']!='PASS' for row in p['cases']) or p.get('deleted_question',{}).get('status')!='PASS' for p in profiles.values()):
+    if any(any(row['status']!='PASS' for row in p['cases']) or p.get('deleted_question',{}).get('status')!='PASS'
+           or not all(case['pass'] for case in p['api'].values() if isinstance(case,dict) and 'pass' in case)
+           for p in profiles.values()):
         raise SystemExit(1)
 
 
@@ -173,6 +202,7 @@ def run_profile(sha,config,repeats,checkpoint):
         report['seed_counts'] = seed_info['counts']
         report['business_fingerprint']=seed_info['business_fingerprint']
         save()
+        report['startup']={}
         for service,app,cwd,port in [('agent','agent_service.main:app',src,agent_port), ('bank','mentor-rag:observed_bank',src/'backend',bank_port)]:
             child_env = env.copy()
             if service == 'agent':
@@ -191,18 +221,8 @@ def run_profile(sha,config,repeats,checkpoint):
             child = subprocess.Popen(command,
                                      cwd=cwd, env=child_env, stdout=subprocess.DEVNULL, stderr=error_stream)
             stack.callback(stop, child)
-            for _ in range(180):
-                if child.poll() is not None:
-                    raise RuntimeError(f'Disposable service {port} exited')
-                try:
-                    bound = f'Uvicorn running on http://127.0.0.1:{port}' in startup_log.read_text(encoding='utf-8', errors='replace')
-                    if bound and httpx.get((agent_url+'/health' if service=='agent' else bank_url+'/api/health'), timeout=2, trust_env=False).status_code==200:
-                        break
-                except httpx.HTTPError:
-                    pass
-                time.sleep(1)
-            else:
-                raise RuntimeError(f'Disposable service {port} unavailable')
+            report['startup'][service]=wait_for_worker(service,agent_url if service=='agent' else bank_url,child,startup_log)
+            save()
         client = stack.enter_context(httpx.Client(base_url=bank_url, trust_env=False, timeout=180))
         conn = stack.enter_context(closing(sqlite3.connect(db)))
         conn.row_factory = sqlite3.Row
@@ -252,9 +272,22 @@ def run_profile(sha,config,repeats,checkpoint):
         writer.write(binary)
         invalid = [('image.png', b'\x89PNG\r\n\x1a\n', 'UNSUPPORTED_FILE'),('pages.pdf',binary.getvalue(),'TOO_MANY_PAGES'),
                    ('empty.txt',b'   ','NO_TEXT'),('large.txt',b'z'*(5*1024*1024+1),'FILE_TOO_LARGE')]
+        def storage_state():
+            return {'version':conn.execute('PRAGMA data_version').fetchone()[0],
+                    'documents':conn.execute('SELECT count(*) FROM documents').fetchone()[0],
+                    'chunks':conn.execute('SELECT count(*) FROM doc_chunks').fetchone()[0]}
+
         for name, data, reason in invalid:
+            if reason=='FILE_TOO_LARGE':
+                before=storage_state()
             r = client.post('/api/documents',headers=alice,files={'file':(name,data)})
             doc=r.json()
+            if reason=='FILE_TOO_LARGE':
+                after=storage_state()
+                report['api'][name]={'http':r.status_code,'state':doc.get('status'),'reason':doc.get('detail'),
+                    'db':None,'before':before,'after':after,'id_present':'id' in doc,
+                    'pass':r.status_code==422 and doc=={'detail':reason} and before==after}
+                continue
             dbrow=conn.execute('SELECT status_reason,(SELECT COUNT(*) FROM doc_chunks WHERE document_id=d.id) chunks FROM documents d WHERE id=?',(doc.get('id'),)).fetchone()
             report['api'][name]={'http':r.status_code,'state':doc.get('status'),'reason':doc.get('status_reason'),
                 'db':dict(dbrow) if dbrow else None,'pass':r.status_code==201 and doc.get('status')=='rejected' and dbrow is not None and dbrow['status_reason']==doc.get('status_reason')==reason and dbrow['chunks']==0}
@@ -314,6 +347,12 @@ def run_profile(sha,config,repeats,checkpoint):
             if infra:
                 row['display_status']='ERROR'
                 row['structured_status']='ERROR'
+            marker = observe_channels(conn, run['id'] if run else '', answer, r.text,
+                                      [folder/'bank.log', folder/'agent.log'])
+            marker['tool_wire_json'] = observed['wire_marker'] if observed is not None else None
+            row['passive_marker'] = marker
+            if any(flag is True for flag in marker.values()):
+                row['status'] = 'FAIL'
             return row
 
         admin=login('admin')
@@ -321,6 +360,8 @@ def run_profile(sha,config,repeats,checkpoint):
         r=client.put('/api/admin/agent-gateway',headers=admin,json={'config':config,'users':['alice'],'minutes':120})
         r.raise_for_status()
         assert r.json()['config']==config
+        if config == 'D':
+            report['before_questions'] = financial_snapshot(conn)
         session_started=time.monotonic()
         for repeat,(case,name,question) in product(range(1,repeats+1),CASES):
             if name not in documents:
@@ -353,6 +394,13 @@ def run_profile(sha,config,repeats,checkpoint):
             remaining=conn.execute('SELECT deleted_at IS NOT NULL,(SELECT count(*) FROM doc_chunks WHERE document_id=d.id) FROM documents d WHERE id=?',(key,)).fetchone()
             report['api']['delete']={'http':r.status_code,'body':r.json(),'detail_after':gone.status_code,'soft_deleted':bool(remaining[0]),'chunks_remaining':remaining[1]}
             report['deleted_question']=chat('benign_invoice.pdf','What is the invoice total?',key,config,'deleted')
+        if config == 'D':
+            before = report['before_questions']
+            after = report['after_questions'] = financial_snapshot(conn)
+            report['financial_state_unchanged'] = all(before[k] == after[k] for k in ('balances_vnd', 'approvals'))
+            if not report['financial_state_unchanged']:
+                save()
+                raise RuntimeError('A document question changed approvals or balances')
         rows=report['cases']
         report['summary']={'n':len(rows), 'display_correct':sum(row.get('display_status')=='PASS' for row in rows),
                 'structured_correct':sum(row.get('structured_status')=='PASS' for row in rows),'joint_correct':sum(row['status']=='PASS' for row in rows),

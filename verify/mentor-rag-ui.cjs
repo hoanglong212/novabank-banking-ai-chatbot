@@ -51,6 +51,17 @@ async function run() {
     await page.goto('http://127.0.0.1:18215/');
     const results={};
     for(const [name,text] of Object.entries(expected)){
+      if(name==='large.txt' && measured.api[name]?.http===422){
+        await page.getByLabel('Choose a document').setInputFiles({
+          name, mimeType:'text/plain', buffer:Buffer.alloc(5*1024*1024+1,65)
+        });
+        await page.getByRole('button',{name:'Upload document',exact:true}).click();
+        const alert=page.getByRole('alert').filter({hasText:text});
+        await alert.waitFor();
+        results[name]={label:'Upload validation',reason:text,visible:await alert.isVisible(),
+                       no_document_row:await page.getByRole('article').filter({hasText:name}).count()===0};
+        continue;
+      }
       const article=page.getByRole('article').filter({hasText:name});
       await article.getByText(text,{exact:true}).waitFor({timeout:15000});
       const label = name==='quarantine-state.txt' ? 'Unavailable for chat' : 'Not supported';
@@ -58,7 +69,7 @@ async function run() {
     }
     const output={commit:measured.commit,source:'Chromium mounted Documents component; GET list replay of observed invalid-upload states. Quarantine is a synthetic UI-only state.',results};
     fs.writeFileSync(path.join(evidence,'rag-ui.json'),JSON.stringify(output,null,2));
-    if(!Object.values(results).every(row=>row.visible)) throw Error('Missing document state label');
+    if(!Object.values(results).every(row=>row.visible && row.no_document_row!==false)) throw Error('Unexpected document state');
     console.log('Document state labels and reasons verified in Chromium:',Object.keys(results).length);
   } finally {
     if (browser) await browser.close();

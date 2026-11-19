@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import re
+from mentor_doc_contracts import offline_checks
 from xml.etree import ElementTree as ET
 
 BASE = Path(__file__).resolve().parents[1]/'docs/release/week8/verify-evidence'
@@ -38,33 +39,12 @@ for cfg in 'ABCD':
         else:
             display[label]=row['status']
     profiles[cfg]={'display':display,'display_correct':sum(value=='PASS' for value in display.values()),
-        'structured_correct':sum(row['status']=='PASS' for row in rows),'denominator':len(rows)}
+        'structured_correct':sum(row.get('structured_status',row['status'])=='PASS' for row in rows),
+        'joint_correct':sum(row['status']=='PASS' for row in rows),'denominator':len(rows)}
 
-checks={}
-b=data['DOC-API-01']
-checks['DOC-API-01']=b['http']==201 and b['body_status']==b['db_status']=='ready' and b['hash_correct'] and b['detail']==200 and b['preview_present']
-b=data['DOC-API-02']
-checks['DOC-API-02']=b['anonymous_upload']==b['expired_http']==401
-b=data['DOC-API-03']
-checks['DOC-API-03']=b['http']==201 and b['status']=='rejected' and b['db_reason']==b['reason']=='UNSUPPORTED_FILE'
-expected={'textless':'NO_TEXT','pages':'TOO_MANY_PAGES','encrypted':'ENCRYPTED_PDF','oversize':'FILE_TOO_LARGE'}
-checks['DOC-API-04']=set(data['DOC-API-04'])==set(expected) and all(row['http']==201 and row['state']=='rejected' and row['reason']==row['db_reason']==expected[k] and row['chunks']==0 for k,row in data['DOC-API-04'].items())
-b=data['DOC-API-05']
-checks['DOC-API-05']=b['http']==201 and b['filename']=='Demo.txt'
-b=data['DOC-API-06']
-checks['DOC-API-06']=b['other_http']==[404,404] and all(item.get('detail')=='DOCUMENT_UNAVAILABLE' for item in b['other_body']) and b['owner_get']==200 and b['deleted_at'] is None and b['owner']=='bob' and b['chunk_count']>0
-b=data['DOC-API-07']
-checks['DOC-API-07']=b['valid_uuid4'] and not b['owner_file_visible_to_second_customer'] and b['absent_uuid_http']==404 and b['list_http']==200
-b=data['DOC-API-08']
-checks['DOC-API-08']=b['http']==201 and b['db_owner']=='alice'
-b=data['DOC-API-09']
-checks['DOC-API-09']=b['cap_http']==[201,409] and b['cap_body']=='DOCUMENT_LIMIT' and b['db_active_after']==20 and b['sequential_upload_statuses'][-1]==429
-b=data['DOC-API-10']
-checks['DOC-API-10']=b['delete']==200 and b['delete_body']=={'deleted':True} and b['detail_after']==404 and b['chunks_after']==0 and live.get('deleted_question',{}).get('status')=='PASS'
-b=data['DOC-API-11']
-checks['DOC-API-11']=b['anonymous_http']==401 and b['normal_customer_http'] in (401,403) and any(row.get('decision')=='ALLOW' for row in live['cases'])
-b=data['DOC-API-12']
-checks['DOC-API-12']=b['bad_media_http']==415 and b['bad_media_body']=={'detail':'MULTIPART_REQUIRED'} and not b['malformed_paths_or_traces']
+checks = offline_checks(data)
+checks['DOC-API-10'] = checks['DOC-API-10'] and live.get('deleted_question', {}).get('status') == 'PASS'
+checks['DOC-API-11'] = checks['DOC-API-11'] and any(row.get('decision') == 'ALLOW' for row in live['cases'])
 
 out={'commit':live['commit'],'api_observed':checks,'profiles':profiles,'browser':ui['results'],
      'coverage_note':'DOC-API-05 uses a benign nested HTML-like filename and reads the React text sink. DOC-API-07 uses a known foreign record and an unused UUID. DOC-API-11 is an ordinary credential denial plus a separate authorized question. No adversarial replay.'}

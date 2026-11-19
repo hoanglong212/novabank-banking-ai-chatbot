@@ -218,12 +218,21 @@ def main():
     parser.add_argument("--seed-db", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--guard-model", type=Path, required=True)
+    parser.add_argument("--published-utility", action="store_true",
+                        help="Run all 100 published calibration prompts on the disposable bank, config D.")
     args = parser.parse_args()
     repo, output = args.repo.resolve(), args.output.resolve()
     # Only copy a marked synthetic database. The source remains read-only.
     if not json.loads(args.seed_db.with_suffix(".seed.json").read_text(encoding="utf-8")).get("synthetic"):
         raise ValueError("Expected a generated synthetic seed database.")
     output.parent.mkdir(parents=True, exist_ok=True)
+    if args.published_utility:
+        codes = [run_isolated(args, repo, output, offset) for offset in range(0, 100, 25)]
+        return int(any(codes))
+    return run_isolated(args, repo, output)
+
+
+def run_isolated(args, repo, output, offset=None):
     with tempfile.TemporaryDirectory(prefix="novabank-mentor-ai-", ignore_cleanup_errors=True) as tmp, ExitStack() as stack:
         path = Path(tmp) / "demo.sqlite3"
         with closing(sqlite3.connect(args.seed_db.resolve().as_uri() + "?mode=ro", uri=True)) as src, closing(sqlite3.connect(path)) as dest:
@@ -252,8 +261,11 @@ def main():
             raise RuntimeError("Temporary stack not ready")
         conn = stack.enter_context(closing(sqlite3.connect(path.as_uri()+"?mode=ro",uri=True)))
         results = {"sha": subprocess.check_output(["git","rev-parse","HEAD"],cwd=repo,text=True).strip(), "ready": ready, "tests": {}}
+        if args.published_utility:
+            from published_utility import verify_published
+            return verify_published(client, path, repo, results["sha"], output, offset)
         verify(App(client,conn), results, output)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
